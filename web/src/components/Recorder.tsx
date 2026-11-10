@@ -153,7 +153,7 @@ export function Recorder() {
   const idle = sign?.gloss === IDLE.gloss;
   const name = (s: SignRow) => (s.gloss === IDLE.gloss ? "No sign" : s.gloss);
   const how = idle
-    ? "Rest your hands, or move them about without making any sign."
+    ? "Keep your hands in view and move them as you would between signs, without making one. Record a few takes with your hands resting too."
     : sign && MOVING.has(sign.gloss)
       ? "Start from the first handshape and trace the whole movement during the take."
       : "Have the sign ready before the countdown ends and keep it up for the whole take.";

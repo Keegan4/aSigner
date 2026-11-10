@@ -1,9 +1,9 @@
 """Loads the sign model exported by ml/train.py and adapts it to `Recogniser`.
 
 The model takes a clip resampled to CLIP_FRAMES normalised frames, shape
-(1, CLIP_FRAMES, NORMALISED_SIZE), and returns one logit per label. The labels
-file and the weights sit beside the model: `signs.onnx`, `signs.onnx.data`
-and `signs.labels.json`. Keep the three together.
+(1, CLIP_FRAMES, NORMALISED_SIZE), and returns one logit per label. It is a
+single file: the labels and the pass score travel inside it as ONNX metadata,
+so a retrained model replaces the old one in one atomic rename.
 """
 import json
 from functools import lru_cache
@@ -14,13 +14,21 @@ import onnxruntime as ort
 
 from .features import CLIP_FRAMES, NORMALISED_SIZE, resample
 
+LABELS_KEY = "asigner.labels"  # JSON list of glosses, in output order
+PASS_SCORE_KEY = "asigner.pass_score"  # optional float chosen at training time
+
 
 class OnnxRecogniser:
     def __init__(self, model_path: Path):
-        labels_path = model_path.with_suffix(".labels.json")
-        self.labels: list[str] = json.loads(labels_path.read_text(encoding="utf-8"))
         # InferenceSession.run may be called from several threads at once.
         self._session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+        metadata = self._session.get_modelmeta().custom_metadata_map
+        if LABELS_KEY not in metadata:
+            raise ValueError(f"{model_path} carries no labels; export it with ml/train.py")
+        self.labels: list[str] = json.loads(metadata[LABELS_KEY])
+        self.pass_score: float | None = (
+            float(metadata[PASS_SCORE_KEY]) if PASS_SCORE_KEY in metadata else None
+        )
         self._input = self._session.get_inputs()[0].name
         outputs = self._session.get_outputs()[0].shape[-1]
         if isinstance(outputs, int) and outputs != len(self.labels):
@@ -44,9 +52,10 @@ def _load(path: str, modified: float) -> OnnxRecogniser:
 def load_recogniser(model_path: str) -> OnnxRecogniser | None:
     """The model at `model_path`, or None if no model has been exported yet.
 
-    Reloads when the file changes, so a retrained model is picked up without a restart.
+    Reloads when the file changes, so a retrained model is picked up by the
+    next connection without a restart.
     """
     path = Path(model_path)
-    if not path.is_file() or not path.with_suffix(".labels.json").is_file():
+    if not path.is_file():
         return None
     return _load(str(path), path.stat().st_mtime)

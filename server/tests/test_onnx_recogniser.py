@@ -6,13 +6,13 @@ import pytest
 from onnx import TensorProto, helper
 
 from app.features import CLIP_FRAMES, FRAME_SIZE, NORMALISED_SIZE, normalise, resample
-from app.onnx_recogniser import load_recogniser
+from app.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, load_recogniser
 from app.practice import score_clip
 
 LABELS = ["A", "B", "C"]
 
 
-def write_model(folder, labels=LABELS, outputs=None):
+def write_model(folder, labels=LABELS, outputs=None, pass_score=None):
     """A tiny stand-in for the trained model: mean over time, then a fixed linear layer.
 
     Class k responds to feature k, so a clip whose feature 1 is large scores as "B".
@@ -33,9 +33,12 @@ def write_model(folder, labels=LABELS, outputs=None):
     )
     model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
     model.ir_version = 8
+    if labels is not None:
+        model.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
+    if pass_score is not None:
+        model.metadata_props.add(key=PASS_SCORE_KEY, value=str(pass_score))
     path = folder / "signs.onnx"
     onnx.save(model, path)
-    path.with_suffix(".labels.json").write_text(json.dumps(labels), encoding="utf-8")
     return path
 
 
@@ -66,10 +69,21 @@ def test_rejects_wrong_shapes_and_label_mismatch(tmp_path):
     with pytest.raises(ValueError):
         recogniser.predict(np.zeros((0, NORMALISED_SIZE), dtype=np.float32))
 
-    other = tmp_path / "other"
-    other.mkdir()
-    with pytest.raises(ValueError):
-        load_recogniser(str(write_model(other, labels=["A", "B"], outputs=3)))
+    for name, labels in (("mismatch", ["A", "B"]), ("unlabelled", None)):
+        folder = tmp_path / name
+        folder.mkdir()
+        with pytest.raises(ValueError):
+            load_recogniser(str(write_model(folder, labels=labels, outputs=3)))
+
+
+def test_pass_score_travels_with_the_model(tmp_path):
+    """Scoring reads `recogniser.pass_score` and falls back to its default when it is None."""
+    plain = tmp_path / "plain"
+    tuned = tmp_path / "tuned"
+    plain.mkdir()
+    tuned.mkdir()
+    assert load_recogniser(str(write_model(plain))).pass_score is None
+    assert load_recogniser(str(write_model(tuned, pass_score=0.75))).pass_score == 0.75
 
 
 def test_works_with_practice_scoring(tmp_path):
