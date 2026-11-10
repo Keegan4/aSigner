@@ -5,9 +5,12 @@ None until a model has been exported to MODEL_PATH, and practice then reports
 that scoring is unavailable. Tests replace it through FastAPI's dependency
 overrides.
 """
+import logging
 from typing import Protocol
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class Recogniser(Protocol):
@@ -38,14 +41,12 @@ class UnusableModel:
 
 def get_recogniser() -> "Recogniser | UnusableModel | None":
     """The installed model, None when there is none, or UnusableModel when the file will not load."""
-    from pathlib import Path
-
     from app.core.config import get_settings
     from app.recognition.onnx_recogniser import load_recogniser
 
     path = get_settings().model_path
-    recogniser = load_recogniser(path)
-    if recogniser is None and Path(path).is_file():
-        # load_recogniser has already logged why.
-        return UnusableModel(f"{path} could not be loaded")
-    return recogniser
+    try:
+        return load_recogniser(path)
+    except Exception as exc:  # onnxruntime raises its own types for a bad file
+        logger.warning("Sign model at %s cannot be used: %s", path, exc)
+        return UnusableModel(str(exc))
