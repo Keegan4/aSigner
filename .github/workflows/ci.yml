@@ -65,7 +65,7 @@ jobs:
       run:
         working-directory: ml
     steps:
-      # The whole checkout: ml/ imports server/app/features.py and onnx_recogniser.py.
+      # The whole checkout: ml/ imports server/app/recognition/features.py and onnx_recogniser.py.
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:

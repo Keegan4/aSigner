@@ -3,10 +3,10 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from ..db import get_db
-from ..deps import current_user
-from ..models import User
-from .clips import delete_clips_for, get_clips_dir
+from app.core.db import get_db
+from app.models import User
+from app.routes.deps import current_user
+from app.services.clips import delete_clips_for, get_clips_dir
 
 router = APIRouter(prefix="/api/me", tags=["me"])
 

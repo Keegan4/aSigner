@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraTracker } from "@/components/CameraTracker";
+import { CameraTracker } from "@/components/camera/CameraTracker";
 import { WS_URL } from "@/lib/api";
-import { FACE, FRAME_SIZE, LEFT_HAND, POSE, RIGHT_HAND } from "@/lib/features";
+import { FACE, FRAME_SIZE, LEFT_HAND, POSE, RIGHT_HAND } from "@/lib/tracking/features";
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
 

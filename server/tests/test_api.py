@@ -2,8 +2,8 @@ import pytest
 from sqlalchemy import select
 from starlette.websockets import WebSocketDisconnect
 
-from app.auth import upsert_user
 from app.models import Attempt, Sign, Translation, User
+from app.routes.auth import upsert_user
 
 
 def test_health(client):
@@ -108,7 +108,7 @@ def test_dev_login_is_off_by_default(client):
 
 
 def test_dev_login_needs_flag_and_localhost(client, monkeypatch):
-    from app.config import get_settings
+    from app.core.config import get_settings
 
     settings = get_settings()
     monkeypatch.setattr(settings, "dev_login", True)

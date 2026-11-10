@@ -5,7 +5,7 @@ it answers with nothing useful, the glosses themselves are the sentence.
 """
 import httpx
 
-from .config import get_settings
+from app.core.config import get_settings
 
 TIMEOUT_SECONDS = 15
 MAX_SENTENCE_CHARS = 500

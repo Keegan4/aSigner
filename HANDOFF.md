@@ -10,7 +10,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 
 - **Landmarks, not video.** The browser runs MediaPipe (hands, pose, face) and sends one 256-float frame per video frame over a WebSocket. Video never leaves the browser and is never stored.
 - **Inference on the server.** FastAPI serves an ONNX model on CPU.
-- **One normaliser.** `server/app/features.py` is imported by both serving and training. Do not write a second one.
+- **One normaliser.** `server/app/recognition/features.py` is imported by both serving and training. Do not write a second one.
 - **Local LLM only.** The translator's sentence layer uses Ollama (`SENTENCE_MODEL`), with no external LLM API. It must fall back to plain glosses when Ollama is down.
 - **Google sign-in, Postgres.** Only text is stored: progress, attempts, past translations.
 - **Sign Bank media is not in the repo.** It is copyright SADeaf, all rights reserved. Link to it; do not copy from it unless written permission arrives.
@@ -23,17 +23,17 @@ Working and tested (49 server tests on SQLite and on Postgres 16; web type-check
 - Auth, session cookie, lessons API, translation history API, delete-my-data, authenticated `/ws/echo`.
 - Schema and one Alembic migration (applied to Postgres 16; `alembic check` reports no drift); seed with the Alphabet lesson.
 - Home page and `/check` camera page.
-- Frame layout (`web/src/lib/features.ts` and `server/app/features.py`, which must match) and normaliser.
-- Practice scoring (T3): `/ws/practice`, spaced repetition, `GET /api/progress`. Scoring runs against the `Recogniser` interface in `server/app/recogniser.py`; no model is installed, so the live socket answers `no_model` until T2 delivers one.
+- Frame layout (`web/src/lib/tracking/features.ts` and `server/app/recognition/features.py`, which must match) and normaliser.
+- Practice scoring (T3): `/ws/practice`, spaced repetition, `GET /api/progress`. Scoring runs against the `Recogniser` interface in `server/app/recognition/recogniser.py`; no model is installed, so the live socket answers `no_model` until T2 delivers one.
 - Lesson, practice, quiz and progress screens (T4). Driven in headless Chromium with a fake camera and a fake model: an attempt was scored, stored and shown on the progress page.
-- Translator groundwork (T5): `server/app/sentence.py` asks Ollama for a sentence and falls back to the glosses; `POST /api/translations` stores one; `/translations` lists them with delete and browser speech. Tested against a fake Ollama only.
-- Live translator (T5): `server/app/translate.py` segments a frame stream into glosses, `/ws/translate` stores each finished sentence, `/translate` shows it. Tested with a fake model only; the page was loaded in headless Chromium but no sign was ever recognised in a browser.
+- Translator groundwork (T5): `server/app/services/sentence.py` asks Ollama for a sentence and falls back to the glosses; `POST /api/translations` stores one; `/translations` lists them with delete and browser speech. Tested against a fake Ollama only.
+- Live translator (T5): `server/app/services/segmentation.py` segments a frame stream into glosses, `/ws/translate` stores each finished sentence, `/translate` shows it. Tested with a fake model only; the page was loaded in headless Chromium but no sign was ever recognised in a browser.
 - Docker (T6): both images build and `postgres`, `server` and `web` start and serve. The `ollama` service was not started.
 
 Never verified:
 
 - Live camera tracking with a person in view, and frame rate on real hardware.
-- Whether MediaPipe's "Left"/"Right" labels match the signer's hands (`web/src/lib/landmarkers.ts` has a TODO).
+- Whether MediaPipe's "Left"/"Right" labels match the signer's hands (`web/src/lib/tracking/landmarkers.ts` has a TODO).
 - A real Google sign-in round trip.
 - The sentence layer against a real Ollama model, and how good its sentences are.
 - The GitHub Actions workflow: it runs on pull requests and pushes to `main`, and has not run yet.
@@ -44,18 +44,26 @@ Never verified:
 | Path | Contents |
 |---|---|
 | `server/app/main.py` | App wiring and session middleware |
-| `server/app/auth.py` | Google OAuth |
-| `server/app/ws.py` | WebSocket auth (`authorise`), echo and `/ws/practice` (message format in its docstring) |
-| `server/app/practice.py` | Scoring thresholds and review schedule |
-| `server/app/translate.py` | Segmentation for the live translator: window, stride and pause lengths |
-| `server/app/recogniser.py` | The model interface T2 must implement |
-| `server/app/features.py` | Frame decode and normalise |
+| `server/app/core/` | Settings (`config.py`) and database session (`db.py`) |
 | `server/app/models.py` | All tables |
+| `server/app/recognition/` | Frame decode and normalise (`features.py`), the model interface (`recogniser.py`), the ONNX loader (`onnx_recogniser.py`). Imports nothing but numpy and onnxruntime, because `ml/` imports it too |
+| `server/app/services/` | Logic with no HTTP in it: scoring and review schedule (`practice.py`), segmentation for the translator (`segmentation.py`), the Ollama sentence layer (`sentence.py`), clip storage (`clips.py`), saving translations (`translations.py`) |
+| `server/app/routes/` | REST endpoints, one module per resource, including Google OAuth (`auth.py`) and the signed-in user dependency (`deps.py`) |
+| `server/app/ws/` | WebSocket endpoints, one module per socket (message formats in their docstrings); `session.py` has `authorise` |
 | `server/seed/lessons.yaml` | Lesson content |
 | `server/tests/` | pytest; `conftest.py` has the signed-in client fixture |
-| `web/src/components/CameraTracker.tsx` | Camera, tracking loop, overlay |
-| `web/src/components/PracticeSession.tsx` | Camera plus one scored attempt; used by practice and quiz |
-| `web/src/lib/` | Frame packing, MediaPipe setup, API helpers, practice socket (and its mock) |
+| `ml/` | Training: `data.py` (loading, augmentation), `train.py` (model, evaluation, export) |
+| `web/src/app/` | Routes only; each page renders one component |
+| `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `translate` (live and history), `ui` (shared page frame and small parts) |
+| `web/src/lib/` | `api.ts` (types and fetch helper), `practice.ts` (practice socket and its mock), `tracking/` (frame packing, MediaPipe setup) |
+| `web/src/hooks/` | Shared data hooks |
+
+### Where new code goes
+
+- A new REST resource: a module in `server/app/routes/` with its own `router`, added to the list in `routes/__init__.py`. A new socket: the same in `server/app/ws/`.
+- Routes and sockets stay thin. Anything worth testing without HTTP goes in `server/app/services/`. Services do not import from `routes/` or `ws/`.
+- Anything the model or training needs goes in `server/app/recognition/` and must not import FastAPI, settings or the database at module level.
+- A new screen: a page in `web/src/app/` and a component in its feature folder under `web/src/components/`. Server imports are absolute (`from app.services.practice import ...`); web imports use the `@/` alias.
 
 ## Gotchas
 
@@ -90,7 +98,7 @@ Can start now against the existing lessons API and a mocked practice socket.
 
 ### T5. Translator mode: built, untested with a real model
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
-Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/translate.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 2 s of frames every 0.2 s; its constants were chosen without a trained model and need tuning against real signing once one exists.
+Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 2 s of frames every 0.2 s; its constants were chosen without a trained model and need tuning against real signing once one exists.
 
 ### T6. Infrastructure: done, apart from a first CI run and the `ollama` service
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.

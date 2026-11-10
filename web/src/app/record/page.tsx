@@ -1,4 +1,4 @@
-import { Recorder } from "@/components/Recorder";
+import { Recorder } from "@/components/record/Recorder";
 
 export default function Page() {
   return <Recorder />;

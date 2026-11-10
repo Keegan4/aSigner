@@ -3,10 +3,10 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { PracticeSession } from "@/components/PracticeSession";
-import { Demo, LessonFallback, Shell } from "@/components/Shell";
+import { PracticeSession } from "@/components/practice/PracticeSession";
+import { Demo, LessonFallback, Shell } from "@/components/ui/Shell";
 import type { Lesson, Sign } from "@/lib/api";
-import { useLesson } from "@/lib/useLesson";
+import { useLesson } from "@/hooks/useLesson";
 
 const QUESTIONS = 5;
 const CHOICES = 4;

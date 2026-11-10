@@ -3,8 +3,8 @@
 import { DrawingUtils, HandLandmarker, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react";
 
-import { packFrame, POSE_POINTS } from "@/lib/features";
-import { closeTrackers, detect, loadTrackers, type Trackers } from "@/lib/landmarkers";
+import { packFrame, POSE_POINTS } from "@/lib/tracking/features";
+import { closeTrackers, detect, loadTrackers, type Trackers } from "@/lib/tracking/landmarkers";
 
 type Status = "loading" | "running" | "error";
 

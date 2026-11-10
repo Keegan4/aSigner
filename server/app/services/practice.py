@@ -6,9 +6,9 @@ import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .features import IDLE_LABEL, normalise
-from .models import Attempt, Progress, now
-from .recogniser import Recogniser
+from app.models import Attempt, Progress, now
+from app.recognition.features import IDLE_LABEL, normalise
+from app.recognition.recogniser import Recogniser
 
 # Used unless the recogniser carries its own `pass_score` (chosen from the
 # false-accept / false-reject curve when the model is trained).

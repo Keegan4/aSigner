@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, ws
-from .config import get_settings
-from .routes import clips, lessons, me, progress, translations
+from app import routes, ws
+from app.core.config import get_settings
 
 settings = get_settings()
 
@@ -17,12 +16,7 @@ app.add_middleware(
     max_age=60 * 60 * 24 * 14,
 )
 
-app.include_router(auth.router)
-app.include_router(me.router)
-app.include_router(lessons.router)
-app.include_router(translations.router)
-app.include_router(progress.router)
-app.include_router(clips.router)
+app.include_router(routes.router)
 app.include_router(ws.router)
 
 

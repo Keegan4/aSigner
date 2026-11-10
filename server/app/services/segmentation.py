@@ -11,9 +11,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from .features import IDLE_LABEL, POSE, normalise
-from .practice import pass_score
-from .recogniser import Recogniser
+from app.recognition.features import IDLE_LABEL, POSE, normalise
+from app.recognition.recogniser import Recogniser
+from app.services.practice import pass_score
 
 WINDOW_SECONDS = 2.0
 STRIDE_SECONDS = 0.2

@@ -5,9 +5,15 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
-from app.features import CLIP_FRAMES, FRAME_SIZE, NORMALISED_SIZE, normalise, resample
-from app.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, load_recogniser
-from app.practice import score_clip
+from app.recognition.features import (
+    CLIP_FRAMES,
+    FRAME_SIZE,
+    NORMALISED_SIZE,
+    normalise,
+    resample,
+)
+from app.recognition.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, load_recogniser
+from app.services.practice import score_clip
 
 LABELS = ["A", "B", "C"]
 

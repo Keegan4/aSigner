@@ -3,8 +3,8 @@ import json
 import httpx
 import pytest
 
-from app import sentence
-from app.config import get_settings
+from app.core.config import get_settings
+from app.services import sentence
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 /**
- * Per-frame feature layout sent to the server. Must match ml/features.py.
+ * Per-frame feature layout sent to the server. Must match server/app/recognition/features.py.
  *
  * Values are raw MediaPipe outputs (image-normalised x, y and relative z).
  * Normalisation (centring, scaling) happens once, in Python, so training

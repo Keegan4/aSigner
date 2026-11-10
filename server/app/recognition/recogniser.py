@@ -24,7 +24,7 @@ class Recogniser(Protocol):
 
 
 def get_recogniser() -> Recogniser | None:
-    from .config import get_settings
-    from .onnx_recogniser import load_recogniser
+    from app.core.config import get_settings
+    from app.recognition.onnx_recogniser import load_recogniser
 
     return load_recogniser(get_settings().model_path)

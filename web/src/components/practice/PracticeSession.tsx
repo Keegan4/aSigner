@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraTracker } from "@/components/CameraTracker";
+import { CameraTracker } from "@/components/camera/CameraTracker";
 import type { Sign } from "@/lib/api";
 import {
   MOCK_PRACTICE,
