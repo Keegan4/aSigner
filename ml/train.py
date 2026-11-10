@@ -9,6 +9,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import sys
 import tempfile
 import time
@@ -115,6 +116,11 @@ class SignNet(nn.Module):
         tokens = torch.cat([cls, frames], dim=1) + self.positions
         encoded = self.encoder(tokens)
         return self.head(self.norm(encoded[:, 0]))
+
+
+def clip_source(signer: str) -> str:
+    """"recorded" for clips made on /record, otherwise the outside source's id."""
+    return "recorded" if re.fullmatch(r"u\d+", signer) else signer
 
 
 def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
@@ -308,6 +314,10 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         "test_clips": len(test_clips),
         "untested_signs": len(untested),
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        # Where the training clips came from, so the file says so itself: clips
+        # recorded in the app carry a "u<number>" signer id, anything converted
+        # from outside footage carries the id it was converted with.
+        "sources": dict(sorted(Counter(clip_source(c.signer) for c in train_clips).items())),
     }
     if pretrained:
         info["pretrained"] = pretrained

@@ -252,3 +252,16 @@ def test_train_runs_from_a_windows_console(tmp_path):
     )
     assert done.returncode == 0, done.stderr.decode("cp1252", "replace")[-2000:]
     assert out.is_file()
+
+
+def test_info_records_where_clips_came_from(tmp_path):
+    """A model trained on converted outside footage must say so in the file itself."""
+    write_clips(tmp_path / "clips", signers=("u1", "signbank"), per_sign=3)
+    out = tmp_path / "signs.onnx"
+    report = train(tmp_path / "clips", out, epochs=1, seed=0, test_signer="u1", runs=tmp_path / "runs")
+    assert report["info"]["sources"] == {"signbank": 9}
+    assert load_recogniser(str(out)).info["sources"] == {"signbank": 9}
+
+    both = tmp_path / "both.onnx"
+    report = train(tmp_path / "clips", both, epochs=1, seed=0, test_signer="x", runs=tmp_path / "runs")
+    assert report["info"]["sources"] == {"recorded": 9, "signbank": 9}
