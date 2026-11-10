@@ -14,6 +14,18 @@ def _count(value) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
 
 
+def _outside_clips(sources) -> int | None:
+    """How many training clips were not recorded in the app, or None if the model does not say.
+
+    `sources` counts clips by origin; "recorded" is the app's own recorder and
+    every other key is footage converted from somewhere else.
+    """
+    if not isinstance(sources, dict):
+        return None
+    counts = [_count(n) for origin, n in sources.items() if origin != "recorded"]
+    return None if None in counts else sum(counts)
+
+
 def describe(recogniser: Recogniser) -> dict:
     """The model's training details, cleaned up, with `limited` set when it should not be trusted.
 
@@ -27,6 +39,7 @@ def describe(recogniser: Recogniser) -> dict:
     top1 = info.get("top1")
     top1 = float(top1) if isinstance(top1, (int, float)) and not isinstance(top1, bool) and 0 <= top1 <= 1 else None
     trained_at = info.get("trained_at")
+    pretrained = info.get("pretrained")
     limited = (
         clips is None
         or signers is None
@@ -43,5 +56,7 @@ def describe(recogniser: Recogniser) -> dict:
         "test_clips": test_clips,
         "untested_signs": untested,
         "trained_at": trained_at if isinstance(trained_at, str) and len(trained_at) <= 40 else None,
+        "outside_clips": _outside_clips(info.get("sources")),
+        "pretrained": pretrained if isinstance(pretrained, str) and len(pretrained) <= 80 else None,
         "limited": limited,
     }

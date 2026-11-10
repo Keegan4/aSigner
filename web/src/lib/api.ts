@@ -44,5 +44,9 @@ export type ModelInfo = {
   top1?: number | null;
   test_clips?: number | null;
   untested_signs?: number | null;
+  /** Training clips converted from footage outside the app's own recorder. */
+  outside_clips?: number | null;
+  /** The public dataset the model was pretrained on, if any. */
+  pretrained?: string | null;
   trained_at?: string | null;
 };
