@@ -72,7 +72,7 @@ python -m venv .venv
 .venv/Scripts/python train.py
 ```
 
-This writes `signs.onnx`, `signs.onnx.data` and `signs.labels.json` into `server/models/`, which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
+This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
 ## Tests
 

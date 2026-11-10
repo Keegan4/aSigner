@@ -1,8 +1,8 @@
 """Checks the pipeline end to end on made-up clips. Says nothing about real accuracy."""
 import numpy as np
 
-from data import augment, mirror, to_model_input
-from train import train
+from data import augment, mirror, to_model_input, transition
+from train import threshold_curve, train
 
 from app.features import CLIP_FRAMES, FRAME_SIZE, LEFT_HAND, NORMALISED_SIZE, POSE, RIGHT_HAND
 from app.onnx_recogniser import load_recogniser
@@ -51,12 +51,42 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     out = tmp_path / "models" / "signs.onnx"
     report = train(tmp_path / "clips", out, epochs=30, seed=0, test_signer="u2", runs=tmp_path / "runs")
 
-    assert report["signs"] == ["A", "B", "C"]
+    assert report["labels"] == ["A", "B", "C", "_idle"]  # no-sign is always a class
     assert "u2 held out" in report["split"]
     assert report["top1"] > 0.9  # the made-up signs are easy to tell apart
+    assert len(report["threshold_curve"]) == 14
+    assert 0.3 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
 
+    # One file, nothing left half-written beside it.
+    assert [p.name for p in out.parent.iterdir()] == ["signs.onnx"]
     recogniser = load_recogniser(str(out))
-    assert recogniser.labels == ["A", "B", "C"]
+    assert recogniser.labels == ["A", "B", "C", "_idle"]
+    assert recogniser.pass_score == report["pass_score"]
     probabilities = recogniser.predict(to_model_input(fake_clip(np.random.default_rng(3), 2)))
     assert recogniser.labels[int(probabilities.argmax())] == "C"
     assert list((tmp_path / "runs").glob("*/confusion.csv"))
+
+
+def test_transition_puts_the_sign_last():
+    rng = np.random.default_rng(4)
+    sign, before = fake_clip(rng, 0), fake_clip(rng, 1)
+    for _ in range(50):
+        frames, fraction = transition(sign, before, rng)
+        shown = round(fraction * len(frames))
+        assert 0.3 <= fraction <= 1.0
+        assert np.array_equal(frames[len(frames) - shown :], sign[:shown])
+        assert np.array_equal(frames[: len(frames) - shown], before[len(before) - (len(frames) - shown) :])
+
+
+def test_threshold_curve_counts_rejects_and_accepts():
+    labels = ["A", "B", "_idle"]
+    probs = np.array([
+        [0.9, 0.05, 0.05],  # A, clearly right
+        [0.5, 0.4, 0.1],  # A, right but unsure: rejected above 0.5
+        [0.2, 0.7, 0.1],  # A signed, looks like B: would pass as B up to 0.7
+        [0.1, 0.1, 0.8],  # idle: never a target, never an accept
+    ])
+    curve = {row["pass_score"]: row for row in threshold_curve(probs, np.array([0, 0, 0, 2]), labels)}
+    assert curve[0.3]["false_reject"] == 1 / 3 and curve[0.3]["false_accept"] == 1 / 4
+    assert curve[0.6]["false_reject"] == 2 / 3 and curve[0.6]["false_accept"] == 1 / 4
+    assert curve[0.75]["false_accept"] == 0

@@ -2,24 +2,31 @@
 
     python train.py --clips ../server/data/clips --out ../server/models/signs.onnx
 
-Writes signs.onnx and signs.labels.json, plus report.json and confusion.csv
-under runs/<time>/.
+Writes signs.onnx (labels and pass score inside it), plus report.json and
+confusion.csv under runs/<time>/.
 """
 import argparse
 import csv
 import json
+import os
+import tempfile
 import time
 from collections import Counter
 from pathlib import Path
 
 import numpy as np
+import onnx
 import torch
 from torch import nn
 
-from data import Clip, augment, load_clips, to_model_input
+from data import Clip, augment, load_clips, to_model_input, transition
 
-from app.features import CLIP_FRAMES, NORMALISED_SIZE  # path set up by data.py
-from app.onnx_recogniser import OnnxRecogniser
+from app.features import CLIP_FRAMES, IDLE_LABEL, NORMALISED_SIZE  # path set up by data.py
+from app.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
+
+TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
+SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
+MIN_CLIPS_FOR_THRESHOLD = 30
 
 
 class SignNet(nn.Module):
@@ -56,19 +63,79 @@ def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
     return train, test, "same signer in train and test: accuracy is optimistic"
 
 
-def evaluate(model: nn.Module, clips: list[Clip], labels: list[str]):
+def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generator):
+    """One epoch's inputs: every clip freshly augmented, some as straddling windows."""
+    xs, ys = [], []
+    for clip in clips:
+        frames, label = clip.frames, clip.label
+        if label != IDLE_LABEL and len(clips) > 1 and rng.random() < TRANSITION_SHARE:
+            other = clips[rng.integers(len(clips))]
+            if other.label != label:
+                frames, fraction = transition(frames, other.frames, rng)
+                if fraction < SIGN_FRACTION:
+                    label = IDLE_LABEL
+        xs.append(to_model_input(augment(frames, rng)))
+        ys.append(labels.index(label))
+    return torch.from_numpy(np.stack(xs)), torch.tensor(ys)
+
+
+def probabilities(model: nn.Module, clips: list[Clip]) -> np.ndarray:
     x = torch.from_numpy(np.stack([to_model_input(c.frames) for c in clips]))
-    y = np.array([labels.index(c.label) for c in clips])
     model.eval()
     with torch.no_grad():
-        logits = model(x).numpy()
-    ranked = np.argsort(-logits, axis=1)
-    top1 = float((ranked[:, 0] == y).mean())
-    top5 = float((ranked[:, :5] == y[:, None]).any(axis=1).mean())
-    confusion = np.zeros((len(labels), len(labels)), dtype=int)
-    for truth, guess in zip(y, ranked[:, 0]):
-        confusion[truth, guess] += 1
-    return top1, top5, confusion
+        return torch.softmax(model(x), dim=1).numpy()
+
+
+def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> list[dict]:
+    """False rejects and false accepts for each pass score, as practice would see them.
+
+    A false reject is a correct sign scored as a fail. A false accept is a
+    clip that would pass as some *other* sign, had that been the target.
+    """
+    signs = np.array([label != IDLE_LABEL for label in labels])
+    wrong = probs * signs
+    wrong[np.arange(len(truth)), truth] = 0.0
+    top = probs.argmax(axis=1)
+    genuine = np.where(top == truth, probs[np.arange(len(truth)), truth], 0.0)
+    impostor = np.where(top == wrong.argmax(axis=1), wrong.max(axis=1), 0.0)
+    real = signs[truth]  # idle clips are never a practice target
+    return [
+        {
+            "pass_score": round(float(t), 2),
+            "false_reject": float((genuine[real] < t).mean()),
+            "false_accept": float((impostor >= t).mean()),
+        }
+        for t in np.arange(0.30, 0.951, 0.05)
+    ]
+
+
+def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | None, probe: np.ndarray):
+    """Write the model as one file and move it into place in a single rename.
+
+    A server that connects mid-export sees either the old model or the new
+    one, never a partial file.
+    """
+    out.parent.mkdir(parents=True, exist_ok=True)
+    model.eval()
+    with tempfile.TemporaryDirectory() as scratch:
+        raw = Path(scratch) / "model.onnx"
+        example = torch.zeros(1, CLIP_FRAMES, NORMALISED_SIZE)
+        torch.onnx.export(model, (example,), str(raw), input_names=["clip"],
+                          output_names=["logits"], dynamo=True)
+        proto = onnx.load(str(raw))  # pulls any external weight file back in
+    proto.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
+    if pass_score is not None:
+        proto.metadata_props.add(key=PASS_SCORE_KEY, value=str(pass_score))
+    pending = out.with_name(out.name + ".tmp")
+    onnx.save(proto, str(pending))
+
+    # The exported file must give the server the same answer PyTorch gives here.
+    with torch.no_grad():
+        expected = torch.softmax(model(torch.from_numpy(probe)[None]), dim=1)[0].numpy()
+    if not np.allclose(expected, OnnxRecogniser(pending).predict(probe), atol=1e-4):
+        pending.unlink()
+        raise SystemExit("Exported model disagrees with the trained model.")
+    os.replace(pending, out)
 
 
 def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path):
@@ -76,27 +143,26 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     torch.manual_seed(seed)
 
     clips = load_clips(clips_dir)
-    labels = sorted({c.label for c in clips})
-    if len(labels) < 2:
-        raise SystemExit(f"Need clips for at least two signs; found {len(clips)} clips, {len(labels)} signs.")
+    if len({c.label for c in clips} - {IDLE_LABEL}) < 2:
+        raise SystemExit(f"Need clips for at least two signs; found {len(clips)} clips.")
     train_clips, test_clips, split_note = split(clips, test_signer, rng)
-    labels = sorted({c.label for c in train_clips})
+    # The idle class always exists: straddling windows are labelled with it even
+    # when nobody has recorded "no sign" takes.
+    labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
     test_clips = [c for c in test_clips if c.label in labels]
-    print(f"{len(train_clips)} training clips, {len(test_clips)} test clips, {len(labels)} signs ({split_note})")
+    print(f"{len(train_clips)} training clips, {len(test_clips)} test clips, "
+          f"{len(labels) - 1} signs plus no-sign ({split_note})")
 
     model = SignNet(len(labels))
     optimiser = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-2)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, epochs)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
-    y_all = torch.tensor([labels.index(c.label) for c in train_clips])
 
     for epoch in range(1, epochs + 1):
+        x_all, y_all = training_batch(train_clips, labels, rng)
         model.train()
-        # Fresh augmentation every epoch, so the model never sees the same clip twice.
-        x_all = torch.from_numpy(np.stack([to_model_input(augment(c.frames, rng)) for c in train_clips]))
-        order = torch.from_numpy(rng.permutation(len(train_clips)))
         total = 0.0
-        for batch in order.split(64):
+        for batch in torch.from_numpy(rng.permutation(len(train_clips))).split(64):
             optimiser.zero_grad()
             loss = loss_fn(model(x_all[batch]), y_all[batch])
             loss.backward()
@@ -106,27 +172,29 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         if epoch % 10 == 0 or epoch == epochs:
             print(f"epoch {epoch:3d}  loss {total / len(train_clips):.3f}")
 
-    report = {"clips": len(clips), "signs": labels, "split": split_note, "epochs": epochs, "seed": seed}
-    confusion = None
+    report = {"clips": len(clips), "labels": labels, "split": split_note, "epochs": epochs, "seed": seed}
+    confusion, pass_score = None, None
     if test_clips:
-        top1, top5, confusion = evaluate(model, test_clips, labels)
-        report |= {"test_clips": len(test_clips), "top1": top1, "top5": top5}
+        probs = probabilities(model, test_clips)
+        truth = np.array([labels.index(c.label) for c in test_clips])
+        ranked = np.argsort(-probs, axis=1)
+        top1 = float((ranked[:, 0] == truth).mean())
+        top5 = float((ranked[:, :5] == truth[:, None]).any(axis=1).mean())
+        confusion = np.zeros((len(labels), len(labels)), dtype=int)
+        np.add.at(confusion, (truth, ranked[:, 0]), 1)
+        curve = threshold_curve(probs, truth, labels)
+        report |= {"test_clips": len(test_clips), "top1": top1, "top5": top5, "threshold_curve": curve}
         print(f"test top-1 {top1:.1%}  top-5 {top5:.1%}  ({split_note})")
+        if sum(c.label != IDLE_LABEL for c in test_clips) >= MIN_CLIPS_FOR_THRESHOLD:
+            best = min(curve, key=lambda row: (row["false_reject"] + row["false_accept"], row["pass_score"]))
+            pass_score = best["pass_score"]
+            print(f"pass score {pass_score} (false reject {best['false_reject']:.1%}, "
+                  f"false accept {best['false_accept']:.1%})")
+        else:
+            print(f"fewer than {MIN_CLIPS_FOR_THRESHOLD} test clips: keeping the server's default pass score")
+    report["pass_score"] = pass_score
 
-    out.parent.mkdir(parents=True, exist_ok=True)
-    model.eval()
-    example = torch.zeros(1, CLIP_FRAMES, NORMALISED_SIZE)
-    torch.onnx.export(model, (example,), str(out), input_names=["clip"], output_names=["logits"],
-                      dynamo=True)
-    out.with_suffix(".labels.json").write_text(json.dumps(labels), encoding="utf-8")
-
-    # The exported file must give the server the same answer PyTorch gives here.
-    probe = to_model_input(clips[0].frames)
-    with torch.no_grad():
-        expected = torch.softmax(model(torch.from_numpy(probe)[None]), dim=1)[0].numpy()
-    exported = OnnxRecogniser(out).predict(probe)
-    if not np.allclose(expected, exported, atol=1e-4):
-        raise SystemExit("Exported model disagrees with the trained model.")
+    export(model, out, labels, pass_score, to_model_input(clips[0].frames))
 
     run = runs / time.strftime("%Y%m%d-%H%M%S")
     run.mkdir(parents=True, exist_ok=True)

@@ -105,4 +105,18 @@ def augment(frames: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return out.astype(np.float32)
 
 
+def transition(sign: np.ndarray, before: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, float]:
+    """What a live two-second window often holds: the end of something else, then this sign.
+
+    Returns the joined frames and the fraction of them that show the sign. The
+    translator slides a window over continuous signing, so most windows straddle
+    two signs; training on whole clips alone would never show the model that.
+    """
+    fraction = rng.uniform(0.3, 1.0)
+    shown = max(2, int(len(sign) * fraction))
+    lead = min(len(before), int(round(shown * (1 - fraction) / fraction)))
+    frames = np.concatenate([before[len(before) - lead :], sign[:shown]])
+    return frames, shown / len(frames)
+
+
 assert HAND_POINTS * 2 + POSE_POINTS == 67
