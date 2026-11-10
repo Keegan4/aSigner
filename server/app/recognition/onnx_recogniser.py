@@ -29,7 +29,11 @@ class OnnxRecogniser:
         self.pass_score: float | None = (
             float(metadata[PASS_SCORE_KEY]) if PASS_SCORE_KEY in metadata else None
         )
-        self._input = self._session.get_inputs()[0].name
+        model_input = self._session.get_inputs()[0]
+        if len(model_input.shape) != 3 or model_input.shape[-1] != NORMALISED_SIZE:
+            raise ValueError(f"model must accept {NORMALISED_SIZE} features including presence flags; "
+                             "retrain and re-export it with ml/train.py")
+        self._input = model_input.name
         outputs = self._session.get_outputs()[0].shape[-1]
         if isinstance(outputs, int) and outputs != len(self.labels):
             raise ValueError(f"model has {outputs} outputs but {len(self.labels)} labels")

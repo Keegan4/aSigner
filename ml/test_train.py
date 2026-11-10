@@ -4,9 +4,12 @@ import pytest
 import torch
 
 from data import augment, mirror, to_model_input, transition
-from train import SignNet, export, threshold_curve, train
+from train import RegionEncoder, SignNet, export, threshold_curve, train
 
-from app.recognition.features import CLIP_FRAMES, FRAME_SIZE, LEFT_HAND, NORMALISED_SIZE, POSE, RIGHT_HAND
+from app.recognition.features import (
+    CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, LEFT_HAND, NORMALISED_PARTS,
+    NORMALISED_SIZE, POSE, PRESENCE, RIGHT_HAND,
+)
 from app.recognition.onnx_recogniser import load_recogniser
 
 
@@ -50,8 +53,10 @@ def test_augment_keeps_missing_parts_missing():
 
 def test_signnet_backpropagates_through_cls_positions_and_every_frame():
     torch.manual_seed(0)
-    model = SignNet(classes=4)
-    clips = torch.randn(4, CLIP_FRAMES, NORMALISED_SIZE, requires_grad=True)
+    model = SignNet(classes=4).eval()
+    clips = torch.randn(4, CLIP_FRAMES, NORMALISED_SIZE)
+    clips[..., PRESENCE] = 1
+    clips.requires_grad_()
     logits = model(clips)
     assert logits.shape == (4, 4)
     torch.nn.functional.cross_entropy(logits, torch.arange(4)).backward()
@@ -61,30 +66,85 @@ def test_signnet_backpropagates_through_cls_positions_and_every_frame():
         assert gradient.abs().sum() > 0
     # Classification can depend on distant frames, including the first and last.
     assert (clips.grad.abs().sum(dim=2) > 0).all()
+    for region in model.regions:
+        assert region.encoder[0].weight.grad.abs().sum() > 0
 
 
 def test_signnet_distinguishes_frame_order_using_positions():
     torch.manual_seed(1)
     model = SignNet(classes=4).eval()
     clip = torch.randn(1, CLIP_FRAMES, NORMALISED_SIZE)
+    clip[..., PRESENCE] = 1
     with torch.no_grad():
-        assert not torch.allclose(model(clip), model(clip.flip(1)), atol=1e-6)
-        # Without positions, CLS attention sees the same set of frames either way.
+        original = model(clip)
+        assert not torch.allclose(original, model(clip.flip(1)), atol=1e-6)
         model.positions.zero_()
-        torch.testing.assert_close(model(clip), model(clip.flip(1)), atol=1e-6, rtol=1e-5)
+        assert not torch.allclose(original, model(clip), atol=1e-6)
+
+
+def test_motion_ignores_tracking_loss_recovery_and_first_frame():
+    region = RegionEncoder((4,), 80)
+    clip = torch.zeros(1, 5, NORMALISED_SIZE)
+    clip[0, :, NORMALISED_PARTS[4]] = torch.tensor([1., 3., 100., 9., 10.])[:, None]
+    clip[0, :, COORDINATE_SIZE + 4] = torch.tensor([1., 1., 0., 1., 1.])
+    features, flags = region.inputs(clip)
+    torch.testing.assert_close(features[0, :, 0], torch.tensor([1., 3., 0., 9., 10.]))
+    expected = torch.tensor([0., 2., 0., 0., 1.])[:, None].expand(-1, 75)
+    torch.testing.assert_close(features[0, :, 75:150], expected)
+    torch.testing.assert_close(features[0, :, -1], torch.tensor([0., 1., 0., 0., 1.]))
+    stationary = clip[:, :1].expand(-1, 5, -1)
+    assert not region.inputs(stationary)[0][..., 75:150].any()
+
+
+def test_hand_encoder_groups_shape_and_placement_without_the_other_hand():
+    clip = torch.zeros(1, 2, NORMALISED_SIZE)
+    clip[..., NORMALISED_PARTS[0]] = 2
+    clip[..., NORMALISED_PARTS[1]] = 100
+    clip[..., NORMALISED_PARTS[2]] = 3
+    clip[..., NORMALISED_PARTS[3]] = 200
+    clip[..., PRESENCE] = 1
+    features, flags = RegionEncoder((0, 2), 80).inputs(clip)
+    assert features.shape == (1, 2, 256)
+    assert (features[..., :63] == 2).all()
+    assert (features[..., 63:126] == 3).all()
+    assert not features[..., 126:252].any()  # stationary, including the first frame
+    assert (flags == 1).all()
+
+
+def test_missing_regions_are_finite_and_ignore_invalid_coordinates():
+    torch.manual_seed(3)
+    model = SignNet(classes=4).eval()
+    clip = torch.randn(1, CLIP_FRAMES, NORMALISED_SIZE)
+    clip[..., PRESENCE] = 0
+    logits = model(clip)
+    assert torch.isfinite(logits).all()
+    torch.testing.assert_close(logits, model(torch.zeros_like(clip)))
+    logits.sum().backward()
+    for region in model.regions:
+        assert region.missing.grad is not None and region.missing.grad.abs().sum() > 0
 
 
 def test_attention_export_matches_pytorch_on_different_clips(tmp_path):
     torch.manual_seed(2)
-    model = SignNet(classes=4)
-    # Populate BatchNorm statistics before checking single-clip evaluation/export.
-    model(torch.randn(4, CLIP_FRAMES, NORMALISED_SIZE))
+    model = SignNet(classes=4).eval()
+    # Non-default saved statistics exercise BatchNorm export without training.
+    with torch.no_grad():
+        for layer in model.modules():
+            if isinstance(layer, torch.nn.BatchNorm1d):
+                layer.running_mean.fill_(0.2)
+                layer.running_var.fill_(0.8)
     rng = np.random.default_rng(2)
     probe = rng.normal(size=(CLIP_FRAMES, NORMALISED_SIZE)).astype(np.float32)
+    probe[:, PRESENCE] = 1
+    partial = probe.copy()
+    partial[:, COORDINATE_SIZE] = 0
+    partial[10:20, COORDINATE_SIZE + 1:] = 0
+    lost = probe.copy()
+    lost[10:20] = 0
     out = tmp_path / "signs.onnx"
     export(model, out, ["A", "B", "C", "_idle"], None, probe)
     recogniser = load_recogniser(str(out))
-    for clip in (probe, probe[::-1].copy(), np.zeros_like(probe), probe * 5):
+    for clip in (probe, probe[::-1].copy(), np.zeros_like(probe), partial, lost):
         with torch.no_grad():
             expected = torch.softmax(model(torch.from_numpy(clip)[None]), dim=1)[0].numpy()
         np.testing.assert_allclose(recogniser.predict(clip), expected, atol=1e-4)

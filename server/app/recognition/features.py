@@ -17,8 +17,16 @@ FACE = POSE + POSE_POINTS * 3
 HEAD = FACE + BLENDSHAPES
 FRAME_SIZE = HEAD + 3  # 256 float32 values, 1024 bytes
 
-# Per hand: shape (wrist-relative) and placement (body-relative).
-NORMALISED_SIZE = 4 * HAND_POINTS * 3 + POSE_POINTS * 3 + BLENDSHAPES + 3  # 382
+# Normalised coordinates: hand shapes, hand placements, pose, face/head.
+# The appended flags follow the same six-part order.
+PART_WIDTHS = (63, 63, 63, 63, 75, 55)
+_OFFSETS = np.cumsum((0, *PART_WIDTHS))
+NORMALISED_PARTS = tuple(slice(int(a), int(b)) for a, b in zip(_OFFSETS[:-1], _OFFSETS[1:]))
+COORDINATE_SIZE = int(_OFFSETS[-1])  # 382
+PRESENCE = slice(COORDINATE_SIZE, COORDINATE_SIZE + len(PART_WIDTHS))
+NORMALISED_SIZE = PRESENCE.stop  # 388, including six inferred validity flags
+# Shape and placement for each hand, then pose and face/head.
+REGION_PARTS = ((0, 2), (1, 3), (4,), (5,))
 
 # The label for "not signing": hands at rest or moving between signs. It is a
 # model class, not a Sign row, so it never appears in lessons.
@@ -47,7 +55,9 @@ def normalise(frame: np.ndarray) -> np.ndarray:
 
     Body and hand placement are measured from the midpoint of the shoulders in
     units of shoulder width. Hand shape is measured from the wrist in units of
-    palm length. Parts that were not detected (all zeros) stay all zeros.
+    palm length. Missing coordinates stay zero. Six appended flags distinguish
+    usable parts from missing/degenerate observations before normalisation.
+    An all-zero face/head cannot distinguish a neutral face from missing data.
     """
     left = frame[LEFT_HAND:RIGHT_HAND].reshape(HAND_POINTS, 3)
     right = frame[RIGHT_HAND:POSE].reshape(HAND_POINTS, 3)
@@ -57,6 +67,14 @@ def normalise(frame: np.ndarray) -> np.ndarray:
     centre = (pose[_L_SHOULDER] + pose[_R_SHOULDER]) / 2
     width = float(np.linalg.norm(pose[_L_SHOULDER, :2] - pose[_R_SHOULDER, :2]))
     has_body = has_pose and width > _EPS
+    flags = [
+        bool(left.any()) and np.linalg.norm(left[_MIDDLE_KNUCKLE] - left[_WRIST]) >= _EPS,
+        bool(right.any()) and np.linalg.norm(right[_MIDDLE_KNUCKLE] - right[_WRIST]) >= _EPS,
+        has_body and bool(left.any()),
+        has_body and bool(right.any()),
+        has_body,
+        bool(frame[FACE:].any()),
+    ]
 
     def to_body(points: np.ndarray) -> np.ndarray:
         if not has_body or not points.any():
@@ -77,6 +95,7 @@ def normalise(frame: np.ndarray) -> np.ndarray:
             to_body(right).ravel(),
             to_body(pose).ravel(),
             frame[FACE:],
+            flags,
         ]
     ).astype(np.float32)
 

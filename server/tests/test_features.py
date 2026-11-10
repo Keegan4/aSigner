@@ -3,10 +3,12 @@ import pytest
 
 from app.recognition.features import (
     FACE,
+    COORDINATE_SIZE,
     FRAME_SIZE,
     LEFT_HAND,
     NORMALISED_SIZE,
     POSE,
+    PRESENCE,
     RIGHT_HAND,
     decode,
     normalise,
@@ -61,3 +63,24 @@ def test_missing_parts_stay_zero():
     empty = normalise(np.zeros(FRAME_SIZE, dtype=np.float32))
     assert not empty.any()
     assert np.isfinite(empty).all()
+
+
+def test_presence_tracks_normalisation_validity():
+    frame = make_frame(right_hand=False)
+    assert normalise(frame).shape == (388,)
+    np.testing.assert_array_equal(normalise(frame)[PRESENCE], [1, 0, 1, 0, 1, 1])
+    # A detected but collapsed hand has placement, but no usable palm scale.
+    frame[:63] = 0.5
+    np.testing.assert_array_equal(normalise(frame)[PRESENCE], [0, 0, 1, 0, 1, 1])
+    frame[POSE:FACE] = 0
+    np.testing.assert_array_equal(normalise(frame)[PRESENCE], [0, 0, 0, 0, 0, 1])
+    assert not normalise(frame)[:COORDINATE_SIZE - 55].any()
+
+
+def test_neutral_face_is_ambiguous_but_valid_zero_hand_coordinates_are_not_missing():
+    frame = make_frame()
+    frame[FACE:] = 0
+    out = normalise(frame)
+    assert out[COORDINATE_SIZE + 5] == 0
+    assert out[COORDINATE_SIZE] == 1
+    assert not out[:3].any()  # wrist-relative wrist is zero despite a valid hand
