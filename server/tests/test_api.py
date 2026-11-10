@@ -100,3 +100,21 @@ def test_ws_echo_counts_frames(signed_in):
         assert ws.receive_json() == {"frames": 1, "bytes": 2048}
         ws.send_bytes(b"\x00" * 10)
         assert ws.receive_json() == {"frames": 2, "bytes": 10}
+
+
+def test_dev_login_is_off_by_default(client):
+    assert client.get("/api/auth/dev-login", follow_redirects=False).status_code == 404
+    assert client.get("/api/auth/methods").json() == {"google": False, "dev": False}
+
+
+def test_dev_login_needs_flag_and_localhost(client, monkeypatch):
+    from app.config import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "dev_login", True)
+    monkeypatch.setattr(settings, "frontend_url", "https://asigner.example")
+    assert client.get("/api/auth/dev-login", follow_redirects=False).status_code == 404
+
+    monkeypatch.setattr(settings, "frontend_url", "http://localhost:3000")
+    assert client.get("/api/auth/dev-login", follow_redirects=False).status_code == 307
+    assert client.get("/api/me").json()["email"] == "dev@localhost"

@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -56,6 +58,29 @@ async def callback(request: Request, db: Session = Depends(get_db)):
     request.session.clear()
     request.session["user_id"] = user.id
     return RedirectResponse(get_settings().frontend_url)
+
+
+def dev_login_allowed() -> bool:
+    settings = get_settings()
+    host = urlparse(settings.frontend_url).hostname
+    return settings.dev_login and host in ("localhost", "127.0.0.1")
+
+
+@router.get("/dev-login")
+def dev_login(request: Request, db: Session = Depends(get_db)):
+    """Sign in as a fixed local user without Google. Off unless DEV_LOGIN=true on localhost."""
+    if not dev_login_allowed():
+        raise HTTPException(404, "Not found")
+    user = upsert_user(db, {"sub": "dev-local", "email": "dev@localhost", "name": "Local developer"})
+    request.session.clear()
+    request.session["user_id"] = user.id
+    return RedirectResponse(get_settings().frontend_url)
+
+
+@router.get("/methods")
+def methods():
+    """Which sign-in options the web app should offer."""
+    return {"google": bool(get_settings().google_client_id), "dev": dev_login_allowed()}
 
 
 @router.post("/logout", status_code=204)

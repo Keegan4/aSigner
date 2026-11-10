@@ -20,6 +20,13 @@ FRAME_SIZE = HEAD + 3  # 256 float32 values, 1024 bytes
 # Per hand: shape (wrist-relative) and placement (body-relative).
 NORMALISED_SIZE = 4 * HAND_POINTS * 3 + POSE_POINTS * 3 + BLENDSHAPES + 3  # 382
 
+# The label for "not signing": hands at rest or moving between signs. It is a
+# model class, not a Sign row, so it never appears in lessons.
+IDLE_LABEL = "_idle"
+
+# Every clip is resampled to this many frames before it reaches the model.
+CLIP_FRAMES = 32
+
 _L_SHOULDER, _R_SHOULDER = 11, 12
 _WRIST, _MIDDLE_KNUCKLE = 0, 9
 _EPS = 1e-6
@@ -72,3 +79,14 @@ def normalise(frame: np.ndarray) -> np.ndarray:
             frame[FACE:],
         ]
     ).astype(np.float32)
+
+
+def resample(frames: np.ndarray, count: int = CLIP_FRAMES) -> np.ndarray:
+    """Pick `count` frames evenly across a clip of any length, oldest first.
+
+    Frames are selected, not blended: averaging a frame where a hand was
+    missing (zeros) with one where it was present would invent a hand halfway
+    to the origin.
+    """
+    index = np.rint(np.linspace(0, len(frames) - 1, count)).astype(int)
+    return np.ascontiguousarray(frames[index], dtype=np.float32)

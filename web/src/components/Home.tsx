@@ -9,6 +9,7 @@ export function Home() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [lessons, setLessons] = useState<LessonSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [devLogin, setDevLogin] = useState(false);
 
   useEffect(() => {
     Promise.all([getJson<Me>("/api/me"), getJson<LessonSummary[]>("/api/lessons")])
@@ -20,6 +21,9 @@ export function Home() {
         setMe(null);
         setError("The aSigner server is not reachable. Start it and reload.");
       });
+    getJson<{ dev: boolean }>("/api/auth/methods")
+      .then((m) => setDevLogin(Boolean(m?.dev)))
+      .catch(() => {});
   }, []);
 
   async function signOut() {
@@ -39,13 +43,20 @@ export function Home() {
             </button>
           </div>
         ) : (
-          // A plain link: the server redirects the whole page to Google.
-          <a
-            href="/api/auth/login"
-            className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
-          >
-            Sign in with Google
-          </a>
+          // Plain links: the server redirects the whole page.
+          <div className="flex items-center gap-2">
+            {devLogin && (
+              <a href="/api/auth/dev-login" className="rounded-md border px-3 py-2 text-sm">
+                Local sign-in
+              </a>
+            )}
+            <a
+              href="/api/auth/login"
+              className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+            >
+              Sign in with Google
+            </a>
+          </div>
         )}
       </header>
 
@@ -99,6 +110,11 @@ export function Home() {
         <Link href="/check" className="underline underline-offset-4">
           Check your camera and tracking
         </Link>
+        {me && (
+          <Link href="/record" className="underline underline-offset-4">
+            Record training clips
+          </Link>
+        )}
       </nav>
     </main>
   );
