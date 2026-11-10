@@ -6,7 +6,6 @@ single file: the labels and the pass score travel inside it as ONNX metadata,
 so a retrained model replaces the old one in one atomic rename.
 """
 import json
-import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -14,8 +13,6 @@ import numpy as np
 import onnxruntime as ort
 
 from app.recognition.features import CLIP_FRAMES, NORMALISED_SIZE, resample
-
-logger = logging.getLogger(__name__)
 
 LABELS_KEY = "asigner.labels"  # JSON list of glosses, in output order
 PASS_SCORE_KEY = "asigner.pass_score"  # optional float chosen at training time
@@ -61,19 +58,12 @@ def _load(path: str, modified: float) -> OnnxRecogniser:
 
 
 def load_recogniser(model_path: str) -> OnnxRecogniser | None:
-    """The model at `model_path`, or None if there is no usable model.
+    """The model at `model_path`, or None if no model has been exported yet.
 
     Reloads when the file changes, so a retrained model is picked up by the
-    next connection without a restart. A file that cannot be used (for example
-    one trained before the feature layout changed) is reported in the log and
-    treated as no model, so practice says scoring is unavailable instead of
-    the connection failing.
+    next connection without a restart.
     """
     path = Path(model_path)
     if not path.is_file():
         return None
-    try:
-        return _load(str(path), path.stat().st_mtime)
-    except Exception as exc:  # onnxruntime raises its own types for corrupt files
-        logger.warning("Ignoring the sign model at %s: %s", path, exc)
-        return None
+    return _load(str(path), path.stat().st_mtime)
