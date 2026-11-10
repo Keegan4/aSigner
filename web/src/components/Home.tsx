@@ -103,6 +103,11 @@ export function Home() {
           </Link>
         )}
         {me && (
+          <Link href="/translate" className="underline underline-offset-4">
+            Translate
+          </Link>
+        )}
+        {me && (
           <Link href="/translations" className="underline underline-offset-4">
             Past translations
           </Link>
