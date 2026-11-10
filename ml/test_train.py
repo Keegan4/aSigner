@@ -1,8 +1,10 @@
 """Checks the pipeline end to end on made-up clips. Says nothing about real accuracy."""
 import numpy as np
+import pytest
+import torch
 
 from data import augment, mirror, to_model_input, transition
-from train import threshold_curve, train
+from train import SignNet, export, threshold_curve, train
 
 from app.recognition.features import CLIP_FRAMES, FRAME_SIZE, LEFT_HAND, NORMALISED_SIZE, POSE, RIGHT_HAND
 from app.recognition.onnx_recogniser import load_recogniser
@@ -46,6 +48,48 @@ def test_augment_keeps_missing_parts_missing():
         assert to_model_input(out).shape == (CLIP_FRAMES, NORMALISED_SIZE)
 
 
+def test_signnet_backpropagates_through_cls_positions_and_every_frame():
+    torch.manual_seed(0)
+    model = SignNet(classes=4)
+    clips = torch.randn(4, CLIP_FRAMES, NORMALISED_SIZE, requires_grad=True)
+    logits = model(clips)
+    assert logits.shape == (4, 4)
+    torch.nn.functional.cross_entropy(logits, torch.arange(4)).backward()
+
+    for gradient in (model.cls_token.grad, model.positions.grad, clips.grad):
+        assert gradient is not None and torch.isfinite(gradient).all()
+        assert gradient.abs().sum() > 0
+    # Classification can depend on distant frames, including the first and last.
+    assert (clips.grad.abs().sum(dim=2) > 0).all()
+
+
+def test_signnet_distinguishes_frame_order_using_positions():
+    torch.manual_seed(1)
+    model = SignNet(classes=4).eval()
+    clip = torch.randn(1, CLIP_FRAMES, NORMALISED_SIZE)
+    with torch.no_grad():
+        assert not torch.allclose(model(clip), model(clip.flip(1)), atol=1e-6)
+        # Without positions, CLS attention sees the same set of frames either way.
+        model.positions.zero_()
+        torch.testing.assert_close(model(clip), model(clip.flip(1)), atol=1e-6, rtol=1e-5)
+
+
+def test_attention_export_matches_pytorch_on_different_clips(tmp_path):
+    torch.manual_seed(2)
+    model = SignNet(classes=4)
+    # Populate BatchNorm statistics before checking single-clip evaluation/export.
+    model(torch.randn(4, CLIP_FRAMES, NORMALISED_SIZE))
+    rng = np.random.default_rng(2)
+    probe = rng.normal(size=(CLIP_FRAMES, NORMALISED_SIZE)).astype(np.float32)
+    out = tmp_path / "signs.onnx"
+    export(model, out, ["A", "B", "C", "_idle"], None, probe)
+    recogniser = load_recogniser(str(out))
+    for clip in (probe, probe[::-1].copy(), np.zeros_like(probe), probe * 5):
+        with torch.no_grad():
+            expected = torch.softmax(model(torch.from_numpy(clip)[None]), dim=1)[0].numpy()
+        np.testing.assert_allclose(recogniser.predict(clip), expected, atol=1e-4)
+
+
 def test_train_exports_a_model_the_server_can_load(tmp_path):
     write_clips(tmp_path / "clips")
     out = tmp_path / "models" / "signs.onnx"
@@ -66,6 +110,25 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     probabilities = recogniser.predict(to_model_input(fake_clip(np.random.default_rng(3), 2)))
     assert recogniser.labels[int(probabilities.argmax())] == "C"
     assert list((tmp_path / "runs").glob("*/confusion.csv"))
+
+
+def test_training_does_not_leave_a_singleton_batch(tmp_path):
+    # A conventional split into batches of 64 would leave BatchNorm one clip.
+    write_clips(tmp_path / "clips", counts={"A": 21, "B": 22, "C": 22})
+    out = tmp_path / "signs.onnx"
+    report = train(tmp_path / "clips", out, epochs=1, seed=0, test_signer="u2", runs=tmp_path / "runs")
+    assert report["clips"] == 130 and report["test_clips"] == 65
+    assert load_recogniser(str(out)).labels == report["labels"]
+
+
+def test_training_explains_when_batchnorm_has_only_one_training_clip(tmp_path):
+    folder = tmp_path / "clips"
+    write_clips(folder, per_sign=1)
+    (folder / "B" / "u1_0.npz").unlink()
+    (folder / "C" / "u1_0.npz").unlink()
+    with pytest.raises(SystemExit, match="at least two training clips for batch normalisation"):
+        train(folder, tmp_path / "signs.onnx", epochs=1, seed=0,
+              test_signer="u2", runs=tmp_path / "runs")
 
 
 def test_transition_puts_the_sign_last():

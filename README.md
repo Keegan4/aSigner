@@ -74,6 +74,8 @@ python -m venv .venv
 
 This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
+The model takes 32 frames of 382 normalised features. It projects each frame to 320 dimensions, prepends a learned classification token, and adds learned positional embeddings. Two Transformer encoder layers, each with 20 attention heads (16 dimensions per head), let every token attend to the entire clip. The classification token's output passes through layer normalisation and a three-layer classifier (`320 → 320 → 160 → labels`, including the no-sign class). Each hidden classifier layer uses batch normalisation, GELU and dropout. All dropout probabilities are 0.1. Training requires at least two clips after the signer split; inference accepts a single clip using the saved batch-normalisation statistics.
+
 ## Tests
 
 ```bash

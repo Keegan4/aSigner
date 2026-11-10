@@ -31,19 +31,40 @@ MIN_CLIPS_FOR_THRESHOLD = 30
 
 
 class SignNet(nn.Module):
-    """A small temporal convolution network over normalised landmark frames."""
+    """Attend to all frames, then classify a learned summary token.
 
-    def __init__(self, classes: int, width: int = 128):
+    Each normalised frame is one token. Learned positions preserve frame order;
+    the prepended classification token gathers information from the whole clip.
+    """
+
+    def __init__(self, classes: int, width: int = 320):
         super().__init__()
-        self.body = nn.Sequential(
-            nn.Conv1d(NORMALISED_SIZE, width, 3, padding=1), nn.ReLU(),
-            nn.Conv1d(width, width, 3, padding=1), nn.ReLU(),
-            nn.Conv1d(width, width, 3, padding=1), nn.ReLU(),
+        self.projection = nn.Linear(NORMALISED_SIZE, width)
+        self.cls_token = nn.Parameter(torch.empty(1, 1, width))
+        self.positions = nn.Parameter(torch.empty(1, CLIP_FRAMES + 1, width))
+        nn.init.normal_(self.cls_token, std=0.02)
+        nn.init.normal_(self.positions, std=0.02)
+        # Construct each layer separately so they start with different weights.
+        self.encoder = nn.Sequential(*(
+            nn.TransformerEncoderLayer(
+                d_model=width, nhead=20, dim_feedforward=width * 2,
+                dropout=0.1, activation="gelu", batch_first=True, norm_first=True,
+            )
+            for _ in range(2)
+        ))
+        self.norm = nn.LayerNorm(width)
+        self.head = nn.Sequential(
+            nn.Linear(width, width), nn.BatchNorm1d(width), nn.GELU(), nn.Dropout(0.1),
+            nn.Linear(width, width // 2), nn.BatchNorm1d(width // 2), nn.GELU(), nn.Dropout(0.1),
+            nn.Linear(width // 2, classes),
         )
-        self.head = nn.Sequential(nn.Dropout(0.3), nn.Linear(width, classes))
 
     def forward(self, clip: torch.Tensor) -> torch.Tensor:  # (batch, time, features)
-        return self.head(self.body(clip.transpose(1, 2)).mean(dim=2))
+        frames = self.projection(clip)
+        cls = self.cls_token.expand(clip.shape[0], -1, -1)
+        tokens = torch.cat([cls, frames], dim=1) + self.positions
+        encoded = self.encoder(tokens)
+        return self.head(self.norm(encoded[:, 0]))
 
 
 def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
@@ -152,6 +173,9 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     if len({c.label for c in clips} - {IDLE_LABEL}) < 2:
         raise SystemExit(f"Need clips for at least two signs; found {len(clips)} clips.")
     train_clips, test_clips, split_note = split(clips, test_signer, rng)
+    if len(train_clips) < 2:
+        raise SystemExit("Need at least two training clips for batch normalisation; "
+                         "record more clips or choose a different test signer.")
     # The idle class always exists: straddling windows are labelled with it even
     # when nobody has recorded "no sign" takes.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
@@ -168,7 +192,12 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         x_all, y_all = training_batch(train_clips, labels, rng)
         model.train()
         total = 0.0
-        for batch in torch.from_numpy(rng.permutation(len(train_clips))).split(64):
+        # Balanced batches stay at most 64 and never leave a singleton, which
+        # BatchNorm cannot train on (e.g. 65 clips become batches of 33 and 32).
+        batches = torch.from_numpy(rng.permutation(len(train_clips))).tensor_split(
+            (len(train_clips) + 63) // 64
+        )
+        for batch in batches:
             optimiser.zero_grad()
             loss = loss_fn(model(x_all[batch]), y_all[batch])
             loss.backward()
