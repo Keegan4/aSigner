@@ -91,7 +91,7 @@ export function PracticeSession({
         case "error":
           recording.current = false;
           clearTimeout(timer.current);
-          if (event.code === "no_model" || event.code === "unsupported_sign") {
+          if (["no_model", "bad_model", "unsupported_sign"].includes(event.code)) {
             setUnavailable(event.message);
             setPhase({ name: "idle" });
           } else if (event.code !== "bad_frame") {

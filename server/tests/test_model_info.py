@@ -1,8 +1,9 @@
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.main import app
 from app.models import Sign
-from app.recognition.recogniser import get_recogniser
+from app.recognition.recogniser import UnusableModel, get_recogniser
 from app.services.model_info import MIN_SIGNERS, MIN_TEST_CLIPS, describe
 
 ORIGIN = {"origin": "http://localhost:3000"}
@@ -58,3 +59,25 @@ def test_practice_tells_the_learner_what_the_model_was_trained_on(signed_in, db_
         ready = ws.receive_json()
     assert ready["type"] == "ready"
     assert (ready["model"]["clips"], ready["model"]["signers"], ready["model"]["limited"]) == (400, 1, True)
+
+
+def test_a_model_file_that_will_not_load_is_reported_not_raised(tmp_path):
+    path = tmp_path / "signs.onnx"
+    path.write_bytes(b"not a model")
+    get_settings().model_path = str(path)  # restored by the default_settings fixture
+    assert isinstance(get_recogniser(), UnusableModel)
+
+
+def test_sockets_tell_the_learner_when_the_model_needs_retraining(signed_in, db_factory):
+    app.dependency_overrides[get_recogniser] = lambda: UnusableModel("old feature layout")
+    with db_factory() as db:
+        a = db.scalar(select(Sign.id).where(Sign.gloss == "A"))
+    with signed_in.websocket_connect("/ws/practice", headers=ORIGIN) as ws:
+        ws.send_json({"type": "start", "sign_id": a})
+        reply = ws.receive_json()
+        assert (reply["type"], reply["code"]) == ("error", "bad_model")
+        assert "old feature layout" not in reply["message"]
+        ws.send_json({"type": "score"})
+        assert ws.receive_json()["code"] == "not_started"
+    with signed_in.websocket_connect("/ws/translate", headers=ORIGIN) as ws:
+        assert ws.receive_json()["code"] == "bad_model"
