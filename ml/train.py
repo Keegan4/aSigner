@@ -32,6 +32,8 @@ from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY
 TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
 SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
 MIN_CLIPS_FOR_THRESHOLD = 30
+MAX_FALSE_ACCEPT = 0.05
+MIN_PASS_SCORE = 0.5
 
 
 class RegionEncoder(nn.Module):
@@ -271,7 +273,12 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         report |= {"test_clips": len(test_clips), "top1": top1, "top5": top5, "threshold_curve": curve}
         print(f"test top-1 {top1:.1%}  top-5 {top5:.1%}  on {len(test_clips)} clips ({split_note})")
         if sum(c.label != IDLE_LABEL for c in test_clips) >= MIN_CLIPS_FOR_THRESHOLD:
-            best = min(curve, key=lambda row: (row["false_reject"] + row["false_accept"], row["pass_score"]))
+            # Passing a wrong sign teaches the wrong sign; failing a right one only
+            # costs a retry. So take the most lenient score that keeps false accepts
+            # under the cap, never below the floor, rather than balancing the two.
+            allowed = [row for row in curve
+                       if row["pass_score"] >= MIN_PASS_SCORE and row["false_accept"] <= MAX_FALSE_ACCEPT]
+            best = allowed[0] if allowed else curve[-1]
             pass_score = best["pass_score"]
             print(f"pass score {pass_score} (false reject {best['false_reject']:.1%}, "
                   f"false accept {best['false_accept']:.1%})")
