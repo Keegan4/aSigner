@@ -64,8 +64,13 @@ export function CameraTracker({ onFrame }: { onFrame?: (frame: Float32Array) => 
             lastTime = video.currentTime;
             const result = detect(trackers, video, performance.now());
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (result.pose) {
-              draw.drawConnectors(result.pose, UPPER_BODY, { color: "#38bdf8", lineWidth: 2 });
+            const pose = result.pose;
+            if (pose) {
+              // Only draw limbs the model is confident it can see. A wrist or elbow
+              // out of shot is still guessed at, and the guess jumps around.
+              const sure = (i: number) => (pose[i]?.visibility ?? 1) > 0.5;
+              const visible = UPPER_BODY.filter((c) => sure(c.start) && sure(c.end));
+              draw.drawConnectors(pose, visible, { color: "#38bdf8", lineWidth: 2 });
             }
             for (const hand of result.hands) {
               draw.drawConnectors(hand, HandLandmarker.HAND_CONNECTIONS, {
