@@ -82,6 +82,19 @@ The model then prepends a learned classification token and adds learned position
 
 There are `1,980,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (1,996,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time.
 
+### Pretraining on public data (optional)
+
+With few clips of your own, the model can start from hand shapes learned on a public fingerspelling dataset ([ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling), MIT licence: 2,122 single-frame hand landmark samples, A to Z):
+
+```bash
+cd ml
+git clone https://huggingface.co/datasets/sid220/asl-now-fingerspelling data/public/asl-now-fingerspelling
+python pretrain.py
+python train.py --init runs/pretrained.pt
+```
+
+The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
+
 ## Tests
 
 ```bash

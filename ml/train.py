@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -20,13 +21,14 @@ import onnx
 import torch
 from torch import nn
 
+from checkpoint import load_into
 from data import Clip, augment, load_clips, to_model_input, transition
 
 from app.recognition.features import (  # path set up by data.py
     CLIP_FRAMES, COORDINATE_SIZE, IDLE_LABEL, NORMALISED_PARTS,
     NORMALISED_SIZE, PART_WIDTHS, REGION_PARTS,
 )
-from app.recognition.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
+from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
 
 TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
 SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
@@ -177,7 +179,8 @@ def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> 
     ]
 
 
-def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | None, probe: np.ndarray):
+def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | None,
+           probe: np.ndarray, info: dict | None = None):
     """Write the model as one file and move it into place in a single rename.
 
     A server that connects mid-export sees either the old model or the new
@@ -199,6 +202,8 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     proto.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
     if pass_score is not None:
         proto.metadata_props.add(key=PASS_SCORE_KEY, value=str(pass_score))
+    if info is not None:
+        proto.metadata_props.add(key=INFO_KEY, value=json.dumps(info))
     pending = out.with_name(out.name + ".tmp")
     onnx.save(proto, str(pending))
 
@@ -211,7 +216,8 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     os.replace(pending, out)
 
 
-def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path):
+def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
+          init: Path | None = None):
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -230,6 +236,10 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
           f"{len(labels) - 1} signs plus no-sign ({split_note})")
 
     model = SignNet(len(labels))
+    # Optionally start from weights pretrained on public data (pretrain.py).
+    pretrained = load_into(model, labels, init) if init else None
+    if pretrained:
+        print(f"starting from {init} ({pretrained})")
     optimiser = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-2)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, epochs)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
@@ -283,7 +293,19 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         print(f"WARNING: {len(untested)} of {len(labels) - 1} signs had no held-out clip, so the "
               f"accuracy above does not cover them: {', '.join(untested)}. Record at least 5 clips per sign.")
 
-    export(model, out, labels, pass_score, to_model_input(clips[0].frames))
+    # Travels inside the model so the app can show learners how much it was trained on.
+    info = {
+        "clips": len(train_clips),
+        "signers": len({c.signer for c in train_clips}),
+        "top1": report.get("top1"),
+        "test_clips": len(test_clips),
+        "untested_signs": len(untested),
+        "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    if pretrained:
+        info["pretrained"] = pretrained
+    report["info"] = info
+    export(model, out, labels, pass_score, to_model_input(clips[0].frames), info)
 
     run = runs / time.strftime("%Y%m%d-%H%M%S")
     run.mkdir(parents=True, exist_ok=True)
@@ -306,5 +328,6 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--test-signer", help="signer id to hold out (default: the one with fewest clips)")
     parser.add_argument("--runs", type=Path, default=here / "runs")
+    parser.add_argument("--init", type=Path, help="checkpoint from pretrain.py to start from")
     args = parser.parse_args()
-    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs)
+    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init)

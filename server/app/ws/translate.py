@@ -7,9 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.recognition.features import decode
-from app.recognition.recogniser import Recogniser, get_recogniser
+from app.recognition.recogniser import Recogniser, UnusableModel, get_recogniser
+from app.services.model_info import describe
 from app.services.segmentation import Segmenter
 from app.services.translations import save_translation
+from app.ws.practice import BAD_MODEL
 from app.ws.session import authorise
 
 router = APIRouter()
@@ -34,12 +36,15 @@ async def translate(
     user_id = await authorise(ws)
     if user_id is None:
         return
-    if recogniser is None:
+    if recogniser is None or isinstance(recogniser, UnusableModel):
+        missing = recogniser is None
         await ws.send_json(
             {
                 "type": "error",
-                "code": "no_model",
-                "message": "Translation is not available yet: no sign model is installed.",
+                "code": "no_model" if missing else "bad_model",
+                "message": "Translation is not available yet: no sign model is installed."
+                if missing
+                else BAD_MODEL,
             }
         )
         await ws.close()
@@ -53,7 +58,7 @@ async def translate(
             saved["created_at"] = saved["created_at"].isoformat()
             await ws.send_json({"type": "sentence", **saved})
 
-    await ws.send_json({"type": "ready"})
+    await ws.send_json({"type": "ready", "model": describe(recogniser)})
     try:
         while True:
             message = await ws.receive()

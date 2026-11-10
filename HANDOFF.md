@@ -18,7 +18,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 
 ## Current state
 
-Working and tested (49 server tests on SQLite and on Postgres 16; web type-check, lint and build clean):
+Working and tested (server and training tests, web type-check, lint and build; CI runs all of it on every pull request, the server tests on SQLite and Postgres 16):
 
 - Auth, session cookie, lessons API, translation history API, delete-my-data, authenticated `/ws/echo`.
 - Schema and one Alembic migration (applied to Postgres 16; `alembic check` reports no drift); seed with the Alphabet lesson.
@@ -28,6 +28,7 @@ Working and tested (49 server tests on SQLite and on Postgres 16; web type-check
 - Lesson, practice, quiz and progress screens (T4). Driven in headless Chromium with a fake camera and a fake model: an attempt was scored, stored and shown on the progress page.
 - Translator groundwork (T5): `server/app/services/sentence.py` asks Ollama for a sentence and falls back to the glosses; `POST /api/translations` stores one; `/translations` lists them with delete and browser speech. Tested against a fake Ollama only.
 - Live translator (T5): `server/app/services/segmentation.py` segments a frame stream into glosses, `/ws/translate` stores each finished sentence, `/translate` shows it. Tested with a fake model only; the page was loaded in headless Chromium but no sign was ever recognised in a browser.
+- Model honesty: practice and translate show what the loaded model was trained on, with a caution when that is one signer, few held-out clips or untested signs (`server/app/services/model_info.py`). A model file that will not load (for example one exported before the feature layout changed) gives a "needs retraining" message instead of a dead socket.
 - Docker (T6): both images build and `postgres`, `server` and `web` start and serve. The `ollama` service was not started.
 
 Never verified:
@@ -36,7 +37,6 @@ Never verified:
 - Whether MediaPipe's "Left"/"Right" labels match the signer's hands (`web/src/lib/tracking/landmarkers.ts` has a TODO).
 - A real Google sign-in round trip.
 - The sentence layer against a real Ollama model, and how good its sentences are.
-- The GitHub Actions workflow: it runs on pull requests and pushes to `main`, and has not run yet.
 - The "Name the sign" quiz with real demo media (no sign has a `demo_path`; it is disabled until one does).
 
 ## Where things are
@@ -80,13 +80,14 @@ Never verified:
 
 Each task can be done independently unless it lists a dependency. Claim one on the noticeboard before starting so two people do not build the same thing.
 
-### T1. Sample recorder
-A signed-in page where the user picks a sign, records a few seconds, and the landmark clip (frames only) is saved with its label. Decide with the owner whether clips go to the server or download as files. Output format should be a `.npy`/`.npz` array of raw 256-float frames plus label and signer id.
-Done when: a recorded clip can be loaded in Python and passed through `normalise`.
+### T1. Sample recorder: done
+`/record` page and `/api/clips` (`server/app/routes/clips.py`, `server/app/services/clips.py`). One `.npz` per clip under `server/data/clips/<label>/`: raw frames `(time, 256)`, `label`, an opaque `signer` id, `fps`. A "No sign" class (`_idle`) is recorded the same way. Clips are deleted with the account. `DEV_LOGIN=true` gives a localhost-only sign-in so clips can be recorded without Google OAuth.
+Verified with a live camera by the owner.
 
-### T2. Training pipeline (`ml/`)
-Dataset loader, augmentation (mirror, scale, rotation, time-warp, jitter, frame drop, face-feature dropout), a small Transformer or GRU over normalised frames, signer-held-out evaluation, ONNX export. Start with A–Z. Public ASL fingerspelling data can be used for pretraining because SgSL uses the same one-handed alphabet.
-Depends on: T1 for SgSL data. Done when: an exported `.onnx` plus a report with top-1/top-5 accuracy and a confusion matrix.
+### T2. Training pipeline (`ml/`): done in code, no usable model yet
+`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, time crop, frame drop, face dropout, windows that straddle two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1, top-5, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
+First real numbers (10 Nov 2026, 47 clips, one signer, about one training clip per letter): 40-45% top-1 on 20 held-out clips over three seeds. That is a pipeline check, not a usable model.
+Still needed: about 25 clips per sign, "No sign" clips, and a second signer so accuracy is measured on someone the model has not seen.
 
 ### T3. Practice scoring and progress (server): done
 A `/ws/practice` endpoint: client names the target sign, server buffers frames, runs the model, returns score, pass/fail and the closest confusion, then writes `attempts` and updates `progress` (spaced repetition: review date moves out on success, resets on failure).
@@ -100,7 +101,7 @@ Can start now against the existing lessons API and a mocked practice socket.
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
 Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 2 s of frames every 0.2 s; its constants were chosen without a trained model and need tuning against real signing once one exists.
 
-### T6. Infrastructure: done, apart from a first CI run and the `ollama` service
+### T6. Infrastructure: done, apart from the `ollama` service, which has not been started
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.
 Can start now.
 
@@ -109,7 +110,10 @@ Can start now.
 - Open `/check` in a normal browser and confirm tracking, frame rate and hand labelling.
 - Email `sgsl_linguistics@sadeaf.org.sg` to ask permission to use Sign Bank material for a portfolio project.
 - Choose the ~50-sign vocabulary and get descriptions reviewed by an SgSL signer.
-- Record reference and training clips.
+- Record training clips on `/record`: about 25 per sign plus "No sign" takes, and get a second person to record a set.
+- Record reference (demo) clips for each sign.
+- Say how doubled letters are fingerspelled in SgSL (the translator only repeats a letter after a pause).
+- Decide whether a failed attempt resets a sign's mastery to 0 or steps it down one level.
 
 ## Running and testing
 

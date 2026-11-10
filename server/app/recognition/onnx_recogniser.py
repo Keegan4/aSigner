@@ -6,6 +6,7 @@ single file: the labels and the pass score travel inside it as ONNX metadata,
 so a retrained model replaces the old one in one atomic rename.
 """
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -14,8 +15,11 @@ import onnxruntime as ort
 
 from app.recognition.features import CLIP_FRAMES, NORMALISED_SIZE, resample
 
+logger = logging.getLogger(__name__)
+
 LABELS_KEY = "asigner.labels"  # JSON list of glosses, in output order
 PASS_SCORE_KEY = "asigner.pass_score"  # optional float chosen at training time
+INFO_KEY = "asigner.info"  # optional JSON object: how much data the model was trained on
 
 
 class OnnxRecogniser:
@@ -29,6 +33,9 @@ class OnnxRecogniser:
         self.pass_score: float | None = (
             float(metadata[PASS_SCORE_KEY]) if PASS_SCORE_KEY in metadata else None
         )
+        # clips, signers, top1, test_clips, untested_signs, trained_at. Shown to
+        # learners so a model trained on very little is visibly weak.
+        self.info: dict | None = json.loads(metadata[INFO_KEY]) if INFO_KEY in metadata else None
         model_input = self._session.get_inputs()[0]
         if len(model_input.shape) != 3 or model_input.shape[-1] != NORMALISED_SIZE:
             raise ValueError(f"model must accept {NORMALISED_SIZE} features including presence flags; "
@@ -54,12 +61,19 @@ def _load(path: str, modified: float) -> OnnxRecogniser:
 
 
 def load_recogniser(model_path: str) -> OnnxRecogniser | None:
-    """The model at `model_path`, or None if no model has been exported yet.
+    """The model at `model_path`, or None if there is no usable model.
 
     Reloads when the file changes, so a retrained model is picked up by the
-    next connection without a restart.
+    next connection without a restart. A file that cannot be used (for example
+    one trained before the feature layout changed) is reported in the log and
+    treated as no model, so practice says scoring is unavailable instead of
+    the connection failing.
     """
     path = Path(model_path)
     if not path.is_file():
         return None
-    return _load(str(path), path.stat().st_mtime)
+    try:
+        return _load(str(path), path.stat().st_mtime)
+    except Exception as exc:  # onnxruntime raises its own types for corrupt files
+        logger.warning("Ignoring the sign model at %s: %s", path, exc)
+        return None

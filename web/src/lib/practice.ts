@@ -1,4 +1,4 @@
-import { WS_URL } from "@/lib/api";
+import { type ModelInfo, WS_URL } from "@/lib/api";
 import { LEFT_HAND, POSE } from "@/lib/tracking/features";
 
 /** Mirrors the messages of the server's /ws/practice endpoint (server/app/ws/practice.py). */
@@ -16,7 +16,7 @@ export type PracticeResult = {
 
 export type PracticeEvent =
   | { type: "open" }
-  | { type: "ready"; sign_id: number; gloss: string }
+  | { type: "ready"; sign_id: number; gloss: string; model: ModelInfo | null }
   | ({ type: "result" } & PracticeResult)
   | { type: "error"; code: string; message: string }
   | { type: "closed"; signedOut: boolean };
@@ -74,7 +74,7 @@ function openMock(onEvent: (event: PracticeEvent) => void): PracticeLink {
     start(id) {
       signId = id;
       frames = withHand = 0;
-      later({ type: "ready", sign_id: id, gloss: "" });
+      later({ type: "ready", sign_id: id, gloss: "", model: null });
     },
     frame(frame) {
       if (signId === null) return;
