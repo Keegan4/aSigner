@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
@@ -13,11 +15,21 @@ from app.seed import load_seed
 
 @pytest.fixture
 def db_factory():
-    engine = make_engine("sqlite://", poolclass=StaticPool)
-    # SQLite ignores ON DELETE CASCADE unless foreign keys are switched on.
-    event.listen(engine, "connect", lambda conn, _: conn.execute("PRAGMA foreign_keys=ON"))
+    """An empty database per test: in-memory SQLite, or TEST_DATABASE_URL if set.
+
+    Every table in TEST_DATABASE_URL is dropped, so never point it at real data.
+    """
+    url = os.environ.get("TEST_DATABASE_URL")
+    if url:
+        engine = make_engine(url)
+        Base.metadata.drop_all(engine)
+    else:
+        engine = make_engine("sqlite://", poolclass=StaticPool)
+        # SQLite ignores ON DELETE CASCADE unless foreign keys are switched on.
+        event.listen(engine, "connect", lambda conn, _: conn.execute("PRAGMA foreign_keys=ON"))
     Base.metadata.create_all(engine)
-    return sessionmaker(bind=engine, expire_on_commit=False)
+    yield sessionmaker(bind=engine, expire_on_commit=False)
+    engine.dispose()
 
 
 @pytest.fixture

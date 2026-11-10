@@ -1,6 +1,8 @@
 FROM node:24-slim
 WORKDIR /app
 COPY package.json package-lock.json ./
+# The postinstall script copies the MediaPipe WASM runtime into public/.
+COPY scripts ./scripts
 RUN npm ci
 COPY . .
 # Rewrites are resolved at build time, so the API address must be known here.
