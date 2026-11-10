@@ -6,10 +6,12 @@ import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .features import normalise
+from .features import IDLE_LABEL, normalise
 from .models import Attempt, Progress, now
 from .recogniser import Recogniser
 
+# Used unless the recogniser carries its own `pass_score` (chosen from the
+# false-accept / false-reject curve when the model is trained).
 PASS_SCORE = 0.6
 MIN_FRAMES = 5
 MAX_FRAMES = 300  # about ten seconds; older frames are dropped
@@ -25,6 +27,12 @@ class Score:
     passed: bool
     closest: str | None
     """The sign the model thought more likely than the target, if any."""
+    no_sign: bool = False
+    """The model saw no sign at all, rather than a different one."""
+
+
+def pass_score(recogniser: Recogniser) -> float:
+    return getattr(recogniser, "pass_score", None) or PASS_SCORE
 
 
 def score_clip(recogniser: Recogniser, frames: list[np.ndarray], target: str) -> Score:
@@ -34,12 +42,14 @@ def score_clip(recogniser: Recogniser, frames: list[np.ndarray], target: str) ->
     index = recogniser.labels.index(target)
     score = float(probabilities[index])
     best = int(probabilities.argmax())
-    passed = best == index and score >= PASS_SCORE
+    passed = best == index and score >= pass_score(recogniser)
     if best == index:
         others = probabilities.copy()
         others[index] = -1.0
         best = int(others.argmax())
     closest = None if passed or len(probabilities) < 2 else recogniser.labels[best]
+    if closest == IDLE_LABEL:
+        return Score(score=score, passed=False, closest=None, no_sign=True)
     return Score(score=score, passed=passed, closest=closest)
 
 

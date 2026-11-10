@@ -41,8 +41,13 @@ async def create_translation(
     known = set(db.scalars(select(Sign.gloss).where(Sign.gloss.in_(body.glosses))))
     if not known.issuperset(body.glosses):
         raise HTTPException(422, "Every gloss must be a known sign.")
-    sentence, from_model = await make_sentence(body.glosses)
-    row = Translation(user_id=user.id, glosses=body.glosses, sentence=sentence)
+    return await save_translation(db, user.id, body.glosses)
+
+
+async def save_translation(db: Session, user_id: int, glosses: list[str]) -> dict:
+    """Write the sentence for `glosses`, store it and return it as the API shows it."""
+    sentence, from_model = await make_sentence(glosses)
+    row = Translation(user_id=user_id, glosses=glosses, sentence=sentence)
     db.add(row)
     db.commit()
     return {

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from sqlalchemy import select
 
-from app.features import FRAME_SIZE, HAND_POINTS, NORMALISED_SIZE, POSE, RIGHT_HAND
+from app.features import FRAME_SIZE, HAND_POINTS, IDLE_LABEL, NORMALISED_SIZE, POSE, RIGHT_HAND
 from app.main import app
 from app.models import Attempt, Progress, Sign
 from app.practice import MAX_MASTERY, REVIEW_DAYS, record_attempt, score_clip
@@ -149,6 +149,23 @@ def test_score_needs_top_place_and_threshold():
     assert (beaten.passed, beaten.closest) == (False, "C")
     good = score_clip(Fixed([0.7, 0.2, 0.1]), frames, "A")
     assert (good.passed, good.closest) == (True, None)
+
+    # A model can bring its own threshold.
+    strict = Fixed([0.7, 0.2, 0.1])
+    strict.pass_score = 0.8
+    assert score_clip(strict, frames, "A").passed is False
+
+
+def test_idle_is_reported_as_no_sign_not_as_a_confusion():
+    class Idle:
+        labels = ["A", "B", IDLE_LABEL]
+
+        def predict(self, frames):
+            return np.array([0.2, 0.1, 0.7])
+
+    frames = [np.frombuffer(recorded_frame(0), dtype="<f4")]
+    result = score_clip(Idle(), frames, "A")
+    assert (result.passed, result.closest, result.no_sign) == (False, None, True)
 
 
 def test_review_date_moves_out_on_success_and_resets_on_failure(user, db_factory, client):

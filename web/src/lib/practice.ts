@@ -7,6 +7,8 @@ export type PracticeResult = {
   score: number;
   passed: boolean;
   closest: string | null;
+  /** The model saw no sign at all, not a different one. */
+  no_sign: boolean;
   mastery: number;
   streak: number;
   next_review_at: string;
@@ -94,6 +96,7 @@ function openMock(onEvent: (event: PracticeEvent) => void): PracticeLink {
           score,
           passed,
           closest: null,
+          no_sign: frames > 0 && withHand === 0,
           mastery: level,
           streak: level,
           next_review_at: new Date().toISOString(),

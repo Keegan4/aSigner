@@ -1,4 +1,5 @@
 import json
+import time
 
 import numpy as np
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
@@ -11,8 +12,13 @@ from .features import decode
 from .models import Sign
 from .practice import MAX_FRAMES, MIN_FRAMES, record_attempt, score_clip
 from .recogniser import Recogniser, get_recogniser
+from .routes.translations import save_translation
+from .translate import Segmenter
 
 router = APIRouter()
+
+# When a frame arrived. A name of its own so tests can replace it.
+clock = time.monotonic
 
 
 async def authorise(ws: WebSocket) -> int | None:
@@ -123,6 +129,7 @@ async def practice(
                             "score": result.score,
                             "passed": result.passed,
                             "closest": result.closest,
+                            "no_sign": result.no_sign,
                             "mastery": progress.mastery,
                             "streak": progress.streak,
                             "next_review_at": progress.next_review_at.isoformat(),
@@ -131,5 +138,72 @@ async def practice(
                     sign, frames = None, []
             else:
                 await error("bad_message", "Unknown message type.")
+    except WebSocketDisconnect:
+        pass
+
+
+@router.websocket("/ws/translate")
+async def translate(
+    ws: WebSocket,
+    db: Session = Depends(get_db),
+    recogniser: Recogniser | None = Depends(get_recogniser),
+):
+    """Translate continuous signing.
+
+    The client streams binary landmark frames. The server answers with
+    {"type": "gloss"} as each sign is recognised and {"type": "sentence"} when
+    a pause ends the sentence, which is then stored. The client may send
+    {"type": "flush"} to end the sentence now or {"type": "clear"} to drop it.
+    """
+    user_id = await authorise(ws)
+    if user_id is None:
+        return
+    if recogniser is None:
+        await ws.send_json(
+            {
+                "type": "error",
+                "code": "no_model",
+                "message": "Translation is not available yet: no sign model is installed.",
+            }
+        )
+        await ws.close()
+        return
+
+    segmenter = Segmenter(recogniser)
+
+    async def finish(glosses: list[str]):
+        if glosses:
+            saved = await save_translation(db, user_id, glosses)
+            saved["created_at"] = saved["created_at"].isoformat()
+            await ws.send_json({"type": "sentence", **saved})
+
+    await ws.send_json({"type": "ready"})
+    try:
+        while True:
+            message = await ws.receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            payload = message.get("bytes")
+            if payload is not None:
+                try:
+                    frame = decode(payload)
+                except ValueError:
+                    continue
+                update = await run_in_threadpool(segmenter.push, frame, clock())
+                if update.gloss:
+                    glosses = update.sentence if update.sentence is not None else segmenter.glosses
+                    await ws.send_json({"type": "gloss", "gloss": update.gloss, "glosses": glosses})
+                if update.sentence is not None:
+                    await finish(update.sentence)
+                continue
+            try:
+                kind = json.loads(message.get("text") or "")["type"]
+            except (ValueError, KeyError, TypeError):
+                continue
+            if kind == "flush":
+                await finish(segmenter.flush())
+            elif kind == "clear":
+                segmenter.flush()
+                await ws.send_json({"type": "cleared"})
     except WebSocketDisconnect:
         pass

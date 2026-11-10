@@ -18,7 +18,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 
 ## Current state
 
-Working and tested (29 server tests on SQLite and on Postgres 16; web type-check, lint and build clean):
+Working and tested (49 server tests on SQLite and on Postgres 16; web type-check, lint and build clean):
 
 - Auth, session cookie, lessons API, translation history API, delete-my-data, authenticated `/ws/echo`.
 - Schema and one Alembic migration (applied to Postgres 16; `alembic check` reports no drift); seed with the Alphabet lesson.
@@ -27,6 +27,7 @@ Working and tested (29 server tests on SQLite and on Postgres 16; web type-check
 - Practice scoring (T3): `/ws/practice`, spaced repetition, `GET /api/progress`. Scoring runs against the `Recogniser` interface in `server/app/recogniser.py`; no model is installed, so the live socket answers `no_model` until T2 delivers one.
 - Lesson, practice, quiz and progress screens (T4). Driven in headless Chromium with a fake camera and a fake model: an attempt was scored, stored and shown on the progress page.
 - Translator groundwork (T5): `server/app/sentence.py` asks Ollama for a sentence and falls back to the glosses; `POST /api/translations` stores one; `/translations` lists them with delete and browser speech. Tested against a fake Ollama only.
+- Live translator (T5): `server/app/translate.py` segments a frame stream into glosses, `/ws/translate` stores each finished sentence, `/translate` shows it. Tested with a fake model only; the page was loaded in headless Chromium but no sign was ever recognised in a browser.
 - Docker (T6): both images build and `postgres`, `server` and `web` start and serve. The `ollama` service was not started.
 
 Never verified:
@@ -46,6 +47,7 @@ Never verified:
 | `server/app/auth.py` | Google OAuth |
 | `server/app/ws.py` | WebSocket auth (`authorise`), echo and `/ws/practice` (message format in its docstring) |
 | `server/app/practice.py` | Scoring thresholds and review schedule |
+| `server/app/translate.py` | Segmentation for the live translator: window, stride and pause lengths |
 | `server/app/recogniser.py` | The model interface T2 must implement |
 | `server/app/features.py` | Frame decode and normalise |
 | `server/app/models.py` | All tables |
@@ -86,9 +88,9 @@ Can start now against a stub model interface. Done when: tests replay recorded f
 Lesson page (sign list, demo slot, description, Sign Bank link), practice screen using `CameraTracker`, quiz in both directions, progress dashboard.
 Can start now against the existing lessons API and a mocked practice socket.
 
-### T5. Translator mode
+### T5. Translator mode: built, untested with a real model
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
-Done: Ollama client with fallback, storage, history page with delete, speech output. Left: segmentation, the gloss buffer and the live translator screen, which depend on T2 for a real model. The live screen should build the gloss list on the server from the model's output and reuse `make_sentence`.
+Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/translate.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 2 s of frames every 0.2 s; its constants were chosen without a trained model and need tuning against real signing once one exists.
 
 ### T6. Infrastructure: done, apart from a first CI run and the `ollama` service
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.

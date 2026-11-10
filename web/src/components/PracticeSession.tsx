@@ -205,6 +205,9 @@ export function PracticeSession({
           {phase.result.closest && (
             <p className="text-sm">It looked more like {phase.result.closest}.</p>
           )}
+          {phase.result.no_sign && (
+            <p className="text-sm">No clear sign was seen. Check that your hand is in view.</p>
+          )}
           {children}
         </div>
       )}
