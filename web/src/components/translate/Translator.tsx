@@ -5,13 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraTracker } from "@/components/camera/CameraTracker";
 import { Shell } from "@/components/ui/Shell";
-import { type Translation, WS_URL } from "@/lib/api";
+import { ModelNote } from "@/components/ui/ModelNote";
+import { type ModelInfo, type Translation, WS_URL } from "@/lib/api";
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
 
 /** Messages of the server's /ws/translate endpoint (server/app/ws/translate.py). */
 type Message =
-  | { type: "ready" }
+  | { type: "ready"; model: ModelInfo | null }
   | { type: "gloss"; gloss: string; glosses: string[] }
   | ({ type: "sentence" } & Translation)
   | { type: "cleared" }
@@ -25,6 +26,7 @@ export function Translator() {
   const [glosses, setGlosses] = useState<string[]>([]);
   const [sentences, setSentences] = useState<Translation[]>([]);
   const [speak, setSpeak] = useState(false);
+  const [model, setModel] = useState<ModelInfo | null>(null);
 
   useEffect(() => {
     speakRef.current = speak;
@@ -38,6 +40,7 @@ export function Translator() {
       const message: Message = JSON.parse(e.data);
       switch (message.type) {
         case "ready":
+          setModel(message.model);
           setLink("open");
           break;
         case "gloss":
@@ -126,6 +129,8 @@ export function Translator() {
               </label>
             </div>
           </section>
+
+          <ModelNote model={model} />
 
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">Sentences</h2>

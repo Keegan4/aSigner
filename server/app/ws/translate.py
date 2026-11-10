@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.recognition.features import decode
 from app.recognition.recogniser import Recogniser, get_recogniser
+from app.services.model_info import describe
 from app.services.segmentation import Segmenter
 from app.services.translations import save_translation
 from app.ws.session import authorise
@@ -53,7 +54,7 @@ async def translate(
             saved["created_at"] = saved["created_at"].isoformat()
             await ws.send_json({"type": "sentence", **saved})
 
-    await ws.send_json({"type": "ready"})
+    await ws.send_json({"type": "ready", "model": describe(recogniser)})
     try:
         while True:
             message = await ws.receive()

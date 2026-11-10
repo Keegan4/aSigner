@@ -9,6 +9,7 @@ from app.core.db import get_db
 from app.models import Sign
 from app.recognition.features import decode
 from app.recognition.recogniser import Recogniser, get_recogniser
+from app.services.model_info import describe
 from app.services.practice import MAX_FRAMES, MIN_FRAMES, record_attempt, score_clip
 from app.ws.session import authorise
 
@@ -25,8 +26,9 @@ async def practice(
 
     Text messages are JSON. The client sends {"type": "start", "sign_id": n},
     then binary landmark frames, then {"type": "score"}. The server answers
-    with "ready", "result" or "error". A result stores the attempt and updates
-    progress; the client may then start again on the same socket.
+    with "ready" (which says what the model was trained on), "result" or
+    "error". A result stores the attempt and updates progress; the client may
+    then start again on the same socket.
     """
     user_id = await authorise(ws)
     if user_id is None:
@@ -72,7 +74,14 @@ async def practice(
                     await error("unsupported_sign", "The sign model has not learnt this sign yet.")
                 else:
                     sign, frames = target, []
-                    await ws.send_json({"type": "ready", "sign_id": sign.id, "gloss": sign.gloss})
+                    await ws.send_json(
+                        {
+                            "type": "ready",
+                            "sign_id": sign.id,
+                            "gloss": sign.gloss,
+                            "model": describe(recogniser),
+                        }
+                    )
             elif kind == "score":
                 if sign is None or recogniser is None:
                     await error("not_started", "Send start before score.")

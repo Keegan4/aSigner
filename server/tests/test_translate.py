@@ -118,7 +118,7 @@ def clock(monkeypatch):
 def test_translate_socket_stores_the_sentence(signed_in, user, db_factory, clock):
     app.dependency_overrides[get_recogniser] = lambda: FakeRecogniser()
     with signed_in.websocket_connect("/ws/translate", headers=ORIGIN) as ws:
-        assert ws.receive_json() == {"type": "ready"}
+        assert ws.receive_json() == {"type": "ready", "model": {"known": False, "limited": True}}
         ws.send_bytes(b"\x00" * 10)  # a malformed frame is dropped
         for label, seconds in (("A", 2), ("B", 2)):
             for _ in range(seconds * FPS):

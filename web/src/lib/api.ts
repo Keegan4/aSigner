@@ -33,3 +33,16 @@ export async function getJson<T>(path: string): Promise<T | null> {
   if (!res.ok) throw new Error(`${path} returned ${res.status}`);
   return res.json();
 }
+
+/** What the server says about the sign model (server/app/services/model_info.py). */
+export type ModelInfo = {
+  known: boolean;
+  /** True when the model was trained or tested on too little to trust its marks. */
+  limited: boolean;
+  clips?: number | null;
+  signers?: number | null;
+  top1?: number | null;
+  test_clips?: number | null;
+  untested_signs?: number | null;
+  trained_at?: string | null;
+};

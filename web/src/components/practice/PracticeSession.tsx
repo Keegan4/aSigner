@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraTracker } from "@/components/camera/CameraTracker";
-import type { Sign } from "@/lib/api";
+import { ModelNote } from "@/components/ui/ModelNote";
+import type { ModelInfo, Sign } from "@/lib/api";
 import {
   MOCK_PRACTICE,
   openPractice,
@@ -46,6 +47,7 @@ export function PracticeSession({
   const onResultRef = useRef(onResult);
   const [status, setStatus] = useState<Link_>("connecting");
   const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [model, setModel] = useState<ModelInfo | null>(null);
   // Tagged with the sign so a new sign starts idle without an effect.
   const [tagged, setTagged] = useState<{ signId: number; phase: Phase }>({
     signId: sign.id,
@@ -73,6 +75,7 @@ export function PracticeSession({
           setPhase({ name: "idle" });
           break;
         case "ready":
+          setModel(event.model);
           recording.current = true;
           setPhase({ name: "recording" });
           timer.current = setTimeout(() => {
@@ -190,6 +193,8 @@ export function PracticeSession({
           )}
         </>
       )}
+
+      <ModelNote model={model} />
 
       {phase.name === "result" && (
         <div
