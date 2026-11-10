@@ -16,6 +16,7 @@ from app.recognition.features import CLIP_FRAMES, NORMALISED_SIZE, resample
 
 LABELS_KEY = "asigner.labels"  # JSON list of glosses, in output order
 PASS_SCORE_KEY = "asigner.pass_score"  # optional float chosen at training time
+INFO_KEY = "asigner.info"  # optional JSON object: how much data the model was trained on
 
 
 class OnnxRecogniser:
@@ -29,6 +30,9 @@ class OnnxRecogniser:
         self.pass_score: float | None = (
             float(metadata[PASS_SCORE_KEY]) if PASS_SCORE_KEY in metadata else None
         )
+        # clips, signers, top1, test_clips, untested_signs, trained_at. Shown to
+        # learners so a model trained on very little is visibly weak.
+        self.info: dict | None = json.loads(metadata[INFO_KEY]) if INFO_KEY in metadata else None
         self._input = self._session.get_inputs()[0].name
         outputs = self._session.get_outputs()[0].shape[-1]
         if isinstance(outputs, int) and outputs != len(self.labels):

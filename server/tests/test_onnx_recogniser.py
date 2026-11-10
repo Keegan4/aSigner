@@ -12,13 +12,13 @@ from app.recognition.features import (
     normalise,
     resample,
 )
-from app.recognition.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, load_recogniser
+from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, load_recogniser
 from app.services.practice import score_clip
 
 LABELS = ["A", "B", "C"]
 
 
-def write_model(folder, labels=LABELS, outputs=None, pass_score=None):
+def write_model(folder, labels=LABELS, outputs=None, pass_score=None, info=None):
     """A tiny stand-in for the trained model: mean over time, then a fixed linear layer.
 
     Class k responds to feature k, so a clip whose feature 1 is large scores as "B".
@@ -43,6 +43,8 @@ def write_model(folder, labels=LABELS, outputs=None, pass_score=None):
         model.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
     if pass_score is not None:
         model.metadata_props.add(key=PASS_SCORE_KEY, value=str(pass_score))
+    if info is not None:
+        model.metadata_props.add(key=INFO_KEY, value=json.dumps(info))
     path = folder / "signs.onnx"
     onnx.save(model, path)
     return path
@@ -110,3 +112,13 @@ def test_resample_keeps_order_and_endpoints():
     assert (np.diff(out[:, 0]) >= 0).all()
     assert resample(frames[:1], 4).shape == (4, NORMALISED_SIZE)
     assert np.isfinite(normalise(np.zeros(FRAME_SIZE, np.float32))).all()
+
+
+def test_training_info_travels_with_the_model(tmp_path):
+    plain = tmp_path / "plain"
+    described = tmp_path / "described"
+    plain.mkdir()
+    described.mkdir()
+    info = {"clips": 240, "signers": 2, "top1": 0.91, "test_clips": 60, "trained_at": "2026-11-10T08:00:00+00:00"}
+    assert load_recogniser(str(write_model(plain))).info is None
+    assert load_recogniser(str(write_model(described, info=info))).info == info

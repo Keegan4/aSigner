@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -23,7 +24,7 @@ from torch import nn
 from data import Clip, augment, load_clips, to_model_input, transition
 
 from app.recognition.features import CLIP_FRAMES, IDLE_LABEL, NORMALISED_SIZE  # path set up by data.py
-from app.recognition.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
+from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
 
 TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
 SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
@@ -110,7 +111,8 @@ def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> 
     ]
 
 
-def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | None, probe: np.ndarray):
+def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | None,
+           info: dict, probe: np.ndarray):
     """Write the model as one file and move it into place in a single rename.
 
     A server that connects mid-export sees either the old model or the new
@@ -132,6 +134,7 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     proto.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
     if pass_score is not None:
         proto.metadata_props.add(key=PASS_SCORE_KEY, value=str(pass_score))
+    proto.metadata_props.add(key=INFO_KEY, value=json.dumps(info))
     pending = out.with_name(out.name + ".tmp")
     onnx.save(proto, str(pending))
 
@@ -208,7 +211,17 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         print(f"WARNING: {len(untested)} of {len(labels) - 1} signs had no held-out clip, so the "
               f"accuracy above does not cover them: {', '.join(untested)}. Record at least 5 clips per sign.")
 
-    export(model, out, labels, pass_score, to_model_input(clips[0].frames))
+    # Travels inside the model so the app can show learners how much it was trained on.
+    info = {
+        "clips": len(train_clips),
+        "signers": len({c.signer for c in train_clips}),
+        "top1": report.get("top1"),
+        "test_clips": len(test_clips),
+        "untested_signs": len(untested),
+        "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    report["info"] = info
+    export(model, out, labels, pass_score, info, to_model_input(clips[0].frames))
 
     run = runs / time.strftime("%Y%m%d-%H%M%S")
     run.mkdir(parents=True, exist_ok=True)

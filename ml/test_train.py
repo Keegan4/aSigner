@@ -63,6 +63,10 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     recogniser = load_recogniser(str(out))
     assert recogniser.labels == ["A", "B", "C", "_idle"]
     assert recogniser.pass_score == report["pass_score"]
+    assert recogniser.info == report["info"]
+    assert recogniser.info["clips"] == 36 and recogniser.info["signers"] == 1  # u1 only; u2 was held out
+    assert recogniser.info["test_clips"] == 36 and recogniser.info["untested_signs"] == 0
+    assert recogniser.info["top1"] == report["top1"]
     probabilities = recogniser.predict(to_model_input(fake_clip(np.random.default_rng(3), 2)))
     assert recogniser.labels[int(probabilities.argmax())] == "C"
     assert list((tmp_path / "runs").glob("*/confusion.csv"))
@@ -102,3 +106,24 @@ def test_report_names_signs_that_were_never_tested(tmp_path, capsys):
     assert report["signs_without_test_clips"] == ["B", "C"]
     assert report["pass_score"] is None  # far too few clips to choose one
     assert "2 of 3 signs had no held-out clip" in capsys.readouterr().out
+
+
+def test_train_runs_from_a_windows_console(tmp_path):
+    """train.py once died at export on Windows: the exporter prints a character
+    cp1252 cannot encode. Pytest's own output capture hides that, so run the
+    script as a real process with that encoding forced."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    write_clips(tmp_path / "clips", per_sign=4)
+    out = tmp_path / "m" / "signs.onnx"
+    done = subprocess.run(
+        [sys.executable, "train.py", "--clips", str(tmp_path / "clips"), "--out", str(out),
+         "--epochs", "1", "--runs", str(tmp_path / "runs")],
+        cwd=Path(__file__).resolve().parent, capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+    )
+    assert done.returncode == 0, done.stderr.decode("cp1252", "replace")[-2000:]
+    assert out.is_file()
