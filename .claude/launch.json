@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd server && .venv\\Scripts\\python -m uvicorn app.main:app --port 8000"],
+      "port": 8000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd web && npm run dev"],
+      "port": 3000
+    }
+  ]
+}

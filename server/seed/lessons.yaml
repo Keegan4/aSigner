@@ -1,0 +1,10 @@
+# Lesson content. Each sign is either a bare gloss or a mapping with
+# gloss / description / demo_path / sign_bank_url.
+#
+# Descriptions are deliberately left empty: they must be written against the
+# SgSL Sign Bank and checked by an SgSL signer before the app presents them.
+lessons:
+  - slug: alphabet
+    title: Fingerspelling A-Z
+    summary: The one-handed manual alphabet used in SgSL.
+    signs: [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, "Y", Z]
