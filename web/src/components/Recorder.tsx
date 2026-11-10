@@ -14,6 +14,9 @@ type Saved = { id: string; label: string };
 const COUNTDOWN_SECONDS = 3;
 const CLIP_SECONDS = 2;
 const TARGET_PER_SIGN = 25;
+// Must match IDLE_LABEL in server/app/features.py.
+const IDLE: SignRow = { id: -1, gloss: "_idle" };
+const MOVING = new Set(["J", "Z"]);
 
 const hasHand = (frame: Float32Array) => frame.subarray(LEFT_HAND, POSE).some((v) => v !== 0);
 
@@ -46,7 +49,7 @@ export function Recorder() {
     ])
       .then(([user, lesson, saved]) => {
         setMe(user);
-        setSigns(lesson?.signs ?? []);
+        setSigns([...(lesson?.signs ?? []), IDLE]);
         setCounts(saved ?? {});
       })
       .catch(() => {
@@ -66,7 +69,8 @@ export function Recorder() {
       setMessage("Too few frames were captured. Check the camera and try again.");
       return;
     }
-    if (frames.filter(hasHand).length < frames.length / 2) {
+    // A resting take may have no hands in view at all, so the check is for signs only.
+    if (label !== IDLE.gloss && frames.filter(hasHand).length < frames.length / 2) {
       setMessage("No hand was visible for most of that take, so it was not saved.");
       return;
     }
@@ -146,10 +150,17 @@ export function Recorder() {
 
   const done = sign ? (counts[sign.gloss] ?? 0) : 0;
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const idle = sign?.gloss === IDLE.gloss;
+  const name = (s: SignRow) => (s.gloss === IDLE.gloss ? "No sign" : s.gloss);
+  const how = idle
+    ? "Rest your hands, or move them about without making any sign."
+    : sign && MOVING.has(sign.gloss)
+      ? "Start from the first handshape and trace the whole movement during the take."
+      : "Have the sign ready before the countdown ends and keep it up for the whole take.";
   const prompt = {
-    idle: "Press Space or Record, then hold the sign.",
-    countdown: `Get ready… ${seconds}`,
-    recording: "Recording. Hold the sign.",
+    idle: `Press Space or Record. ${how}`,
+    countdown: `Get the sign ready… ${seconds}`,
+    recording: "Recording: keep signing.",
     saving: "Saving…",
   }[phase];
 
@@ -158,7 +169,7 @@ export function Recorder() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-sm opacity-60">Sign to record</p>
-          <p className="text-6xl font-semibold leading-none">{sign?.gloss ?? "–"}</p>
+          <p className="text-6xl font-semibold leading-none">{sign ? name(sign) : "–"}</p>
         </div>
         <p className="text-sm opacity-70">
           {done} of {TARGET_PER_SIGN} for this sign · {total} clips in total
@@ -211,7 +222,7 @@ export function Recorder() {
                 aria-current={i === index}
                 className={`rounded border px-2 py-1 ${i === index ? "bg-foreground text-background" : ""} ${n >= TARGET_PER_SIGN ? "border-green-600" : ""}`}
               >
-                {s.gloss} {n}
+                {name(s)} {n}
               </button>
             </li>
           );

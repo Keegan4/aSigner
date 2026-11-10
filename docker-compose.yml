@@ -29,6 +29,11 @@ services:
       OLLAMA_URL: http://ollama:11434
     ports:
       - "8000:8000"
+    volumes:
+      # Recorded clips and the trained model live on the host, so they survive
+      # rebuilds and training on the host can feed the container.
+      - ./server/data:/app/data
+      - ./server/models:/app/models
     depends_on:
       postgres:
         condition: service_healthy

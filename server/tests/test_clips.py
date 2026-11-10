@@ -89,3 +89,8 @@ def test_deleting_the_account_deletes_its_clips(signed_in, user, db_factory, cli
     signed_in.post(f"/test/login/{user.id}")
     assert signed_in.delete("/api/me").status_code == 204
     assert [p.stem for p in clips_dir.glob("*/*.npz")] == [kept]
+
+
+def test_idle_clips_are_accepted_without_a_sign_row(signed_in, clips_dir):
+    assert post(signed_in, clip_bytes(), label="_idle").status_code == 201
+    assert signed_in.get("/api/clips/counts").json() == {"_idle": 1}

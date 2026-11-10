@@ -2,7 +2,8 @@
 
 The model takes a clip resampled to CLIP_FRAMES normalised frames, shape
 (1, CLIP_FRAMES, NORMALISED_SIZE), and returns one logit per label. The labels
-file sits beside the model: `signs.onnx` and `signs.labels.json`.
+file and the weights sit beside the model: `signs.onnx`, `signs.onnx.data`
+and `signs.labels.json`. Keep the three together.
 """
 import json
 from functools import lru_cache

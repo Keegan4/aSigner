@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..db import get_db
 from ..deps import current_user
-from ..features import FRAME_SIZE
+from ..features import FRAME_SIZE, IDLE_LABEL
 from ..models import Sign, User
 
 router = APIRouter(prefix="/api/clips", tags=["clips"])
@@ -57,7 +57,10 @@ async def save_clip(
     clips_dir: Path = Depends(get_clips_dir),
 ):
     """Store one clip. The body is the raw frames back to back, 1024 bytes each."""
-    if not _SAFE.fullmatch(label) or db.scalar(select(Sign).where(Sign.gloss == label)) is None:
+    known = label == IDLE_LABEL or (
+        _SAFE.fullmatch(label) and db.scalar(select(Sign).where(Sign.gloss == label)) is not None
+    )
+    if not known:
         raise HTTPException(404, "Unknown sign.")
     body = await request.body()
     count, remainder = divmod(len(body), _FRAME_BYTES)

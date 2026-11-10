@@ -20,6 +20,10 @@ FRAME_SIZE = HEAD + 3  # 256 float32 values, 1024 bytes
 # Per hand: shape (wrist-relative) and placement (body-relative).
 NORMALISED_SIZE = 4 * HAND_POINTS * 3 + POSE_POINTS * 3 + BLENDSHAPES + 3  # 382
 
+# The label for "not signing": hands at rest or moving between signs. It is a
+# model class, not a Sign row, so it never appears in lessons.
+IDLE_LABEL = "_idle"
+
 # Every clip is resampled to this many frames before it reaches the model.
 CLIP_FRAMES = 32
 

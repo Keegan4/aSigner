@@ -13,7 +13,9 @@ import {
 } from "@/lib/practice";
 
 const COUNTDOWN = 3;
-const RECORD_MS = 2500;
+// Same countdown and take length as the training recorder (Recorder.tsx), so
+// practice clips look like the clips the model was trained on.
+const RECORD_MS = 2000;
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
 type Phase =
@@ -127,17 +129,17 @@ export function PracticeSession({
         return;
       }
       setPhase({ name: "countdown", left });
-      timer.current = setTimeout(() => tick(left - 1), 800);
+      timer.current = setTimeout(() => tick(left - 1), 1000);
     };
     tick(COUNTDOWN);
   }
 
   const busy = phase.name !== "idle" && phase.name !== "result";
   const prompt = {
-    idle: "Press Record, then make the sign.",
-    countdown: `Get ready… ${phase.name === "countdown" ? phase.left : ""}`,
+    idle: "Press Record and have the sign ready before the countdown ends.",
+    countdown: `Get the sign ready… ${phase.name === "countdown" ? phase.left : ""}`,
     starting: "Starting…",
-    recording: "Recording: make the sign now.",
+    recording: "Recording: keep signing.",
     scoring: "Checking…",
     result: "",
   }[phase.name];
