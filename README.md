@@ -10,8 +10,10 @@ Built so far:
 - Database schema and migrations (users, signs, lessons, attempts, progress, translations).
 - Next.js app: home page with lessons, camera check page with hand, body and face tracking.
 - Landmark frame format (256 floats per frame) and the shared normaliser.
+- Practice scoring over a WebSocket, spaced repetition and a progress API, waiting on the model.
+- Lesson, practice, quiz and progress screens.
 
-Not built yet: the sign recognition model, practice scoring, quiz, spaced repetition, and the translator.
+Not built yet: the sign recognition model (so practice cannot score real attempts yet) and the translator.
 
 ## How it works
 
@@ -54,7 +56,7 @@ Open http://localhost:3000.
 
 ### Docker
 
-`docker compose up --build` starts Postgres, Ollama, the server and the web app. This path has not been run yet.
+`docker compose up --build` starts Postgres, Ollama, the server and the web app. The `ollama` service has not been run yet.
 
 ## Tests
 

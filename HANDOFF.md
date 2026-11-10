@@ -18,19 +18,23 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 
 ## Current state
 
-Working and tested (15 server tests, web type-check and lint clean):
+Working and tested (21 server tests on SQLite and on Postgres 16; web type-check, lint and build clean):
 
 - Auth, session cookie, lessons API, translation history API, delete-my-data, authenticated `/ws/echo`.
-- Schema and one Alembic migration; seed with the Alphabet lesson.
+- Schema and one Alembic migration (applied to Postgres 16; `alembic check` reports no drift); seed with the Alphabet lesson.
 - Home page and `/check` camera page.
 - Frame layout (`web/src/lib/features.ts` and `server/app/features.py`, which must match) and normaliser.
+- Practice scoring (T3): `/ws/practice`, spaced repetition, `GET /api/progress`. Scoring runs against the `Recogniser` interface in `server/app/recogniser.py`; no model is installed, so the live socket answers `no_model` until T2 delivers one.
+- Lesson, practice, quiz and progress screens (T4). Driven in headless Chromium with a fake camera and a fake model: an attempt was scored, stored and shown on the progress page.
+- Docker (T6): both images build and `postgres`, `server` and `web` start and serve. The `ollama` service was not started.
 
 Never verified:
 
-- Live camera tracking (developed in a browser with the camera blocked).
+- Live camera tracking with a person in view, and frame rate on real hardware.
 - Whether MediaPipe's "Left"/"Right" labels match the signer's hands (`web/src/lib/landmarkers.ts` has a TODO).
 - A real Google sign-in round trip.
-- Postgres and `docker compose up` (everything ran on SQLite; Docker was not installed).
+- The GitHub Actions workflow: it runs on pull requests and pushes to `main`, and has not run yet.
+- The "Name the sign" quiz with real demo media (no sign has a `demo_path`; it is disabled until one does).
 
 ## Where things are
 
@@ -38,13 +42,16 @@ Never verified:
 |---|---|
 | `server/app/main.py` | App wiring and session middleware |
 | `server/app/auth.py` | Google OAuth |
-| `server/app/ws.py` | WebSocket auth (`authorise`) and echo endpoint |
+| `server/app/ws.py` | WebSocket auth (`authorise`), echo and `/ws/practice` (message format in its docstring) |
+| `server/app/practice.py` | Scoring thresholds and review schedule |
+| `server/app/recogniser.py` | The model interface T2 must implement |
 | `server/app/features.py` | Frame decode and normalise |
 | `server/app/models.py` | All tables |
 | `server/seed/lessons.yaml` | Lesson content |
 | `server/tests/` | pytest; `conftest.py` has the signed-in client fixture |
 | `web/src/components/CameraTracker.tsx` | Camera, tracking loop, overlay |
-| `web/src/lib/` | Frame packing, MediaPipe setup, API helpers |
+| `web/src/components/PracticeSession.tsx` | Camera plus one scored attempt; used by practice and quiz |
+| `web/src/lib/` | Frame packing, MediaPipe setup, API helpers, practice socket (and its mock) |
 
 ## Gotchas
 
@@ -52,7 +59,10 @@ Never verified:
 - **WebSockets do not go through the Next proxy.** The browser connects straight to the server (`NEXT_PUBLIC_WS_URL`). The cookie still applies because cookies ignore ports. The server checks the `Origin` header against `FRONTEND_URL`.
 - **Close codes need an accepted socket.** `authorise` accepts before closing with 4401 so the browser can see the code.
 - **Python.** The server was developed on 3.14. PyTorch and MediaPipe's Python package may not support 3.14; check before starting `ml/` and use 3.12 or 3.13 there if needed.
-- **The migration was generated against SQLite** and hand-edited for the JSONB column. Run it against Postgres before trusting it.
+- **Route types are generated.** `npx tsc --noEmit` fails on `LayoutProps` in a fresh checkout until `npx next typegen` (or a build) has run.
+- **Dynamic routes need Suspense.** `cacheComponents` is on, so a page that reads `useParams`/`useSearchParams` must sit inside `<Suspense>` or the build fails.
+- **Tests on Postgres.** Set `TEST_DATABASE_URL` to an empty database; every table in it is dropped for each test.
+- **Trying the practice UI without a model.** Build the web app with `NEXT_PUBLIC_MOCK_PRACTICE=1`: results are made up and nothing is stored.
 
 ## Open tasks
 
@@ -66,11 +76,11 @@ Done when: a recorded clip can be loaded in Python and passed through `normalise
 Dataset loader, augmentation (mirror, scale, rotation, time-warp, jitter, frame drop, face-feature dropout), a small Transformer or GRU over normalised frames, signer-held-out evaluation, ONNX export. Start with A–Z. Public ASL fingerspelling data can be used for pretraining because SgSL uses the same one-handed alphabet.
 Depends on: T1 for SgSL data. Done when: an exported `.onnx` plus a report with top-1/top-5 accuracy and a confusion matrix.
 
-### T3. Practice scoring and progress (server)
+### T3. Practice scoring and progress (server): done
 A `/ws/practice` endpoint: client names the target sign, server buffers frames, runs the model, returns score, pass/fail and the closest confusion, then writes `attempts` and updates `progress` (spaced repetition: review date moves out on success, resets on failure).
 Can start now against a stub model interface. Done when: tests replay recorded frames and assert the stored attempt and progress.
 
-### T4. Lesson and practice UI (web)
+### T4. Lesson and practice UI (web): done, apart from what needs demo media
 Lesson page (sign list, demo slot, description, Sign Bank link), practice screen using `CameraTracker`, quiz in both directions, progress dashboard.
 Can start now against the existing lessons API and a mocked practice socket.
 
@@ -78,7 +88,7 @@ Can start now against the existing lessons API and a mocked practice socket.
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
 Depends on: T2 for a real model; the Ollama client, history page and storage can start now.
 
-### T6. Infrastructure
+### T6. Infrastructure: done, apart from a first CI run and the `ollama` service
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.
 Can start now.
 
@@ -91,4 +101,4 @@ Can start now.
 
 ## Running and testing
 
-See [README.md](README.md). Before opening a PR: `pytest` in `server/`, and `npx tsc --noEmit` and `npm run lint` in `web/`.
+See [README.md](README.md). Before opening a PR: `pytest` in `server/`, and `npx next typegen`, `npx tsc --noEmit` and `npm run lint` in `web/`.
