@@ -22,7 +22,29 @@ export type Detection = FrameParts & {
   hands: NormalizedLandmark[][];
 };
 
+let quietened = false;
+
+/**
+ * MediaPipe prints progress notes such as "INFO: Created TensorFlow Lite
+ * XNNPACK delegate for CPU" through console.error, which the Next.js dev
+ * overlay reports as an application error. Those lines are passed to
+ * console.info instead; every other error is left alone.
+ */
+function quietenMediaPipeInfo() {
+  if (quietened) return;
+  quietened = true;
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && /^(INFO|W\d{4}|I\d{4})[: ]/.test(args[0])) {
+      console.info(...args);
+      return;
+    }
+    original(...args);
+  };
+}
+
 export async function loadTrackers(): Promise<Trackers> {
+  quietenMediaPipeInfo();
   const fileset = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
   const base = (path: string) => ({
     baseOptions: { modelAssetPath: `${MODELS}/${path}`, delegate: "GPU" as const },
