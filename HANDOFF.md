@@ -18,7 +18,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 
 ## Current state
 
-Working and tested (21 server tests on SQLite and on Postgres 16; web type-check, lint and build clean):
+Working and tested (29 server tests on SQLite and on Postgres 16; web type-check, lint and build clean):
 
 - Auth, session cookie, lessons API, translation history API, delete-my-data, authenticated `/ws/echo`.
 - Schema and one Alembic migration (applied to Postgres 16; `alembic check` reports no drift); seed with the Alphabet lesson.
@@ -26,6 +26,7 @@ Working and tested (21 server tests on SQLite and on Postgres 16; web type-check
 - Frame layout (`web/src/lib/features.ts` and `server/app/features.py`, which must match) and normaliser.
 - Practice scoring (T3): `/ws/practice`, spaced repetition, `GET /api/progress`. Scoring runs against the `Recogniser` interface in `server/app/recogniser.py`; no model is installed, so the live socket answers `no_model` until T2 delivers one.
 - Lesson, practice, quiz and progress screens (T4). Driven in headless Chromium with a fake camera and a fake model: an attempt was scored, stored and shown on the progress page.
+- Translator groundwork (T5): `server/app/sentence.py` asks Ollama for a sentence and falls back to the glosses; `POST /api/translations` stores one; `/translations` lists them with delete and browser speech. Tested against a fake Ollama only.
 - Docker (T6): both images build and `postgres`, `server` and `web` start and serve. The `ollama` service was not started.
 
 Never verified:
@@ -33,6 +34,7 @@ Never verified:
 - Live camera tracking with a person in view, and frame rate on real hardware.
 - Whether MediaPipe's "Left"/"Right" labels match the signer's hands (`web/src/lib/landmarkers.ts` has a TODO).
 - A real Google sign-in round trip.
+- The sentence layer against a real Ollama model, and how good its sentences are.
 - The GitHub Actions workflow: it runs on pull requests and pushes to `main`, and has not run yet.
 - The "Name the sign" quiz with real demo media (no sign has a `demo_path`; it is disabled until one does).
 
@@ -86,7 +88,7 @@ Can start now against the existing lessons API and a mocked practice socket.
 
 ### T5. Translator mode
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
-Depends on: T2 for a real model; the Ollama client, history page and storage can start now.
+Done: Ollama client with fallback, storage, history page with delete, speech output. Left: segmentation, the gloss buffer and the live translator screen, which depend on T2 for a real model. The live screen should build the gloss list on the server from the model's output and reuse `make_sentence`.
 
 ### T6. Infrastructure: done, apart from a first CI run and the `ollama` service
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.

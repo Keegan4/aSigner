@@ -91,6 +91,11 @@ export function Home() {
             Your progress
           </Link>
         )}
+        {me && (
+          <Link href="/translations" className="underline underline-offset-4">
+            Past translations
+          </Link>
+        )}
         <Link href="/check" className="underline underline-offset-4">
           Check your camera and tracking
         </Link>

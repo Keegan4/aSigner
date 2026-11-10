@@ -12,8 +12,9 @@ Built so far:
 - Landmark frame format (256 floats per frame) and the shared normaliser.
 - Practice scoring over a WebSocket, spaced repetition and a progress API, waiting on the model.
 - Lesson, practice, quiz and progress screens.
+- Translator groundwork: local Ollama sentence layer with a plain-gloss fallback, and a history page with delete and speech.
 
-Not built yet: the sign recognition model (so practice cannot score real attempts yet) and the translator.
+Not built yet: the sign recognition model (so practice cannot score real attempts yet) and the live translator screen.
 
 ## How it works
 

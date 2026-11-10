@@ -17,6 +17,7 @@ export type SignProgress = {
   next_review_at: string | null;
   due: boolean;
 };
+export type Translation = { id: number; glosses: string[]; sentence: string; created_at: string };
 export type Progress = { max_mastery: number; signs: SignProgress[] };
 
 /**
