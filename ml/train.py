@@ -9,6 +9,7 @@ import argparse
 import csv
 import json
 import os
+import sys
 import tempfile
 import time
 from collections import Counter
@@ -117,11 +118,16 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     """
     out.parent.mkdir(parents=True, exist_ok=True)
     model.eval()
+    # The exporter prints a tick mark that a Windows console (cp1252) cannot
+    # encode, which would abort the export after training has finished.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     with tempfile.TemporaryDirectory() as scratch:
         raw = Path(scratch) / "model.onnx"
         example = torch.zeros(1, CLIP_FRAMES, NORMALISED_SIZE)
         torch.onnx.export(model, (example,), str(raw), input_names=["clip"],
-                          output_names=["logits"], dynamo=True)
+                          output_names=["logits"], dynamo=True, verbose=False)
         proto = onnx.load(str(raw))  # pulls any external weight file back in
     proto.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
     if pass_score is not None:
@@ -184,7 +190,7 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         np.add.at(confusion, (truth, ranked[:, 0]), 1)
         curve = threshold_curve(probs, truth, labels)
         report |= {"test_clips": len(test_clips), "top1": top1, "top5": top5, "threshold_curve": curve}
-        print(f"test top-1 {top1:.1%}  top-5 {top5:.1%}  ({split_note})")
+        print(f"test top-1 {top1:.1%}  top-5 {top5:.1%}  on {len(test_clips)} clips ({split_note})")
         if sum(c.label != IDLE_LABEL for c in test_clips) >= MIN_CLIPS_FOR_THRESHOLD:
             best = min(curve, key=lambda row: (row["false_reject"] + row["false_accept"], row["pass_score"]))
             pass_score = best["pass_score"]
@@ -193,6 +199,14 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         else:
             print(f"fewer than {MIN_CLIPS_FOR_THRESHOLD} test clips: keeping the server's default pass score")
     report["pass_score"] = pass_score
+
+    # Accuracy says nothing about a sign that had no held-out clip, so name them.
+    tested = {c.label for c in test_clips}
+    untested = [label for label in labels if label != IDLE_LABEL and label not in tested]
+    report["signs_without_test_clips"] = untested
+    if untested:
+        print(f"WARNING: {len(untested)} of {len(labels) - 1} signs had no held-out clip, so the "
+              f"accuracy above does not cover them: {', '.join(untested)}. Record at least 5 clips per sign.")
 
     export(model, out, labels, pass_score, to_model_input(clips[0].frames))
 

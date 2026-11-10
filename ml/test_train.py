@@ -17,12 +17,12 @@ def fake_clip(rng, label_index: int, frames: int = 50) -> np.ndarray:
     return clip
 
 
-def write_clips(folder, signers=("u1", "u2"), per_sign=12):
+def write_clips(folder, signers=("u1", "u2"), per_sign=12, counts=None):
     rng = np.random.default_rng(0)
     for index, label in enumerate("ABC"):
         (folder / label).mkdir(parents=True)
         for signer in signers:
-            for n in range(per_sign):
+            for n in range((counts or {}).get(label, per_sign)):
                 np.savez_compressed(folder / label / f"{signer}_{n}.npz", frames=fake_clip(rng, index),
                                     label=label, signer=signer, fps=np.float32(25))
 
@@ -53,6 +53,7 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
 
     assert report["labels"] == ["A", "B", "C", "_idle"]  # no-sign is always a class
     assert "u2 held out" in report["split"]
+    assert report["signs_without_test_clips"] == []
     assert report["top1"] > 0.9  # the made-up signs are easy to tell apart
     assert len(report["threshold_curve"]) == 14
     assert 0.3 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
@@ -90,3 +91,14 @@ def test_threshold_curve_counts_rejects_and_accepts():
     assert curve[0.3]["false_reject"] == 1 / 3 and curve[0.3]["false_accept"] == 1 / 4
     assert curve[0.6]["false_reject"] == 2 / 3 and curve[0.6]["false_accept"] == 1 / 4
     assert curve[0.75]["false_accept"] == 0
+
+
+def test_report_names_signs_that_were_never_tested(tmp_path, capsys):
+    """One signer, one clip for B and C: accuracy rests on A alone and must say so."""
+    write_clips(tmp_path / "clips", signers=("u1",), counts={"A": 2, "B": 1, "C": 1})
+    report = train(tmp_path / "clips", tmp_path / "m" / "signs.onnx", epochs=2, seed=0,
+                   test_signer=None, runs=tmp_path / "runs")
+    assert report["test_clips"] == 1
+    assert report["signs_without_test_clips"] == ["B", "C"]
+    assert report["pass_score"] is None  # far too few clips to choose one
+    assert "2 of 3 signs had no held-out clip" in capsys.readouterr().out
