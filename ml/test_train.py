@@ -160,7 +160,9 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     assert report["signs_without_test_clips"] == []
     assert report["top1"] > 0.9  # the made-up signs are easy to tell apart
     assert len(report["threshold_curve"]) == 14
-    assert 0.3 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
+    assert 0.5 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
+    chosen = next(row for row in report["threshold_curve"] if row["pass_score"] == report["pass_score"])
+    assert chosen["false_accept"] <= 0.05 or report["pass_score"] == 0.95
 
     # One file, nothing left half-written beside it.
     assert [p.name for p in out.parent.iterdir()] == ["signs.onnx"]
