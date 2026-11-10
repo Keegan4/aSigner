@@ -13,7 +13,9 @@ import {
 } from "@/lib/practice";
 
 const COUNTDOWN = 3;
-const RECORD_MS = 2500;
+// Same countdown and take length as the training recorder (Recorder.tsx), so
+// practice clips look like the clips the model was trained on.
+const RECORD_MS = 2000;
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
 type Phase =
@@ -127,7 +129,7 @@ export function PracticeSession({
         return;
       }
       setPhase({ name: "countdown", left });
-      timer.current = setTimeout(() => tick(left - 1), 800);
+      timer.current = setTimeout(() => tick(left - 1), 1000);
     };
     tick(COUNTDOWN);
   }
