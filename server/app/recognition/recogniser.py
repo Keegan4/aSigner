@@ -40,13 +40,21 @@ class UnusableModel:
 
 
 def get_recogniser() -> "Recogniser | UnusableModel | None":
-    """The installed model, None when there is none, or UnusableModel when the file will not load."""
+    """The installed model, None when there is none, or UnusableModel when the file will not load.
+
+    Holds whether the loader raises for a bad file or logs and returns None.
+    """
+    from pathlib import Path
+
     from app.core.config import get_settings
     from app.recognition.onnx_recogniser import load_recogniser
 
     path = get_settings().model_path
     try:
-        return load_recogniser(path)
+        recogniser = load_recogniser(path)
     except Exception as exc:  # onnxruntime raises its own types for a bad file
         logger.warning("Sign model at %s cannot be used: %s", path, exc)
         return UnusableModel(str(exc))
+    if recogniser is None and Path(path).is_file():
+        return UnusableModel(f"{path} could not be loaded")
+    return recogniser

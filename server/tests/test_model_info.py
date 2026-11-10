@@ -68,6 +68,24 @@ def test_a_model_file_that_will_not_load_is_reported_not_raised(tmp_path):
     assert isinstance(get_recogniser(), UnusableModel)
 
 
+def test_unusable_is_reported_whether_the_loader_raises_or_returns_none(tmp_path, monkeypatch):
+    from app.recognition import onnx_recogniser
+
+    path = tmp_path / "signs.onnx"
+    path.write_bytes(b"not a model")
+    get_settings().model_path = str(path)
+
+    def raises(model_path):
+        raise ValueError("stale layout")
+
+    monkeypatch.setattr(onnx_recogniser, "load_recogniser", raises)
+    assert get_recogniser().reason == "stale layout"
+    monkeypatch.setattr(onnx_recogniser, "load_recogniser", lambda model_path: None)
+    assert isinstance(get_recogniser(), UnusableModel)
+    path.unlink()
+    assert get_recogniser() is None
+
+
 def test_sockets_tell_the_learner_when_the_model_needs_retraining(signed_in, db_factory):
     app.dependency_overrides[get_recogniser] = lambda: UnusableModel("old feature layout")
     with db_factory() as db:
