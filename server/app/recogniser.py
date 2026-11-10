@@ -1,8 +1,9 @@
 """The sign model interface that scoring is written against.
 
-The trained model comes from ml/ (handoff task T2). Until an exported model is
-wired in here, `get_recogniser` returns None and practice reports that scoring
-is unavailable. Tests replace it through FastAPI's dependency overrides.
+The trained model comes from ml/ (handoff task T2). `get_recogniser` returns
+None until a model has been exported to MODEL_PATH, and practice then reports
+that scoring is unavailable. Tests replace it through FastAPI's dependency
+overrides.
 """
 from typing import Protocol
 
@@ -23,4 +24,7 @@ class Recogniser(Protocol):
 
 
 def get_recogniser() -> Recogniser | None:
-    return None
+    from .config import get_settings
+    from .onnx_recogniser import load_recogniser
+
+    return load_recogniser(get_settings().model_path)

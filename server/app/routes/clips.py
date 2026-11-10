@@ -36,6 +36,17 @@ def signer_id(user: User) -> str:
     return f"u{user.id}"
 
 
+def delete_clips_for(user: User, clips_dir: Path) -> int:
+    """Remove every clip a user recorded. Called when their account is deleted,
+    which also stops a reused user id (SQLite) inheriting someone else's clips."""
+    if not clips_dir.is_dir():
+        return 0
+    paths = list(clips_dir.glob(f"*/{signer_id(user)}_*.npz"))
+    for path in paths:
+        path.unlink()
+    return len(paths)
+
+
 @router.post("", status_code=201)
 async def save_clip(
     request: Request,

@@ -10,3 +10,5 @@ ml/data/
 ml/runs/
 *.onnx
 server/data/
+server/models/
+ml/.venv/

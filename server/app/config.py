@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     sentence_model: str = ""
     clips_dir: str = "data/clips"
+    # Written by ml/train.py, with signs.labels.json beside it.
+    model_path: str = "models/signs.onnx"
     # Local development only: enables /api/auth/dev-login. Refused unless FRONTEND_URL is localhost.
     dev_login: bool = False
 

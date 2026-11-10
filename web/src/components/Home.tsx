@@ -80,18 +80,33 @@ export function Home() {
         <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">Lessons</h2>
         <ul className="flex flex-col gap-2">
           {lessons.map((lesson) => (
-            <li key={lesson.slug} className="rounded-lg border p-4">
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="font-medium">{lesson.title}</span>
-                <span className="text-sm opacity-60">{lesson.sign_count} signs</span>
-              </div>
-              <p className="mt-1 text-sm opacity-70">{lesson.summary}</p>
+            <li key={lesson.slug}>
+              <Link
+                href={`/lessons/${encodeURIComponent(lesson.slug)}`}
+                className="block rounded-lg border p-4 hover:bg-foreground/5"
+              >
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="font-medium">{lesson.title}</span>
+                  <span className="text-sm opacity-60">{lesson.sign_count} signs</span>
+                </div>
+                <p className="mt-1 text-sm opacity-70">{lesson.summary}</p>
+              </Link>
             </li>
           ))}
         </ul>
       </section>
 
-      <nav className="flex flex-col gap-2 text-sm">
+      <nav className="flex flex-wrap gap-6 text-sm">
+        {me && (
+          <Link href="/progress" className="underline underline-offset-4">
+            Your progress
+          </Link>
+        )}
+        {me && (
+          <Link href="/translations" className="underline underline-offset-4">
+            Past translations
+          </Link>
+        )}
         <Link href="/check" className="underline underline-offset-4">
           Check your camera and tracking
         </Link>

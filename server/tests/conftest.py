@@ -67,3 +67,16 @@ def user(db_factory):
 def signed_in(client, user):
     assert client.post(f"/test/login/{user.id}").status_code == 200
     return client
+
+
+@pytest.fixture(autouse=True)
+def default_settings(monkeypatch, tmp_path):
+    """Tests must not depend on the developer's own .env."""
+    from app.config import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "dev_login", False)
+    monkeypatch.setattr(settings, "google_client_id", "")
+    monkeypatch.setattr(settings, "frontend_url", "http://localhost:3000")
+    monkeypatch.setattr(settings, "model_path", str(tmp_path / "no-model" / "signs.onnx"))
+    monkeypatch.setattr(settings, "clips_dir", str(tmp_path / "clips"))

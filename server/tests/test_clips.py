@@ -73,3 +73,19 @@ def test_counts_and_delete_are_per_user(signed_in, user, db_factory, clips_dir):
     assert signed_in.delete(f"/api/clips/A/{first}").status_code == 204
     assert signed_in.delete(f"/api/clips/A/{first}").status_code == 404
     assert signed_in.get("/api/clips/counts").json() == {"A": 1, "B": 1}
+
+
+def test_deleting_the_account_deletes_its_clips(signed_in, user, db_factory, clips_dir):
+    post(signed_in, clip_bytes(seed=1))
+    post(signed_in, clip_bytes(seed=2), label="B")
+    with db_factory() as db:
+        other = User(google_sub="sub-2", email="other@example.com")
+        db.add(other)
+        db.commit()
+        other_id = other.id
+    signed_in.post(f"/test/login/{other_id}")
+    kept = post(signed_in, clip_bytes(seed=3)).json()["id"]
+
+    signed_in.post(f"/test/login/{user.id}")
+    assert signed_in.delete("/api/me").status_code == 204
+    assert [p.stem for p in clips_dir.glob("*/*.npz")] == [kept]
