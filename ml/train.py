@@ -21,6 +21,7 @@ import onnx
 import torch
 from torch import nn
 
+from checkpoint import load_into
 from data import Clip, augment, load_clips, to_model_input, transition
 
 from app.recognition.features import (  # path set up by data.py
@@ -215,7 +216,8 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     os.replace(pending, out)
 
 
-def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path):
+def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
+          init: Path | None = None):
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -234,6 +236,10 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
           f"{len(labels) - 1} signs plus no-sign ({split_note})")
 
     model = SignNet(len(labels))
+    # Optionally start from weights pretrained on public data (pretrain.py).
+    pretrained = load_into(model, labels, init) if init else None
+    if pretrained:
+        print(f"starting from {init} ({pretrained})")
     optimiser = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-2)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, epochs)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
@@ -296,6 +302,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         "untested_signs": len(untested),
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    if pretrained:
+        info["pretrained"] = pretrained
     report["info"] = info
     export(model, out, labels, pass_score, to_model_input(clips[0].frames), info)
 
@@ -320,5 +328,6 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--test-signer", help="signer id to hold out (default: the one with fewest clips)")
     parser.add_argument("--runs", type=Path, default=here / "runs")
+    parser.add_argument("--init", type=Path, help="checkpoint from pretrain.py to start from")
     args = parser.parse_args()
-    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs)
+    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init)
