@@ -18,13 +18,14 @@ from app.services.practice import score_clip
 LABELS = ["A", "B", "C"]
 
 
-def write_model(folder, labels=LABELS, outputs=None, pass_score=None, info=None):
+def write_model(folder, labels=LABELS, outputs=None, pass_score=None, input_size=NORMALISED_SIZE,
+                info=None):
     """A tiny stand-in for the trained model: mean over time, then a fixed linear layer.
 
     Class k responds to feature k, so a clip whose feature 1 is large scores as "B".
     """
     outputs = outputs or len(labels)
-    weights = np.zeros((NORMALISED_SIZE, outputs), dtype=np.float32)
+    weights = np.zeros((input_size, outputs), dtype=np.float32)
     for k in range(outputs):
         weights[k, k] = 10.0
     graph = helper.make_graph(
@@ -33,7 +34,7 @@ def write_model(folder, labels=LABELS, outputs=None, pass_score=None, info=None)
             helper.make_node("MatMul", ["mean", "weights"], ["logits"]),
         ],
         "stand_in",
-        [helper.make_tensor_value_info("clip", TensorProto.FLOAT, [1, CLIP_FRAMES, NORMALISED_SIZE])],
+        [helper.make_tensor_value_info("clip", TensorProto.FLOAT, [1, CLIP_FRAMES, input_size])],
         [helper.make_tensor_value_info("logits", TensorProto.FLOAT, [1, outputs])],
         [helper.make_tensor("weights", TensorProto.FLOAT, weights.shape, weights.ravel())],
     )
@@ -58,6 +59,11 @@ def clip(feature: int, time: int) -> np.ndarray:
 
 def test_missing_model_means_no_recogniser(tmp_path):
     assert load_recogniser(str(tmp_path / "signs.onnx")) is None
+
+
+def test_legacy_model_is_rejected_at_load_with_reexport_guidance(tmp_path):
+    with pytest.raises(ValueError, match="388 features.*retrain and re-export"):
+        load_recogniser(str(write_model(tmp_path, input_size=382)))
 
 
 def test_predicts_probabilities_for_any_clip_length(tmp_path):

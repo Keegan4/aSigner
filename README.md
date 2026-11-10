@@ -74,11 +74,25 @@ python -m venv .venv
 
 This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
+The model takes 32 frames of 388 features: the original 382 normalised values plus six validity flags for left/right hand shape, left/right hand placement, pose and face/head. These flags are inferred from existing recordings; the browser's 256-value frame format is unchanged. Face presence is inferred from nonzero face/head values, so a completely neutral face cannot be distinguished from missing face tracking.
+
+Separate left-hand, right-hand, pose and face/head encoders each produce 80 dimensions from positions, frame differences and validity flags. Differences are zero for the first frame and whenever either adjacent observation is invalid, preventing tracking loss/recovery from appearing as motion. They describe motion over resampled clip time, not physical velocity. Entirely missing regions use learned embeddings. The four outputs are concatenated into 320 dimensions and processed by a residual temporal convolution (depthwise kernel 3, then a pointwise projection).
+
+The model then prepends a learned classification token and adds learned positional embeddings. Two Transformer encoder layers, each with 20 attention heads (16 dimensions per head), let every token attend to the entire clip. The classification token's output passes through layer normalisation and a three-layer classifier (`320 → 320 → 160 → labels`, including the no-sign class). Each hidden classifier layer uses batch normalisation, GELU and dropout. All dropout probabilities are 0.1. Training requires at least two clips after the signer split; inference accepts a single clip using the saved batch-normalisation statistics.
+
+There are `1,980,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (1,996,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time.
+
 ## Tests
 
 ```bash
 cd server
 .venv/Scripts/python -m pytest
+```
+
+To check the ML architecture and ONNX export without running training or optimizer steps, run from the repository root with the ML dependencies installed:
+
+```bash
+python -m pytest -q ml/test_train.py -k 'not train_exports and not training_ and not report_names'
 ```
 
 ## Data and credit

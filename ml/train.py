@@ -23,7 +23,10 @@ from torch import nn
 
 from data import Clip, augment, load_clips, to_model_input, transition
 
-from app.recognition.features import CLIP_FRAMES, IDLE_LABEL, NORMALISED_SIZE  # path set up by data.py
+from app.recognition.features import (  # path set up by data.py
+    CLIP_FRAMES, COORDINATE_SIZE, IDLE_LABEL, NORMALISED_PARTS,
+    NORMALISED_SIZE, PART_WIDTHS, REGION_PARTS,
+)
 from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
 
 TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
@@ -31,20 +34,84 @@ SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this mu
 MIN_CLIPS_FOR_THRESHOLD = 30
 
 
-class SignNet(nn.Module):
-    """A small temporal convolution network over normalised landmark frames."""
+class RegionEncoder(nn.Module):
+    """Encode positions, valid motion and availability for one anatomical region."""
 
-    def __init__(self, classes: int, width: int = 128):
+    def __init__(self, parts: tuple[int, ...], width: int):
         super().__init__()
-        self.body = nn.Sequential(
-            nn.Conv1d(NORMALISED_SIZE, width, 3, padding=1), nn.ReLU(),
-            nn.Conv1d(width, width, 3, padding=1), nn.ReLU(),
-            nn.Conv1d(width, width, 3, padding=1), nn.ReLU(),
+        self.parts = parts
+        coordinates = sum(PART_WIDTHS[i] for i in parts)
+        self.encoder = nn.Sequential(
+            nn.Linear(2 * coordinates + 2 * len(parts), width), nn.GELU(), nn.LayerNorm(width),
         )
-        self.head = nn.Sequential(nn.Dropout(0.3), nn.Linear(width, classes))
+        self.missing = nn.Parameter(torch.empty(width))
+        nn.init.normal_(self.missing, std=0.02)
+
+    def inputs(self, clip: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        positions, motions, present, motion_valid = [], [], [], []
+        for i in self.parts:
+            flag = (clip[..., COORDINATE_SIZE + i:COORDINATE_SIZE + i + 1] > 0.5).to(clip.dtype)
+            values = clip[..., NORMALISED_PARTS[i]] * flag
+            previous = torch.cat([torch.zeros_like(values[:, :1]), values[:, :-1]], dim=1)
+            previous_flag = torch.cat([torch.zeros_like(flag[:, :1]), flag[:, :-1]], dim=1)
+            valid = flag * previous_flag
+            positions.append(values)
+            motions.append((values - previous) * valid)
+            present.append(flag)
+            motion_valid.append(valid)
+        flags = torch.cat(present, dim=-1)
+        return torch.cat([*positions, *motions, flags, *motion_valid], dim=-1), flags
+
+    def forward(self, clip: torch.Tensor) -> torch.Tensor:
+        features, flags = self.inputs(clip)
+        encoded = self.encoder(features)
+        return torch.where(flags.sum(dim=-1, keepdim=True) > 0, encoded, self.missing)
+
+
+class SignNet(nn.Module):
+    """Attend to all frames, then classify a learned summary token.
+
+    Each normalised frame is one token. Learned positions preserve frame order;
+    the prepended classification token gathers information from the whole clip.
+    """
+
+    def __init__(self, classes: int, width: int = 320):
+        super().__init__()
+        if width % 20 or width % 4:
+            raise ValueError("embedding width must be divisible by 20 heads and four regions")
+        self.regions = nn.ModuleList(RegionEncoder(parts, width // 4) for parts in REGION_PARTS)
+        self.temporal_norm = nn.LayerNorm(width)
+        self.temporal = nn.Sequential(
+            nn.Conv1d(width, width, kernel_size=3, padding=1, groups=width),
+            nn.Conv1d(width, width, kernel_size=1), nn.GELU(), nn.Dropout(0.1),
+        )
+        self.cls_token = nn.Parameter(torch.empty(1, 1, width))
+        self.positions = nn.Parameter(torch.empty(1, CLIP_FRAMES + 1, width))
+        nn.init.normal_(self.cls_token, std=0.02)
+        nn.init.normal_(self.positions, std=0.02)
+        # Construct each layer separately so they start with different weights.
+        self.encoder = nn.Sequential(*(
+            nn.TransformerEncoderLayer(
+                d_model=width, nhead=20, dim_feedforward=width * 2,
+                dropout=0.1, activation="gelu", batch_first=True, norm_first=True,
+            )
+            for _ in range(2)
+        ))
+        self.norm = nn.LayerNorm(width)
+        self.head = nn.Sequential(
+            nn.Linear(width, width), nn.BatchNorm1d(width), nn.GELU(), nn.Dropout(0.1),
+            nn.Linear(width, width // 2), nn.BatchNorm1d(width // 2), nn.GELU(), nn.Dropout(0.1),
+            nn.Linear(width // 2, classes),
+        )
 
     def forward(self, clip: torch.Tensor) -> torch.Tensor:  # (batch, time, features)
-        return self.head(self.body(clip.transpose(1, 2)).mean(dim=2))
+        frames = torch.cat([region(clip) for region in self.regions], dim=-1)
+        local = self.temporal(self.temporal_norm(frames).transpose(1, 2)).transpose(1, 2)
+        frames = frames + local
+        cls = self.cls_token.expand(clip.shape[0], -1, -1)
+        tokens = torch.cat([cls, frames], dim=1) + self.positions
+        encoded = self.encoder(tokens)
+        return self.head(self.norm(encoded[:, 0]))
 
 
 def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
@@ -112,7 +179,7 @@ def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> 
 
 
 def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | None,
-           info: dict, probe: np.ndarray):
+           probe: np.ndarray, info: dict | None = None):
     """Write the model as one file and move it into place in a single rename.
 
     A server that connects mid-export sees either the old model or the new
@@ -134,7 +201,8 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     proto.metadata_props.add(key=LABELS_KEY, value=json.dumps(labels))
     if pass_score is not None:
         proto.metadata_props.add(key=PASS_SCORE_KEY, value=str(pass_score))
-    proto.metadata_props.add(key=INFO_KEY, value=json.dumps(info))
+    if info is not None:
+        proto.metadata_props.add(key=INFO_KEY, value=json.dumps(info))
     pending = out.with_name(out.name + ".tmp")
     onnx.save(proto, str(pending))
 
@@ -155,6 +223,9 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     if len({c.label for c in clips} - {IDLE_LABEL}) < 2:
         raise SystemExit(f"Need clips for at least two signs; found {len(clips)} clips.")
     train_clips, test_clips, split_note = split(clips, test_signer, rng)
+    if len(train_clips) < 2:
+        raise SystemExit("Need at least two training clips for batch normalisation; "
+                         "record more clips or choose a different test signer.")
     # The idle class always exists: straddling windows are labelled with it even
     # when nobody has recorded "no sign" takes.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
@@ -171,7 +242,12 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         x_all, y_all = training_batch(train_clips, labels, rng)
         model.train()
         total = 0.0
-        for batch in torch.from_numpy(rng.permutation(len(train_clips))).split(64):
+        # Balanced batches stay at most 64 and never leave a singleton, which
+        # BatchNorm cannot train on (e.g. 65 clips become batches of 33 and 32).
+        batches = torch.from_numpy(rng.permutation(len(train_clips))).tensor_split(
+            (len(train_clips) + 63) // 64
+        )
+        for batch in batches:
             optimiser.zero_grad()
             loss = loss_fn(model(x_all[batch]), y_all[batch])
             loss.backward()
@@ -221,7 +297,7 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     report["info"] = info
-    export(model, out, labels, pass_score, info, to_model_input(clips[0].frames))
+    export(model, out, labels, pass_score, to_model_input(clips[0].frames), info)
 
     run = runs / time.strftime("%Y%m%d-%H%M%S")
     run.mkdir(parents=True, exist_ok=True)

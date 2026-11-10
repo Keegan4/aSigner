@@ -80,13 +80,14 @@ Never verified:
 
 Each task can be done independently unless it lists a dependency. Claim one on the noticeboard before starting so two people do not build the same thing.
 
-### T1. Sample recorder
-A signed-in page where the user picks a sign, records a few seconds, and the landmark clip (frames only) is saved with its label. Decide with the owner whether clips go to the server or download as files. Output format should be a `.npy`/`.npz` array of raw 256-float frames plus label and signer id.
-Done when: a recorded clip can be loaded in Python and passed through `normalise`.
+### T1. Sample recorder: done
+`/record` page and `/api/clips` (`server/app/routes/clips.py`, `server/app/services/clips.py`). One `.npz` per clip under `server/data/clips/<label>/`: raw frames `(time, 256)`, `label`, an opaque `signer` id, `fps`. A "No sign" class (`_idle`) is recorded the same way. Clips are deleted with the account. `DEV_LOGIN=true` gives a localhost-only sign-in so clips can be recorded without Google OAuth.
+Verified with a live camera by the owner.
 
-### T2. Training pipeline (`ml/`)
-Dataset loader, augmentation (mirror, scale, rotation, time-warp, jitter, frame drop, face-feature dropout), a small Transformer or GRU over normalised frames, signer-held-out evaluation, ONNX export. Start with A–Z. Public ASL fingerspelling data can be used for pretraining because SgSL uses the same one-handed alphabet.
-Depends on: T1 for SgSL data. Done when: an exported `.onnx` plus a report with top-1/top-5 accuracy and a confusion matrix.
+### T2. Training pipeline (`ml/`): done in code, no usable model yet
+`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, time crop, frame drop, face dropout, windows that straddle two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1, top-5, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
+First real numbers (10 Nov 2026, 47 clips, one signer, about one training clip per letter): 40-45% top-1 on 20 held-out clips over three seeds. That is a pipeline check, not a usable model.
+Still needed: about 25 clips per sign, "No sign" clips, and a second signer so accuracy is measured on someone the model has not seen.
 
 ### T3. Practice scoring and progress (server): done
 A `/ws/practice` endpoint: client names the target sign, server buffers frames, runs the model, returns score, pass/fail and the closest confusion, then writes `attempts` and updates `progress` (spaced repetition: review date moves out on success, resets on failure).
@@ -109,7 +110,10 @@ Can start now.
 - Open `/check` in a normal browser and confirm tracking, frame rate and hand labelling.
 - Email `sgsl_linguistics@sadeaf.org.sg` to ask permission to use Sign Bank material for a portfolio project.
 - Choose the ~50-sign vocabulary and get descriptions reviewed by an SgSL signer.
-- Record reference and training clips.
+- Record training clips on `/record`: about 25 per sign plus "No sign" takes, and get a second person to record a set.
+- Record reference (demo) clips for each sign.
+- Say how doubled letters are fingerspelled in SgSL (the translator only repeats a letter after a pause).
+- Decide whether a failed attempt resets a sign's mastery to 0 or steps it down one level.
 
 ## Running and testing
 
