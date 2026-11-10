@@ -8,3 +8,31 @@ lessons:
     title: Fingerspelling A-Z
     summary: The one-handed manual alphabet used in SgSL.
     signs: [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, "Y", Z]
+  - slug: basic-words
+    title: Basic words
+    summary: Everyday words to start signing with.
+    signs:
+      - {gloss: GOOD, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Good"}
+      - {gloss: BAD, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Bad"}
+      - {gloss: "YES", sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Yes"}
+      - {gloss: "NO", sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=No"}
+      - {gloss: PLEASE, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Please"}
+      - {gloss: HELP, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Help"}
+      - {gloss: NAME, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Name"}
+      - {gloss: FRIEND, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Friend"}
+      - {gloss: FAMILY, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Family"}
+      - {gloss: MOTHER, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Mother"}
+      - {gloss: FATHER, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Father"}
+      - {gloss: EAT, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Eat"}
+      - {gloss: DRINK, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Drink"}
+      - {gloss: WATER, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Water"}
+      - {gloss: HOME, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Home"}
+      - {gloss: SCHOOL, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=School"}
+      - {gloss: LEARN, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Learn"}
+      - {gloss: SIGN, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Sign"}
+      - {gloss: DEAF, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Deaf"}
+      - {gloss: UNDERSTAND, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Understand"}
+      - {gloss: WANT, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Want"}
+      - {gloss: LIKE, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Like"}
+      - {gloss: WHAT, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=What"}
+      - {gloss: WHERE, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Where"}
