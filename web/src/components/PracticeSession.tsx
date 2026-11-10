@@ -136,10 +136,10 @@ export function PracticeSession({
 
   const busy = phase.name !== "idle" && phase.name !== "result";
   const prompt = {
-    idle: "Press Record, then make the sign.",
-    countdown: `Get ready… ${phase.name === "countdown" ? phase.left : ""}`,
+    idle: "Press Record and have the sign ready before the countdown ends.",
+    countdown: `Get the sign ready… ${phase.name === "countdown" ? phase.left : ""}`,
     starting: "Starting…",
-    recording: "Recording: make the sign now.",
+    recording: "Recording: keep signing.",
     scoring: "Checking…",
     result: "",
   }[phase.name];
