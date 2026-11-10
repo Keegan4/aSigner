@@ -160,7 +160,9 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     assert report["signs_without_test_clips"] == []
     assert report["top1"] > 0.9  # the made-up signs are easy to tell apart
     assert len(report["threshold_curve"]) == 14
-    assert 0.3 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
+    assert 0.5 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
+    chosen = next(row for row in report["threshold_curve"] if row["pass_score"] == report["pass_score"])
+    assert chosen["false_accept"] <= 0.05 or report["pass_score"] == 0.95
 
     # One file, nothing left half-written beside it.
     assert [p.name for p in out.parent.iterdir()] == ["signs.onnx"]
@@ -250,3 +252,16 @@ def test_train_runs_from_a_windows_console(tmp_path):
     )
     assert done.returncode == 0, done.stderr.decode("cp1252", "replace")[-2000:]
     assert out.is_file()
+
+
+def test_info_records_where_clips_came_from(tmp_path):
+    """A model trained on converted outside footage must say so in the file itself."""
+    write_clips(tmp_path / "clips", signers=("u1", "signbank"), per_sign=3)
+    out = tmp_path / "signs.onnx"
+    report = train(tmp_path / "clips", out, epochs=1, seed=0, test_signer="u1", runs=tmp_path / "runs")
+    assert report["info"]["sources"] == {"signbank": 9}
+    assert load_recogniser(str(out)).info["sources"] == {"signbank": 9}
+
+    both = tmp_path / "both.onnx"
+    report = train(tmp_path / "clips", both, epochs=1, seed=0, test_signer="x", runs=tmp_path / "runs")
+    assert report["info"]["sources"] == {"recorded": 9, "signbank": 9}
