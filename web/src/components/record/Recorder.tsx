@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraTracker } from "@/components/CameraTracker";
+import { CameraTracker } from "@/components/camera/CameraTracker";
 import { getJson, type Me } from "@/lib/api";
-import { FRAME_SIZE, LEFT_HAND, POSE } from "@/lib/features";
+import { FRAME_SIZE, LEFT_HAND, POSE } from "@/lib/tracking/features";
 
 type SignRow = { id: number; gloss: string };
 type Phase = "idle" | "countdown" | "recording" | "saving";
@@ -14,7 +14,7 @@ type Saved = { id: string; label: string };
 const COUNTDOWN_SECONDS = 3;
 const CLIP_SECONDS = 2;
 const TARGET_PER_SIGN = 25;
-// Must match IDLE_LABEL in server/app/features.py.
+// Must match IDLE_LABEL in server/app/recognition/features.py.
 const IDLE: SignRow = { id: -1, gloss: "_idle" };
 const MOVING = new Set(["J", "Z"]);
 

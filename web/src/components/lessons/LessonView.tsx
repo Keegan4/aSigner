@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { Demo, LessonFallback, Mastery, Shell } from "@/components/Shell";
-import { useLesson } from "@/lib/useLesson";
+import { Demo, LessonFallback, Mastery, Shell } from "@/components/ui/Shell";
+import { useLesson } from "@/hooks/useLesson";
 
 export function LessonView() {
   const { slug } = useParams<{ slug: string }>();

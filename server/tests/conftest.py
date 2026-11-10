@@ -7,7 +7,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db import Base, get_db, make_engine
+from app.core.db import Base, get_db, make_engine
 from app.main import app
 from app.models import User
 from app.seed import load_seed
@@ -72,7 +72,7 @@ def signed_in(client, user):
 @pytest.fixture(autouse=True)
 def default_settings(monkeypatch, tmp_path):
     """Tests must not depend on the developer's own .env."""
-    from app.config import get_settings
+    from app.core.config import get_settings
 
     settings = get_settings()
     monkeypatch.setattr(settings, "dev_login", False)

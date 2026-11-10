@@ -2,7 +2,7 @@
 
 This is the only normaliser: the live server and the training code in ml/
 both import it, so model inputs cannot drift between training and serving.
-The raw layout must match web/src/lib/features.ts.
+The raw layout must match web/src/lib/tracking/features.ts.
 """
 import numpy as np
 

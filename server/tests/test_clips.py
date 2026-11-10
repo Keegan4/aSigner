@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from app.features import FRAME_SIZE, normalise
 from app.main import app
 from app.models import User
-from app.routes.clips import get_clips_dir
+from app.recognition.features import FRAME_SIZE, normalise
+from app.services.clips import get_clips_dir
 
 
 @pytest.fixture

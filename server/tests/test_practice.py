@@ -4,11 +4,18 @@ import numpy as np
 import pytest
 from sqlalchemy import select
 
-from app.features import FRAME_SIZE, HAND_POINTS, IDLE_LABEL, NORMALISED_SIZE, POSE, RIGHT_HAND
 from app.main import app
 from app.models import Attempt, Progress, Sign
-from app.practice import MAX_MASTERY, REVIEW_DAYS, record_attempt, score_clip
-from app.recogniser import get_recogniser
+from app.recognition.features import (
+    FRAME_SIZE,
+    HAND_POINTS,
+    IDLE_LABEL,
+    NORMALISED_SIZE,
+    POSE,
+    RIGHT_HAND,
+)
+from app.recognition.recogniser import get_recogniser
+from app.services.practice import MAX_MASTERY, REVIEW_DAYS, record_attempt, score_clip
 
 ORIGIN = {"origin": "http://localhost:3000"}
 LABELS = list("ABC")

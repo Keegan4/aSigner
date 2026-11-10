@@ -6,9 +6,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .config import get_settings
-from .db import get_db
-from .models import User
+from app.core.config import get_settings
+from app.core.db import get_db
+from app.models import User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

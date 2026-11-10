@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getJson, type Lesson, type Progress } from "./api";
+import { getJson, type Lesson, type Progress } from "@/lib/api";
 
 export type LessonState =
   | { status: "loading" }

@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 
-from .features import CLIP_FRAMES, NORMALISED_SIZE, resample
+from app.recognition.features import CLIP_FRAMES, NORMALISED_SIZE, resample
 
 LABELS_KEY = "asigner.labels"  # JSON list of glosses, in output order
 PASS_SCORE_KEY = "asigner.pass_score"  # optional float chosen at training time

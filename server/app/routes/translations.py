@@ -3,10 +3,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..db import get_db
-from ..deps import current_user
-from ..models import Sign, Translation, User
-from ..sentence import make_sentence
+from app.core.db import get_db
+from app.models import Sign, Translation, User
+from app.routes.deps import current_user
+from app.services.translations import save_translation
 
 router = APIRouter(prefix="/api/translations", tags=["translations"])
 
@@ -42,21 +42,6 @@ async def create_translation(
     if not known.issuperset(body.glosses):
         raise HTTPException(422, "Every gloss must be a known sign.")
     return await save_translation(db, user.id, body.glosses)
-
-
-async def save_translation(db: Session, user_id: int, glosses: list[str]) -> dict:
-    """Write the sentence for `glosses`, store it and return it as the API shows it."""
-    sentence, from_model = await make_sentence(glosses)
-    row = Translation(user_id=user_id, glosses=glosses, sentence=sentence)
-    db.add(row)
-    db.commit()
-    return {
-        "id": row.id,
-        "glosses": row.glosses,
-        "sentence": row.sentence,
-        "created_at": row.created_at,
-        "from_model": from_model,
-    }
 
 
 @router.delete("/{translation_id}", status_code=204)

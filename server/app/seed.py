@@ -8,7 +8,7 @@ import yaml
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Lesson, LessonSign, Sign
+from app.models import Lesson, LessonSign, Sign
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "seed"
 
@@ -41,7 +41,7 @@ def load_seed(db: Session, seed_dir: Path = SEED_DIR) -> None:
 
 
 if __name__ == "__main__":
-    from .db import SessionLocal
+    from app.core.db import SessionLocal
 
     with SessionLocal() as session:
         load_seed(session)

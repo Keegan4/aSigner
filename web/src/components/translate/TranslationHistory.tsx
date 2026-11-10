@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Shell } from "@/components/Shell";
+import { Shell } from "@/components/ui/Shell";
 import { getJson, type Translation } from "@/lib/api";
 
 type State =

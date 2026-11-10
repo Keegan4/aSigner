@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from app.features import (
+from app.recognition.features import (
     FACE,
     FRAME_SIZE,
     LEFT_HAND,
@@ -29,7 +29,7 @@ def moved(frame: np.ndarray, scale: float, shift: float) -> np.ndarray:
 
 
 def test_layout_matches_the_browser():
-    # web/src/lib/features.ts sends 256 floats per frame.
+    # web/src/lib/tracking/features.ts sends 256 floats per frame.
     assert (LEFT_HAND, RIGHT_HAND, POSE, FACE, FRAME_SIZE) == (0, 63, 126, 201, 256)
 
 

@@ -4,8 +4,8 @@ import numpy as np
 from data import augment, mirror, to_model_input, transition
 from train import threshold_curve, train
 
-from app.features import CLIP_FRAMES, FRAME_SIZE, LEFT_HAND, NORMALISED_SIZE, POSE, RIGHT_HAND
-from app.onnx_recogniser import load_recogniser
+from app.recognition.features import CLIP_FRAMES, FRAME_SIZE, LEFT_HAND, NORMALISED_SIZE, POSE, RIGHT_HAND
+from app.recognition.onnx_recogniser import load_recogniser
 
 
 def fake_clip(rng, label_index: int, frames: int = 50) -> np.ndarray:

@@ -2,18 +2,24 @@ import numpy as np
 import pytest
 from sqlalchemy import select
 
-from app import ws as ws_module
-from app.features import FRAME_SIZE, HAND_POINTS, IDLE_LABEL, POSE, RIGHT_HAND
 from app.main import app
 from app.models import Translation
-from app.recogniser import get_recogniser
-from app.translate import (
+from app.recognition.features import (
+    FRAME_SIZE,
+    HAND_POINTS,
+    IDLE_LABEL,
+    POSE,
+    RIGHT_HAND,
+)
+from app.recognition.recogniser import get_recogniser
+from app.services.segmentation import (
     MAX_GLOSSES,
     SENTENCE_GAP_SECONDS,
     STABLE_PREDICTIONS,
     STRIDE_SECONDS,
     Segmenter,
 )
+from app.ws import translate as ws_module
 
 ORIGIN = {"origin": "http://localhost:3000"}
 LABELS = ["A", "B", "C", IDLE_LABEL]

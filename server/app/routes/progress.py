@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..db import get_db
-from ..deps import current_user
-from ..models import Progress, Sign, User, now
-from ..practice import MAX_MASTERY
+from app.core.db import get_db
+from app.models import Progress, Sign, User, now
+from app.routes.deps import current_user
+from app.services.practice import MAX_MASTERY
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
 

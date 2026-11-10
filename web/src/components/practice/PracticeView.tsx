@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { PracticeSession } from "@/components/PracticeSession";
-import { Demo, LessonFallback, Shell } from "@/components/Shell";
-import { useLesson } from "@/lib/useLesson";
+import { PracticeSession } from "@/components/practice/PracticeSession";
+import { Demo, LessonFallback, Shell } from "@/components/ui/Shell";
+import { useLesson } from "@/hooks/useLesson";
 
 export function PracticeView() {
   const { slug } = useParams<{ slug: string }>();

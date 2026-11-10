@@ -13,11 +13,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..config import get_settings
-from ..db import get_db
-from ..deps import current_user
-from ..features import FRAME_SIZE, IDLE_LABEL
-from ..models import Sign, User
+from app.core.db import get_db
+from app.models import Sign, User
+from app.recognition.features import FRAME_SIZE, IDLE_LABEL
+from app.routes.deps import current_user
+from app.services.clips import get_clips_dir, signer_id
 
 router = APIRouter(prefix="/api/clips", tags=["clips"])
 
@@ -25,26 +25,6 @@ MIN_FRAMES = 5
 MAX_FRAMES = 300
 _FRAME_BYTES = FRAME_SIZE * 4
 _SAFE = re.compile(r"[A-Za-z0-9_-]+")
-
-
-def get_clips_dir() -> Path:
-    return Path(get_settings().clips_dir)
-
-
-def signer_id(user: User) -> str:
-    """An opaque id: clips must not carry names or email addresses."""
-    return f"u{user.id}"
-
-
-def delete_clips_for(user: User, clips_dir: Path) -> int:
-    """Remove every clip a user recorded. Called when their account is deleted,
-    which also stops a reused user id (SQLite) inheriting someone else's clips."""
-    if not clips_dir.is_dir():
-        return 0
-    paths = list(clips_dir.glob(f"*/{signer_id(user)}_*.npz"))
-    for path in paths:
-        path.unlink()
-    return len(paths)
 
 
 @router.post("", status_code=201)

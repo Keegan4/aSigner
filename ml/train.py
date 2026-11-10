@@ -21,8 +21,8 @@ from torch import nn
 
 from data import Clip, augment, load_clips, to_model_input, transition
 
-from app.features import CLIP_FRAMES, IDLE_LABEL, NORMALISED_SIZE  # path set up by data.py
-from app.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
+from app.recognition.features import CLIP_FRAMES, IDLE_LABEL, NORMALISED_SIZE  # path set up by data.py
+from app.recognition.onnx_recogniser import LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
 
 TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
 SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it

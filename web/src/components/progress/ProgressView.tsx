@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { Mastery, Shell } from "@/components/Shell";
+import { Mastery, Shell } from "@/components/ui/Shell";
 import { getJson, type LessonSummary, type Progress, type SignProgress } from "@/lib/api";
 
 type State =

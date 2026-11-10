@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraTracker } from "@/components/CameraTracker";
-import { Shell } from "@/components/Shell";
+import { CameraTracker } from "@/components/camera/CameraTracker";
+import { Shell } from "@/components/ui/Shell";
 import { type Translation, WS_URL } from "@/lib/api";
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
 
-/** Messages of the server's /ws/translate endpoint (server/app/ws.py). */
+/** Messages of the server's /ws/translate endpoint (server/app/ws/translate.py). */
 type Message =
   | { type: "ready" }
   | { type: "gloss"; gloss: string; glosses: string[] }

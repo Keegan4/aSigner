@@ -1,7 +1,7 @@
-import { WS_URL } from "./api";
-import { LEFT_HAND, POSE } from "./features";
+import { WS_URL } from "@/lib/api";
+import { LEFT_HAND, POSE } from "@/lib/tracking/features";
 
-/** Mirrors the messages of the server's /ws/practice endpoint (server/app/ws.py). */
+/** Mirrors the messages of the server's /ws/practice endpoint (server/app/ws/practice.py). */
 export type PracticeResult = {
   sign_id: number;
   score: number;

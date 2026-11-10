@@ -12,7 +12,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "server"))
 
-from app.features import (  # noqa: E402
+from app.recognition.features import (  # noqa: E402
     CLIP_FRAMES,
     FACE,
     HAND_POINTS,
