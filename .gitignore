@@ -9,3 +9,4 @@ node_modules/
 ml/data/
 ml/runs/
 *.onnx
+server/data/
