@@ -12,7 +12,7 @@ from app.recognition.features import (
     normalise,
     resample,
 )
-from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, load_recogniser
+from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser, load_recogniser
 from app.services.practice import score_clip
 
 LABELS = ["A", "B", "C"]
@@ -62,8 +62,22 @@ def test_missing_model_means_no_recogniser(tmp_path):
 
 
 def test_legacy_model_is_rejected_at_load_with_reexport_guidance(tmp_path):
+    path = write_model(tmp_path, input_size=382)
     with pytest.raises(ValueError, match="388 features.*retrain and re-export"):
-        load_recogniser(str(write_model(tmp_path, input_size=382)))
+        OnnxRecogniser(path)
+
+
+def test_unusable_model_counts_as_no_model_and_is_logged(tmp_path, caplog):
+    """A stale or corrupt file must not take the practice socket down with it."""
+    stale = write_model(tmp_path, input_size=382)
+    with caplog.at_level("WARNING"):
+        assert load_recogniser(str(stale)) is None
+    assert "retrain and re-export" in caplog.text
+
+    corrupt = tmp_path / "corrupt"
+    corrupt.mkdir()
+    (corrupt / "signs.onnx").write_bytes(b"not a model")
+    assert load_recogniser(str(corrupt / "signs.onnx")) is None
 
 
 def test_predicts_probabilities_for_any_clip_length(tmp_path):
@@ -87,7 +101,7 @@ def test_rejects_wrong_shapes_and_label_mismatch(tmp_path):
         folder = tmp_path / name
         folder.mkdir()
         with pytest.raises(ValueError):
-            load_recogniser(str(write_model(folder, labels=labels, outputs=3)))
+            OnnxRecogniser(write_model(folder, labels=labels, outputs=3))
 
 
 def test_pass_score_travels_with_the_model(tmp_path):
