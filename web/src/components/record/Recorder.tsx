@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraTracker } from "@/components/camera/CameraTracker";
-import { getJson, type Me } from "@/lib/api";
+import { getJson, type LessonSummary, type Me } from "@/lib/api";
 import { FRAME_SIZE, LEFT_HAND, POSE } from "@/lib/tracking/features";
 
 type SignRow = { id: number; gloss: string };
@@ -16,7 +16,8 @@ const CLIP_SECONDS = 2;
 const TARGET_PER_SIGN = 25;
 // Must match IDLE_LABEL in server/app/recognition/features.py.
 const IDLE: SignRow = { id: -1, gloss: "_idle" };
-const MOVING = new Set(["J", "Z"]);
+// The traced letters, and every word: only a single letter can be a held shape.
+const moves = (gloss: string) => gloss.length > 1 || gloss === "J" || gloss === "Z";
 
 const hasHand = (frame: Float32Array) => frame.subarray(LEFT_HAND, POSE).some((v) => v !== 0);
 
@@ -42,14 +43,21 @@ export function Recorder() {
   }, [phase]);
 
   useEffect(() => {
+    const everySign = async () => {
+      const lessons = (await getJson<LessonSummary[]>("/api/lessons")) ?? [];
+      const loaded = await Promise.all(
+        lessons.map((l) => getJson<{ signs: SignRow[] }>(`/api/lessons/${encodeURIComponent(l.slug)}`)),
+      );
+      return loaded.flatMap((lesson) => lesson?.signs ?? []);
+    };
     Promise.all([
       getJson<Me>("/api/me"),
-      getJson<{ signs: SignRow[] }>("/api/lessons/alphabet"),
+      everySign(),
       getJson<Record<string, number>>("/api/clips/counts"),
     ])
-      .then(([user, lesson, saved]) => {
+      .then(([user, all, saved]) => {
         setMe(user);
-        setSigns([...(lesson?.signs ?? []), IDLE]);
+        setSigns([...all, IDLE]);
         setCounts(saved ?? {});
       })
       .catch(() => {
@@ -154,8 +162,8 @@ export function Recorder() {
   const name = (s: SignRow) => (s.gloss === IDLE.gloss ? "No sign" : s.gloss);
   const how = idle
     ? "Keep your hands in view and move them as you would between signs, without making one. Record a few takes with your hands resting too."
-    : sign && MOVING.has(sign.gloss)
-      ? "Start from the first handshape and trace the whole movement during the take."
+    : sign && moves(sign.gloss)
+      ? "Start from the first handshape and make the whole movement during the take."
       : "Have the sign ready before the countdown ends and keep it up for the whole take.";
   const prompt = {
     idle: `Press Space or Record. ${how}`,

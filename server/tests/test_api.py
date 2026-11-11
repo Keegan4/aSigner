@@ -35,6 +35,17 @@ def test_lessons_are_seeded_in_order(client):
     assert client.get("/api/lessons/nope").status_code == 404
 
 
+def test_basic_words_link_to_the_sign_bank_and_describe_nothing(client):
+    lessons = client.get("/api/lessons").json()
+    assert [l["slug"] for l in lessons] == ["alphabet", "basic-words"]
+    signs = client.get("/api/lessons/basic-words").json()["signs"]
+    assert len(signs) == lessons[1]["sign_count"] == 24
+    assert {"YES", "NO"} <= {s["gloss"] for s in signs}  # not read as YAML booleans
+    for sign in signs:
+        assert sign["sign_bank_url"].startswith("https://blogs.ntu.edu.sg/sgslsignbank/word/")
+        assert sign["description"] is None and sign["demo_path"] is None
+
+
 def test_upsert_user_updates_instead_of_duplicating(db_factory):
     with db_factory() as db:
         first = upsert_user(db, {"sub": "g-1", "email": "a@example.com", "name": "A"})
