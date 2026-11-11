@@ -13,3 +13,5 @@ ml/runs/
 server/data/
 server/models/
 ml/.venv/
+ml/.venv-mp/
+ml/.cache/

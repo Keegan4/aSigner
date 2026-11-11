@@ -69,10 +69,49 @@ export async function loadTrackers(): Promise<Trackers> {
   return { hands, pose, face };
 }
 
+// Hands carry the sign and change fastest, so they are tracked on every frame.
+// The body and face move slowly by comparison; tracking them less often roughly
+// doubles the frame rate on machines where MediaPipe falls back to the CPU.
+const POSE_EVERY = 2;
+const FACE_EVERY = 3;
+// How much of the newest body position to take; the rest is the previous one.
+// Steadies the arm, which the lightweight pose model places with visible jitter.
+const POSE_SMOOTHING = 0.6;
+
+type Cache = {
+  calls: number;
+  pose?: NormalizedLandmark[];
+  blendshapes?: number[];
+  faceMatrix?: ArrayLike<number>;
+};
+const caches = new WeakMap<Trackers, Cache>();
+
+function smooth(previous: NormalizedLandmark[] | undefined, next: NormalizedLandmark[] | undefined) {
+  if (!previous || !next || previous.length !== next.length) return next;
+  const keep = 1 - POSE_SMOOTHING;
+  return next.map((point, i) => ({
+    ...point,
+    x: point.x * POSE_SMOOTHING + previous[i].x * keep,
+    y: point.y * POSE_SMOOTHING + previous[i].y * keep,
+    z: point.z * POSE_SMOOTHING + previous[i].z * keep,
+  }));
+}
+
 export function detect(trackers: Trackers, video: HTMLVideoElement, timeMs: number): Detection {
+  let cache = caches.get(trackers);
+  if (!cache) caches.set(trackers, (cache = { calls: 0 }));
+  const call = cache.calls++;
+
   const h = trackers.hands.detectForVideo(video, timeMs);
-  const p = trackers.pose.detectForVideo(video, timeMs);
-  const f = trackers.face.detectForVideo(video, timeMs);
+  if (call % POSE_EVERY === 0) {
+    const p = trackers.pose.detectForVideo(video, timeMs);
+    cache.pose = smooth(cache.pose, p.landmarks[0]);
+  }
+  if (call % FACE_EVERY === 0) {
+    const f = trackers.face.detectForVideo(video, timeMs);
+    cache.blendshapes = f.faceBlendshapes?.[0]?.categories.map((c) => c.score);
+    cache.faceMatrix = f.facialTransformationMatrixes?.[0]?.data;
+  }
 
   const out: Detection = { hands: h.landmarks };
   h.landmarks.forEach((points, i) => {
@@ -82,9 +121,9 @@ export function detect(trackers: Trackers, video: HTMLVideoElement, timeMs: numb
     if (label === "Left") out.leftHand = points;
     else if (label === "Right") out.rightHand = points;
   });
-  out.pose = p.landmarks[0];
-  out.blendshapes = f.faceBlendshapes?.[0]?.categories.map((c) => c.score);
-  out.faceMatrix = f.facialTransformationMatrixes?.[0]?.data;
+  out.pose = cache.pose;
+  out.blendshapes = cache.blendshapes;
+  out.faceMatrix = cache.faceMatrix;
   return out;
 }
 

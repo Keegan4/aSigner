@@ -3,13 +3,16 @@
 import { DrawingUtils, HandLandmarker, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react";
 
-import { packFrame, POSE_POINTS } from "@/lib/tracking/features";
+import { packFrame } from "@/lib/tracking/features";
 import { closeTrackers, detect, loadTrackers, type Trackers } from "@/lib/tracking/landmarkers";
 
 type Status = "loading" | "running" | "error";
 
-const UPPER_BODY = PoseLandmarker.POSE_CONNECTIONS.filter(
-  (c) => c.start < POSE_POINTS && c.end < POSE_POINTS,
+// The overlay shows shoulders, elbows and wrists only (pose landmarks 11-16).
+// The pose model also guesses a few face and finger points, but they are crude
+// and jump about; the hands have their own, far more precise, overlay.
+const ARMS = PoseLandmarker.POSE_CONNECTIONS.filter(
+  (c) => c.start >= 11 && c.start <= 16 && c.end >= 11 && c.end <= 16,
 );
 
 /**
@@ -64,8 +67,13 @@ export function CameraTracker({ onFrame }: { onFrame?: (frame: Float32Array) => 
             lastTime = video.currentTime;
             const result = detect(trackers, video, performance.now());
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (result.pose) {
-              draw.drawConnectors(result.pose, UPPER_BODY, { color: "#38bdf8", lineWidth: 2 });
+            const pose = result.pose;
+            if (pose) {
+              // Only draw limbs the model is confident it can see. A wrist or elbow
+              // out of shot is still guessed at, and the guess jumps around.
+              const sure = (i: number) => (pose[i]?.visibility ?? 1) > 0.5;
+              const visible = ARMS.filter((c) => sure(c.start) && sure(c.end));
+              draw.drawConnectors(pose, visible, { color: "#38bdf8", lineWidth: 2 });
             }
             for (const hand of result.hands) {
               draw.drawConnectors(hand, HandLandmarker.HAND_CONNECTIONS, {
