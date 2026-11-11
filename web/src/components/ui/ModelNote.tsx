@@ -19,6 +19,10 @@ export function ModelNote({ model }: { model: ModelInfo | null }) {
     );
   }
   if (model.untested_signs) facts.push(`${plural(model.untested_signs, "sign")} never tested`);
+  if (model.outside_clips) {
+    facts.push(`${plural(model.outside_clips, "clip")} came from footage outside this app`);
+  }
+  if (model.pretrained) facts.push(`pretrained on ${model.pretrained}`);
   const summary = facts.length
     ? `Sign model: ${facts.join("; ")}.`
     : "This sign model does not say what it was trained on.";

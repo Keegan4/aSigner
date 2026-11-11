@@ -26,7 +26,19 @@ class Model:
 
 
 def test_a_well_covered_model_is_described_without_a_caution():
-    assert describe(Model(GOOD)) == {"known": True, **GOOD, "limited": False}
+    assert describe(Model(GOOD)) == {
+        "known": True, **GOOD, "outside_clips": None, "pretrained": None, "limited": False,
+    }
+
+
+def test_outside_clips_and_pretraining_are_reported():
+    told = describe(Model({**GOOD, "sources": {"recorded": 380, "signbank": 12, "other": 8},
+                           "pretrained": "asl-now-fingerspelling (MIT)"}))
+    assert (told["outside_clips"], told["pretrained"]) == (20, "asl-now-fingerspelling (MIT)")
+    assert describe(Model({**GOOD, "sources": {"recorded": 400}}))["outside_clips"] == 0
+    for odd in ("signbank", {"signbank": "many"}, {"signbank": -1}):
+        assert describe(Model({**GOOD, "sources": odd}))["outside_clips"] is None
+    assert describe(Model({**GOOD, "pretrained": "x" * 81}))["pretrained"] is None
 
 
 def test_thin_training_is_flagged():
@@ -46,6 +58,8 @@ def test_missing_or_malformed_details_are_flagged_not_trusted():
         "test_clips": None,
         "untested_signs": None,
         "trained_at": None,
+        "outside_clips": None,
+        "pretrained": None,
         "limited": True,
     }
 
