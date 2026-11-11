@@ -95,6 +95,16 @@ python train.py --init runs/pretrained.pt
 
 The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
 
+To also learn movement, both hands and body position, add the landmark data of Kaggle's [Google Isolated Sign Language Recognition](https://www.kaggle.com/competitions/asl-signs) competition (about 94,000 clips of 250 ASL signs by 21 signers, already MediaPipe landmarks). Downloading it needs a Kaggle account that has accepted the competition rules; read its licence terms there first. It is about 40 GB zipped.
+
+```bash
+kaggle competitions download -c asl-signs -p data/public/asl-signs   # then unzip there, so train.csv is in that folder
+python pretrain.py --data data/public/asl-now-fingerspelling data/public/asl-signs
+python train.py --init runs/pretrained.pt
+```
+
+By default 100 clips of each sign are used (`--per-sign 0` uses all of them, which needs several GB of memory and much longer). Whole signers are held out to measure it. These are ASL signs, not SgSL: their labels are prefixed `asl:` so none is mistaken for a sign taught here, and the dataset has no face blendshapes or head angles, so the face part of the model learns nothing from it.
+
 ## Tests
 
 ```bash
