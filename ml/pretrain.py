@@ -21,7 +21,7 @@ import asl_signs
 import public_data
 from checkpoint import save_checkpoint
 from data import Clip
-from train import SignNet, probabilities, training_batch
+from train import SignNet, pick_device, probabilities, training_batch
 
 from app.recognition.features import IDLE_LABEL  # path set up by data.py
 
@@ -109,7 +109,9 @@ def pretrain(data: Path | list[Path], out: Path, epochs: int, seed: int, per_sig
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
     print(f"{len(train_clips)} training samples, {len(test_clips)} held out, {len(labels) - 1} labels ({source})")
 
-    model = SignNet(len(labels))
+    device = pick_device()
+    model = SignNet(len(labels)).to(device)
+    print(f"training on {device}")
     optimiser = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
     steps = sum(_batches(len(chunk)) for chunk in _chunks(len(train_clips)))
     schedule = torch.optim.lr_scheduler.OneCycleLR(optimiser, max_lr=1e-3, total_steps=epochs * steps)
@@ -119,8 +121,9 @@ def pretrain(data: Path | list[Path], out: Path, epochs: int, seed: int, per_sig
         total = 0.0
         for chunk in _chunks(len(train_clips), rng):
             x, y = training_batch([train_clips[i] for i in chunk], labels, rng)
+            x, y = x.to(device), y.to(device)
             model.train()
-            for batch in torch.arange(len(chunk)).tensor_split(_batches(len(chunk))):
+            for batch in torch.arange(len(chunk), device=device).tensor_split(_batches(len(chunk))):
                 optimiser.zero_grad()
                 loss = loss_fn(model(x[batch]), y[batch])
                 loss.backward()

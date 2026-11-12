@@ -38,6 +38,21 @@ MAX_FALSE_ACCEPT = 0.05
 MIN_PASS_SCORE = 0.5
 
 
+def pick_device() -> torch.device:
+    """A GPU when PyTorch can see one, otherwise the CPU.
+
+    "cuda" also covers AMD GPUs on a ROCm build of PyTorch; "xpu" is Intel
+    Arc and Core Ultra graphics on an XPU build; "mps" is Apple Silicon.
+    """
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if hasattr(torch, "xpu") and torch.xpu.is_available():
+        return torch.device("xpu")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 class RegionEncoder(nn.Module):
     """Encode positions, valid motion and availability for one anatomical region."""
 
@@ -158,10 +173,11 @@ def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generato
 
 
 def probabilities(model: nn.Module, clips: list[Clip]) -> np.ndarray:
-    x = torch.from_numpy(np.stack([to_model_input(c.frames) for c in clips]))
+    device = next(model.parameters()).device
+    x = torch.from_numpy(np.stack([to_model_input(c.frames) for c in clips])).to(device)
     model.eval()
     with torch.no_grad():
-        return torch.softmax(model(x), dim=1).numpy()
+        return torch.softmax(model(x), dim=1).cpu().numpy()
 
 
 def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> list[dict]:
@@ -195,7 +211,8 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     one, never a partial file.
     """
     out.parent.mkdir(parents=True, exist_ok=True)
-    model.eval()
+    # The server runs on the CPU, so the model is exported and checked there.
+    model.cpu().eval()
     # The exporter prints a tick mark that a Windows console (cp1252) cannot
     # encode, which would abort the export after training has finished.
     for stream in (sys.stdout, sys.stderr):
@@ -250,6 +267,9 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     pretrained = load_into(model, labels, init) if init else None
     if pretrained:
         print(f"starting from {init} ({pretrained})")
+    device = pick_device()
+    model.to(device)
+    print(f"training on {device}")
     # Frozen: everything but the classifier head keeps its pretrained weights.
     frozen = [m for name, m in model.named_children() if name != "head"] if freeze_backbone else []
     for module in frozen:
@@ -263,6 +283,7 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
 
     for epoch in range(1, epochs + 1):
         x_all, y_all = training_batch(train_clips, labels, rng)
+        x_all, y_all = x_all.to(device), y_all.to(device)
         model.train()
         for module in frozen:
             module.eval()  # no dropout in the frozen part either, so its output is fixed
@@ -273,6 +294,7 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
             (len(train_clips) + 63) // 64
         )
         for batch in batches:
+            batch = batch.to(device)
             optimiser.zero_grad()
             loss = loss_fn(model(x_all[batch]), y_all[batch])
             loss.backward()

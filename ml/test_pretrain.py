@@ -69,8 +69,8 @@ def test_pretrain_then_train_from_the_checkpoint(tmp_path, monkeypatch):
     after = built[0]
     for name, tensor in after.state_dict().items():
         if not name.startswith("head."):
-            assert torch.equal(tensor, before.state_dict()[name]), name
-    assert not torch.equal(after.head[0].weight, before.head[0].weight)
+            assert torch.equal(tensor.cpu(), before.state_dict()[name]), name
+    assert not torch.equal(after.head[0].weight.cpu(), before.head[0].weight)
     with pytest.raises(SystemExit):
         train(tmp_path / "clips", out, epochs=1, seed=0, test_signer=None, runs=tmp_path / "runs",
               freeze_backbone=True)

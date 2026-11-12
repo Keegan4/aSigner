@@ -1,3 +1,5 @@
+import struct
+
 import numpy as np
 import pytest
 from sqlalchemy import select
@@ -145,4 +147,70 @@ def test_translate_socket_stores_the_sentence(signed_in, user, db_factory, clock
 
 def test_translate_socket_without_a_model(signed_in):
     with signed_in.websocket_connect("/ws/translate", headers=ORIGIN) as ws:
+        assert ws.receive_json()["code"] == "no_model"
+
+
+def video_frame(label: str | None, at: float) -> bytes:
+    return frame(label).tobytes() + struct.pack("<d", at)
+
+
+def test_segmenter_reports_each_window():
+    segmenter = Segmenter(FakeRecogniser())
+    windows = []
+    for i in range(1, 3 * FPS):
+        update = segmenter.push(frame("A"), i / FPS)
+        if update.window is not None:
+            windows.append((update.seen, update.window))
+    assert windows[0] == (None, [])  # too little seen yet
+    seen, top = windows[-1]
+    assert seen == "A" and top[0] == ("A", pytest.approx(0.9)) and len(top) == 3
+
+
+def test_translate_video_socket_uses_video_time(signed_in, db_factory):
+    app.dependency_overrides[get_recogniser] = lambda: FakeRecogniser()
+    # No clock fixture: the frames arrive at once, but carry video times.
+    with signed_in.websocket_connect("/ws/translate-video", headers=ORIGIN) as ws:
+        assert ws.receive_json()["type"] == "ready"
+        ws.send_bytes(frame("A").tobytes())  # no time: dropped
+        at = 0.0
+        for label, seconds in (("A", 2), ("B", 2)):
+            for _ in range(seconds * FPS):
+                at += 1 / FPS
+                ws.send_bytes(video_frame(label, at))
+        ws.send_bytes(video_frame("C", at))  # time does not move forward: dropped
+        ws.send_json({"type": "end"})
+        messages = []
+        while (message := ws.receive_json())["type"] != "done":
+            messages.append(message)
+
+    windows = [m for m in messages if m["type"] == "window"]
+    assert windows and all(b["t"] > a["t"] for a, b in zip(windows, windows[1:]))
+    assert windows[-1]["label"] == "B" and windows[-1]["top"][0][0] == "B"
+    glosses = [m for m in messages if m["type"] == "gloss"]
+    assert [g["gloss"] for g in glosses] == ["A", "B"]
+    assert 0 < glosses[0]["t"] < 2 < glosses[1]["t"] <= at
+    sentence = messages[-1]
+    assert (sentence["type"], sentence["glosses"], sentence["sentence"]) == ("sentence", ["A", "B"], "A B")
+    assert "id" not in sentence
+    with db_factory() as db:
+        assert db.scalars(select(Translation)).all() == []  # not saved unless asked
+
+
+def test_translate_video_socket_can_save(signed_in, user, db_factory):
+    app.dependency_overrides[get_recogniser] = lambda: FakeRecogniser()
+    with signed_in.websocket_connect("/ws/translate-video?save=true", headers=ORIGIN) as ws:
+        ws.receive_json()
+        for i in range(1, 2 * FPS):
+            ws.send_bytes(video_frame("C", i / FPS))
+        ws.send_json({"type": "end"})
+        while (message := ws.receive_json())["type"] != "sentence":
+            pass
+        assert ws.receive_json() == {"type": "done"}
+    with db_factory() as db:
+        rows = db.scalars(select(Translation)).all()
+        assert [(r.user_id, r.glosses, r.id) for r in rows] == [(user.id, ["C"], message["id"])]
+
+
+def test_translate_video_socket_without_a_model(signed_in):
+    with signed_in.websocket_connect("/ws/translate-video", headers=ORIGIN) as ws:
         assert ws.receive_json()["code"] == "no_model"

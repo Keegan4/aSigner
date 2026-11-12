@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 import torch
 
-from data import augment, mirror, to_model_input, transition
-from train import RegionEncoder, SignNet, export, threshold_curve, train
+from data import Clip, augment, mirror, to_model_input, transition
+from train import RegionEncoder, SignNet, export, pick_device, probabilities, threshold_curve, train
 
 from app.recognition.features import (
     CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, LEFT_HAND, NORMALISED_PARTS,
@@ -176,6 +176,33 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     probabilities = recogniser.predict(to_model_input(fake_clip(np.random.default_rng(3), 2)))
     assert recogniser.labels[int(probabilities.argmax())] == "C"
     assert list((tmp_path / "runs").glob("*/confusion.csv"))
+
+
+@pytest.mark.parametrize("cuda, xpu, mps, expected", [
+    (True, True, True, "cuda"), (False, True, True, "xpu"), (False, False, True, "mps"), (False, False, False, "cpu"),
+])
+def test_device_is_a_gpu_whenever_pytorch_sees_one(monkeypatch, cuda, xpu, mps, expected):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: cuda)
+    monkeypatch.setattr(torch.xpu, "is_available", lambda: xpu)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: mps)
+    assert pick_device() == torch.device(expected)
+
+
+@pytest.mark.skipif(pick_device().type == "cpu", reason="needs a GPU PyTorch can use")
+def test_training_on_the_gpu_exports_a_cpu_model_the_server_can_load(tmp_path):
+    write_clips(tmp_path / "clips", per_sign=6)
+    out = tmp_path / "signs.onnx"
+    train(tmp_path / "clips", out, epochs=2, seed=0, test_signer="u2", runs=tmp_path / "runs")
+    assert load_recogniser(str(out)).labels == ["A", "B", "C", "_idle"]
+
+
+def test_probabilities_come_back_on_the_cpu_from_any_device():
+    torch.manual_seed(0)
+    model = SignNet(classes=3).to(pick_device())
+    rng = np.random.default_rng(0)
+    probs = probabilities(model, [Clip(fake_clip(rng, 0), "A", "u1"), Clip(fake_clip(rng, 1), "B", "u1")])
+    assert isinstance(probs, np.ndarray) and probs.shape == (2, 3)
+    np.testing.assert_allclose(probs.sum(axis=1), 1.0, atol=1e-5)
 
 
 def test_training_does_not_leave_a_singleton_batch(tmp_path):

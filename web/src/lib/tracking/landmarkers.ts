@@ -97,7 +97,11 @@ function smooth(previous: NormalizedLandmark[] | undefined, next: NormalizedLand
   }));
 }
 
-export function detect(trackers: Trackers, video: HTMLVideoElement, timeMs: number): Detection {
+export function detect(
+  trackers: Trackers,
+  video: HTMLVideoElement | HTMLCanvasElement,
+  timeMs: number,
+): Detection {
   let cache = caches.get(trackers);
   if (!cache) caches.set(trackers, (cache = { calls: 0 }));
   const call = cache.calls++;
