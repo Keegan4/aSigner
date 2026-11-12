@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CameraTracker } from "@/components/camera/CameraTracker";
+import { CameraTracker, type TrackingStats } from "@/components/camera/CameraTracker";
 import {
   emptyFeed,
   type FrameFeed,
@@ -99,6 +99,9 @@ export function Translator() {
   const onCamera = useCallback((settings: MediaTrackSettings) => {
     feed.current.cameraFps = settings.frameRate;
   }, []);
+  const onStats = useCallback((stats: TrackingStats) => {
+    feed.current.tracking = stats;
+  }, []);
 
   const send = (type: "flush" | "clear") => {
     const ws = socket.current;
@@ -124,7 +127,7 @@ export function Translator() {
           </aside>
         )}
         <div className="order-1 flex min-w-0 flex-col gap-6 lg:order-2">
-          <CameraTracker onFrame={onFrame} onVideoFrame={onVideoFrame} onCamera={onCamera} />
+          <CameraTracker onFrame={onFrame} onVideoFrame={onVideoFrame} onCamera={onCamera} onStats={onStats} />
 
           {unavailable ? (
             <p role="alert" className="rounded-md border p-3 text-sm">

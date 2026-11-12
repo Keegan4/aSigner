@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import type { TrackingStats } from "@/components/camera/CameraTracker";
+
 import {
   BLENDSHAPES,
   FACE,
@@ -109,6 +111,8 @@ export type FrameFeed = {
   videoFrames: number;
   /** The camera's nominal frame rate, if it reports one. */
   cameraFps?: number;
+  /** How tracking is running and how long the latest frame took. */
+  tracking?: TrackingStats;
 };
 
 export const emptyFeed = (): FrameFeed => ({ frame: null, sent: 0, points: 0, videoFrames: 0 });
@@ -122,6 +126,14 @@ export function landmarkCount(frame: Float32Array): number {
   return count;
 }
 
+/** Milliseconds each model took the last time it ran, e.g. "hands 9.1 · pose 6.0 · face 14.2 ms". */
+function modelTimes({ timings }: TrackingStats): string {
+  const parts = (["hands", "pose", "face"] as const)
+    .filter((part) => timings[part] !== undefined)
+    .map((part) => `${part} ${timings[part]!.toFixed(1)}`);
+  return parts.length ? `${parts.join(" · ")} ms` : "–";
+}
+
 type Rates = { video: number; tracked: number; points: number };
 
 /**
@@ -131,6 +143,7 @@ type Rates = { video: number; tracked: number; points: number };
 export function LandmarksPanel({ feed }: { feed: React.RefObject<FrameFeed> }) {
   const [frame, setFrame] = useState<Float32Array | null>(null);
   const [rates, setRates] = useState<Rates | null>(null);
+  const [tracking, setTracking] = useState<TrackingStats | undefined>();
 
   useEffect(() => {
     let since = performance.now();
@@ -138,6 +151,7 @@ export function LandmarksPanel({ feed }: { feed: React.RefObject<FrameFeed> }) {
     const timer = setInterval(() => {
       const current = feed.current;
       setFrame(current.frame);
+      setTracking(current.tracking);
       const now = performance.now();
       if (now - since >= 1000) {
         const perSecond = (n: number, m: number) => ((n - m) * 1000) / (now - since);
@@ -176,6 +190,12 @@ export function LandmarksPanel({ feed }: { feed: React.RefObject<FrameFeed> }) {
             <dd>{rates ? `${rates.points.toFixed(0)} points/s` : "–"}</dd>
             <dt className="opacity-70">This frame</dt>
             <dd>{landmarkCount(frame)} points</dd>
+            <dt className="opacity-70">Tracking</dt>
+            <dd>{tracking ? `${tracking.mode}, ${tracking.delegate}` : "–"}</dd>
+            <dt className="opacity-70">Latency</dt>
+            <dd>{tracking ? `${tracking.latency.toFixed(1)} ms` : "–"}</dd>
+            <dt className="opacity-70">Models</dt>
+            <dd>{tracking ? modelTimes(tracking) : "–"}</dd>
           </dl>
           <Part title="Head" present={seen(frame, HEAD, 3)}>
             <p className="font-mono text-xs">

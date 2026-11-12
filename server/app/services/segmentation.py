@@ -16,7 +16,10 @@ from app.recognition.recogniser import Recogniser
 from app.services.practice import pass_score
 
 WINDOW_SECONDS = 2.0
-STRIDE_SECONDS = 0.2
+# Asked twice as often as before, so the STABLE_PREDICTIONS check passes in
+# 0.2 s instead of 0.4 s once a sign is clear. The model is small; this costs
+# the server little.
+STRIDE_SECONDS = 0.1
 MIN_WINDOW_SECONDS = 1.0  # no guesses until this much has been seen
 MIN_WINDOW_FRAMES = 5
 STABLE_PREDICTIONS = 3  # the same sign this many times running counts as signed
