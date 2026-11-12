@@ -10,6 +10,7 @@ from app.recognition.features import (
     FRAME_SIZE,
     HAND_POINTS,
     IDLE_LABEL,
+    NORMALISED_PARTS,
     POSE,
     RIGHT_HAND,
 )
@@ -37,7 +38,7 @@ class FakeRecogniser:
         self.confidence = confidence
 
     def predict(self, frames):
-        marker = frames[-1, HAND_POINTS * 3 + 8 * 3]
+        marker = frames[-1, NORMALISED_PARTS[1].start + 8 * 3]
         out = np.full(len(LABELS), (1 - self.confidence) / (len(LABELS) - 1))
         out[int(round(marker))] = self.confidence
         return out

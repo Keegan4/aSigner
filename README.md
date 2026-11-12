@@ -77,13 +77,24 @@ Training (`train.py` and `pretrain.py`) uses a GPU whenever PyTorch can see one,
 
 This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
-The model takes 32 frames of 388 features: the original 382 normalised values plus six validity flags for left/right hand shape, left/right hand placement, pose and face/head. These flags are inferred from existing recordings; the browser's 256-value frame format is unchanged. Face presence is inferred from nonzero face/head values, so a completely neutral face cannot be distinguished from missing face tracking.
+The model takes 32 frames of 538 features: 532 normalised values plus six validity flags for left/right hand shape, left/right hand placement, pose and face/head. Each hand shape is 138 values: the 21 points relative to the wrist in units of palm length (63), the same points in the palm's own frame, so they do not change when the hand turns (63), and the distances from the thumb tip to the middle joint, end joint and tip of each finger (12). In the palm frame one axis always points out of the palm, which is what separates closed fists such as S (thumb in front of the fingers) from M (thumb behind them). These flags are inferred from existing recordings; the browser's 256-value frame format is unchanged. Face presence is inferred from nonzero face/head values, so a completely neutral face cannot be distinguished from missing face tracking.
 
 Separate left-hand, right-hand, pose and face/head encoders each produce 80 dimensions from positions, frame differences and validity flags. Differences are zero for the first frame and whenever either adjacent observation is invalid, preventing tracking loss/recovery from appearing as motion. They describe motion over resampled clip time, not physical velocity. Entirely missing regions use learned embeddings. The four outputs are concatenated into 320 dimensions and processed by a residual temporal convolution (depthwise kernel 3, then a pointwise projection).
 
 The model then prepends a learned classification token and adds learned positional embeddings. Two Transformer encoder layers, each with 20 attention heads (16 dimensions per head), let every token attend to the entire clip. The classification token's output passes through layer normalisation and a three-layer classifier (`320 → 320 → 160 → labels`, including the no-sign class). Each hidden classifier layer uses batch normalisation, GELU and dropout. All dropout probabilities are 0.1. Training requires at least two clips after the signer split; inference accepts a single clip using the saved batch-normalisation statistics.
 
-There are `1,980,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (1,996,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time.
+There are `2,004,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (2,020,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for an earlier input size (382 or 388 features) must be retrained and re-exported; the server rejects them at load time with a "needs retraining" message. A pretraining checkpoint from before the change is refused too: run `pretrain.py` again.
+
+### Letters that look alike
+
+Several letters are closed fists that differ only in where the thumb sits (S/M, M/N, A/S, E/S, T/N). To check whether your recordings hold the difference at all, before training:
+
+```bash
+cd ml
+.venv/Scripts/python separability.py S M
+```
+
+It prints how well the two signs separate on the original hand shape and on the palm-frame values, and which values differ most. If the palm-frame line stays near 50%, MediaPipe is not placing the hidden thumb differently for the two letters, and no retraining will fix it. When recording these letters, vary how the hand is turned so the model learns the shape rather than one angle. Then retrain (`pretrain.py` first if you use it, then `train.py`) and check those letters' rows in `runs/<time>/confusion.csv`.
 
 ### Pretraining on public data (optional)
 

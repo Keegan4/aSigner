@@ -10,6 +10,7 @@ from app.recognition.features import (
     FRAME_SIZE,
     HAND_POINTS,
     IDLE_LABEL,
+    NORMALISED_PARTS,
     NORMALISED_SIZE,
     POSE,
     RIGHT_HAND,
@@ -33,7 +34,7 @@ class FakeRecogniser:
         assert frames.ndim == 2 and frames.shape[1] == NORMALISED_SIZE
         self.clips.append(frames)
         # Hand shape is wrist-relative in palm lengths, so this survives normalise.
-        marker = frames[:, HAND_POINTS * 3 + 8 * 3].mean()
+        marker = frames[:, NORMALISED_PARTS[1].start + 8 * 3].mean()
         out = np.full(len(LABELS), 0.05)
         out[int(round(marker)) % len(LABELS)] = 0.9
         return out

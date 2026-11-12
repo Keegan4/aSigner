@@ -63,7 +63,7 @@ def test_missing_model_means_no_recogniser(tmp_path):
 
 def test_legacy_model_is_rejected_at_load_with_reexport_guidance(tmp_path):
     path = write_model(tmp_path, input_size=382)
-    with pytest.raises(ValueError, match="388 features.*retrain and re-export"):
+    with pytest.raises(ValueError, match=f"{NORMALISED_SIZE} features.*retrain and re-export"):
         OnnxRecogniser(path)
 
 

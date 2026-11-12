@@ -100,3 +100,70 @@ Update the module docstring and the size comments.
   clips, retrains, and checks the S/M cells of `runs/<time>/confusion.csv`. If separability stays
   near 50% after the change, MediaPipe is not resolving the thumb and the fallback is
   `worldLandmarks` or more varied recordings.
+
+## Review and implementation notes
+
+Implemented as planned, with these additions found in review:
+
+- `ml/test_train.py` also hard-coded the hand slices (`:63`, `63:126`, `126:252`) in the
+  `RegionEncoder` grouping test; it now uses `PART_WIDTHS`.
+- README's parameter count changed: `2,004,000 + 161 × C` (was `1,980,000 + 161 × C`).
+- `THUMB_TIP`, `FINGER_JOINTS` and `HAND_DETAIL` are public in `features.py`, so the
+  separability script and tests name the same points the normaliser uses.
+- **Aspect ratio:** x and y are image-normalised (x by width, y by height) and z is roughly in
+  x's units, so on a 640×480 camera the palm frame is built in slightly stretched space. Rotation
+  invariance is therefore approximate on real data (exact in the tests, which rotate the raw
+  values). Fixing it needs the frame's aspect ratio, which the 256-float frame does not carry;
+  left as is.
+- Synthetic check (`ml/test_separability.py`): fists that differ only in thumb depth, turned at
+  random in 3D, with noise. Leave-one-out nearest-centroid accuracy was about 40–60% on the
+  original 63 values and 83–95% on the 75 palm-frame values; the top feature was always
+  `point 4 palm-n` (effect size about 8–9). Nearest-centroid weights all features equally, so
+  its accuracy is a floor; the effect-size list is the sharper signal.
+- `test_practice.py` and `test_translate.py` had fake recognisers reading the right hand at a
+  hard-coded offset (63); they now use `NORMALISED_PARTS[1].start`.
+
+### Measured on the owner's clips (2026-11-12)
+
+15 clips each of S and M, all from one signer (`u1`):
+
+| Feature set | Leave-one-out accuracy |
+|---|---|
+| Original hand shape (63) | 96.7% |
+| Palm frame and thumb distances (75) | 96.7% |
+| Both (138) | 96.7% |
+
+S and M already separate on the original features, and the latest training run
+(`runs/20261111-005308`) got its 3 held-out S and 3 held-out M clips right. What separates them
+is mostly the pinky and the knuckles' height (`point 20 palm-n`, `point 18 y`, `point 9 y`),
+i.e. how the hand was held, not the thumb: `point 4 palm-n` ranks 68th of 138 (effect 1.1,
+against about 8 in the synthetic test). So on these recordings MediaPipe does not place the
+hidden thumb clearly differently for the two letters, which is the limit this plan warned about.
+Other pairs: palm-frame values helped M/N (86.7% → 96.7%) and A/S (92.9% → 100%), not T/N
+(100% → 91.4%). On the public ASLNow samples (83 S, 88 M) they did not help (82.5% → 77.2%).
+
+With one signer and six held-out clips this cannot show whether the change helps a new signer or
+a new hand angle. A second signer's S and M clips would.
+
+### Model comparison on the owner's clips (2026-11-12)
+
+Two models per seed trained on the same 331 clips (no pretraining, 80 epochs): one with the old
+features (`main`), one with this branch. Each was scored on the same 79 held-out clips, as recorded and with
+each hand turned in 3D about its wrist by 20° and 40° (4 random axes per clip, identical for
+both models). The turn is applied to the raw image coordinates, so it is a stand-in for real
+hand angles: it does not model occlusion or how MediaPipe tracks a turned hand, and it favours
+features built to ignore rotation.
+
+| Hand turned | Seed | Old: all letters | New: all letters | Old: S M N A E T | New: S M N A E T |
+|---|---|---|---|---|---|
+| 0° (as recorded) | 0 | 91.1% | 89.9% | 94.4% | 94.4% |
+| 0° (as recorded) | 1 | 89.9% | 94.9% | 72.2% | 94.4% |
+| 20° | 0 | 75.0% | 85.4% | 65.3% | 88.9% |
+| 20° | 1 | 73.1% | 85.1% | 51.4% | 76.4% |
+| 40° | 0 | 41.1% | 69.0% | 37.5% | 70.8% |
+| 40° | 1 | 49.1% | 69.0% | 45.8% | 59.7% |
+
+As recorded, the two are level within noise (3 held-out clips per letter). With the hand turned,
+the new features hold up clearly better in both seeds. S and M themselves: as recorded both
+models got 3/3 of each; turned 20°, S went from 8/12 and 6/12 (old) to 11/12 and 9/12 (new), while M
+went from 8/12 and 5/12 to 11/12 and 5/12. The remaining fist mistakes are mostly among S, M and N.
