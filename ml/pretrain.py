@@ -17,7 +17,7 @@ from torch import nn
 from checkpoint import save_checkpoint
 from data import Clip
 from public_data import SOURCE, load_samples
-from train import SignNet, probabilities, training_batch
+from train import SignNet, pick_device, probabilities, training_batch
 
 from app.recognition.features import IDLE_LABEL  # path set up by data.py
 
@@ -49,7 +49,9 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int) -> dict:
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
     print(f"{len(train_clips)} training samples, {len(test_clips)} held out, {len(labels) - 1} letters ({SOURCE})")
 
-    model = SignNet(len(labels))
+    device = pick_device()
+    model = SignNet(len(labels)).to(device)
+    print(f"training on {device}")
     optimiser = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
     schedule = torch.optim.lr_scheduler.OneCycleLR(
         optimiser, max_lr=1e-3, epochs=epochs, steps_per_epoch=(len(train_clips) + 63) // 64
@@ -58,6 +60,7 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int) -> dict:
 
     for epoch in range(1, epochs + 1):
         x_all, y_all = training_batch(train_clips, labels, rng)
+        x_all, y_all = x_all.to(device), y_all.to(device)
         model.train()
         total = 0.0
         batches = torch.from_numpy(rng.permutation(len(train_clips))).tensor_split((len(train_clips) + 63) // 64)
