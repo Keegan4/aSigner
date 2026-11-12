@@ -38,6 +38,11 @@ MAX_FALSE_ACCEPT = 0.05
 MIN_PASS_SCORE = 0.5
 
 
+def pick_device() -> torch.device:
+    """The GPU when PyTorch can see one, otherwise the CPU."""
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 class RegionEncoder(nn.Module):
     """Encode positions, valid motion and availability for one anatomical region."""
 
@@ -158,10 +163,11 @@ def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generato
 
 
 def probabilities(model: nn.Module, clips: list[Clip]) -> np.ndarray:
-    x = torch.from_numpy(np.stack([to_model_input(c.frames) for c in clips]))
+    device = next(model.parameters()).device
+    x = torch.from_numpy(np.stack([to_model_input(c.frames) for c in clips])).to(device)
     model.eval()
     with torch.no_grad():
-        return torch.softmax(model(x), dim=1).numpy()
+        return torch.softmax(model(x), dim=1).cpu().numpy()
 
 
 def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> list[dict]:
@@ -195,7 +201,8 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     one, never a partial file.
     """
     out.parent.mkdir(parents=True, exist_ok=True)
-    model.eval()
+    # The server runs on the CPU, so the model is exported and checked there.
+    model.cpu().eval()
     # The exporter prints a tick mark that a Windows console (cp1252) cannot
     # encode, which would abort the export after training has finished.
     for stream in (sys.stdout, sys.stderr):
@@ -248,12 +255,16 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     pretrained = load_into(model, labels, init) if init else None
     if pretrained:
         print(f"starting from {init} ({pretrained})")
+    device = pick_device()
+    model.to(device)
+    print(f"training on {device}")
     optimiser = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-2)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, epochs)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     for epoch in range(1, epochs + 1):
         x_all, y_all = training_batch(train_clips, labels, rng)
+        x_all, y_all = x_all.to(device), y_all.to(device)
         model.train()
         total = 0.0
         # Balanced batches stay at most 64 and never leave a singleton, which

@@ -7,7 +7,9 @@ from torch import nn
 
 def save_checkpoint(model: nn.Module, labels: list[str], source: str, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"state": model.state_dict(), "labels": labels, "source": source}, path)
+    # Saved from the CPU so a checkpoint trained on a GPU loads on a machine without one.
+    state = {key: value.cpu() for key, value in model.state_dict().items()}
+    torch.save({"state": state, "labels": labels, "source": source}, path)
 
 
 def load_into(model: nn.Module, labels: list[str], path: Path) -> str:
