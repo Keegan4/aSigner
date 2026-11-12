@@ -57,6 +57,10 @@ async def translate(
     {"type": "gloss"} as each sign is recognised and {"type": "sentence"} when
     a pause ends the sentence, which is then stored. The client may send
     {"type": "flush"} to end the sentence now or {"type": "clear"} to drop it.
+
+    For debugging, every model prediction is also reported as {"type":
+    "window", "label", "top": [[gloss, probability], ...]}, as on
+    /ws/translate-video but without a time.
     """
     user_id = await authorise(ws)
     if user_id is None or not await has_model(ws, recogniser):
@@ -83,6 +87,10 @@ async def translate(
                 except ValueError:
                     continue
                 update = await run_in_threadpool(segmenter.push, frame, clock())
+                if update.window is not None:
+                    await ws.send_json(
+                        {"type": "window", "label": update.seen, "top": update.window}
+                    )
                 if update.gloss:
                     glosses = update.sentence if update.sentence is not None else segmenter.glosses
                     await ws.send_json({"type": "gloss", "gloss": update.gloss, "glosses": glosses})
