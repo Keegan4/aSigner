@@ -65,6 +65,7 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int) -> dict:
         total = 0.0
         batches = torch.from_numpy(rng.permutation(len(train_clips))).tensor_split((len(train_clips) + 63) // 64)
         for batch in batches:
+            batch = batch.to(device)
             optimiser.zero_grad()
             loss = loss_fn(model(x_all[batch]), y_all[batch])
             loss.backward()
