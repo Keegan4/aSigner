@@ -7,8 +7,8 @@ from data import Clip, augment, mirror, to_model_input, transition
 from train import RegionEncoder, SignNet, export, pick_device, probabilities, threshold_curve, train
 
 from app.recognition.features import (
-    CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, LEFT_HAND, NORMALISED_PARTS,
-    NORMALISED_SIZE, POSE, PRESENCE, RIGHT_HAND,
+    CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, HAND_POINTS, LEFT_HAND, NORMALISED_PARTS,
+    NORMALISED_SIZE, PART_WIDTHS, POSE, PRESENCE, RIGHT_HAND, normalise,
 )
 from app.recognition.onnx_recogniser import load_recogniser
 
@@ -38,6 +38,16 @@ def test_mirror_swaps_hands_and_is_its_own_inverse():
     assert not flipped[:, RIGHT_HAND:POSE].any()  # the right hand became the left
     assert flipped[:, LEFT_HAND:RIGHT_HAND].any()
     assert np.allclose(mirror(flipped), clip, atol=1e-6)
+
+
+def test_mirrored_right_hand_gives_the_same_detail_in_the_left_slot():
+    clip = fake_clip(np.random.default_rng(4), 2)
+    detail = slice(HAND_POINTS * 3, None)  # after the orientation-dependent values
+    for frame, flipped in zip(clip, mirror(clip)):
+        right = normalise(frame)[NORMALISED_PARTS[1]][detail]
+        left = normalise(flipped)[NORMALISED_PARTS[0]][detail]
+        assert right.any()
+        np.testing.assert_allclose(left, right, atol=1e-5)
 
 
 def test_augment_keeps_missing_parts_missing():
@@ -104,10 +114,12 @@ def test_hand_encoder_groups_shape_and_placement_without_the_other_hand():
     clip[..., NORMALISED_PARTS[3]] = 200
     clip[..., PRESENCE] = 1
     features, flags = RegionEncoder((0, 2), 80).inputs(clip)
-    assert features.shape == (1, 2, 256)
-    assert (features[..., :63] == 2).all()
-    assert (features[..., 63:126] == 3).all()
-    assert not features[..., 126:252].any()  # stationary, including the first frame
+    shape, placement = PART_WIDTHS[0], PART_WIDTHS[2]
+    positions = shape + placement
+    assert features.shape == (1, 2, 2 * positions + 4)
+    assert (features[..., :shape] == 2).all()
+    assert (features[..., shape:positions] == 3).all()
+    assert not features[..., positions:2 * positions].any()  # stationary, including the first frame
     assert (flags == 1).all()
 
 
