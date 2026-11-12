@@ -39,8 +39,18 @@ MIN_PASS_SCORE = 0.5
 
 
 def pick_device() -> torch.device:
-    """The GPU when PyTorch can see one, otherwise the CPU."""
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    """A GPU when PyTorch can see one, otherwise the CPU.
+
+    "cuda" also covers AMD GPUs on a ROCm build of PyTorch; "xpu" is Intel
+    Arc and Core Ultra graphics on an XPU build; "mps" is Apple Silicon.
+    """
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if hasattr(torch, "xpu") and torch.xpu.is_available():
+        return torch.device("xpu")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
 
 
 class RegionEncoder(nn.Module):
@@ -273,6 +283,7 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
             (len(train_clips) + 63) // 64
         )
         for batch in batches:
+            batch = batch.to(device)
             optimiser.zero_grad()
             loss = loss_fn(model(x_all[batch]), y_all[batch])
             loss.backward()

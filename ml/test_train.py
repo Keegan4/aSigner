@@ -178,14 +178,17 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     assert list((tmp_path / "runs").glob("*/confusion.csv"))
 
 
-def test_device_is_the_gpu_whenever_pytorch_sees_one(monkeypatch):
-    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-    assert pick_device() == torch.device("cuda")
-    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
-    assert pick_device() == torch.device("cpu")
+@pytest.mark.parametrize("cuda, xpu, mps, expected", [
+    (True, True, True, "cuda"), (False, True, True, "xpu"), (False, False, True, "mps"), (False, False, False, "cpu"),
+])
+def test_device_is_a_gpu_whenever_pytorch_sees_one(monkeypatch, cuda, xpu, mps, expected):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: cuda)
+    monkeypatch.setattr(torch.xpu, "is_available", lambda: xpu)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: mps)
+    assert pick_device() == torch.device(expected)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="needs a CUDA GPU")
+@pytest.mark.skipif(pick_device().type == "cpu", reason="needs a GPU PyTorch can use")
 def test_training_on_the_gpu_exports_a_cpu_model_the_server_can_load(tmp_path):
     write_clips(tmp_path / "clips", per_sign=6)
     out = tmp_path / "signs.onnx"
