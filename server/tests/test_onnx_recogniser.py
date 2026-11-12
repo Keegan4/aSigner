@@ -12,12 +12,7 @@ from app.recognition.features import (
     normalise,
     resample,
 )
-import onnxruntime as ort
-
-from app.recognition import onnx_recogniser
-from app.recognition.onnx_recogniser import (
-    CPU, INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser, load_recogniser, pick_providers,
-)
+from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser, load_recogniser
 from app.services.practice import score_clip
 
 LABELS = ["A", "B", "C"]
@@ -60,32 +55,6 @@ def clip(feature: int, time: int) -> np.ndarray:
     frames = np.zeros((time, NORMALISED_SIZE), dtype=np.float32)
     frames[:, feature] = 1.0
     return frames
-
-
-def test_a_gpu_provider_is_preferred_whenever_onnxruntime_offers_one(monkeypatch):
-    monkeypatch.setattr(ort, "get_available_providers", lambda: [CPU])
-    assert pick_providers() == [CPU]
-    monkeypatch.setattr(ort, "get_available_providers",
-                        lambda: [CPU, "CoreMLExecutionProvider", "CUDAExecutionProvider"])
-    assert pick_providers() == [("CUDAExecutionProvider", {}), CPU]  # the CPU still runs what the GPU cannot
-    monkeypatch.setattr(ort, "get_available_providers", lambda: ["OpenVINOExecutionProvider", CPU])
-    assert pick_providers() == [("OpenVINOExecutionProvider", {"device_type": "GPU"}), CPU]
-
-
-def test_a_gpu_provider_that_will_not_start_falls_back_to_the_cpu(tmp_path, monkeypatch, caplog):
-    real = ort.InferenceSession
-
-    def session(path, providers):
-        if providers != [CPU]:
-            raise RuntimeError("CUDA driver not found")
-        return real(path, providers=providers)
-
-    monkeypatch.setattr(onnx_recogniser, "pick_providers", lambda: [("CUDAExecutionProvider", {}), CPU])
-    monkeypatch.setattr(ort, "InferenceSession", session)
-    recogniser = OnnxRecogniser(write_model(tmp_path))
-    assert recogniser.provider == CPU
-    assert recogniser.labels[int(recogniser.predict(clip(1, 10)).argmax())] == "B"
-    assert "CUDAExecutionProvider would not start" in caplog.text
 
 
 def test_missing_model_means_no_recogniser(tmp_path):

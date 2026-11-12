@@ -29,7 +29,7 @@ from app.recognition.features import (  # path set up by data.py
     CLIP_FRAMES, COORDINATE_SIZE, IDLE_LABEL, NORMALISED_PARTS,
     NORMALISED_SIZE, PART_WIDTHS, REGION_PARTS,
 )
-from app.recognition.onnx_recogniser import CPU, INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
+from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
 
 TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
 SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
@@ -233,11 +233,9 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     onnx.save(proto, str(pending))
 
     # The exported file must give the server the same answer PyTorch gives here.
-    # Checked on the CPU, which is exact; a GPU provider may differ in the last digits.
     with torch.no_grad():
         expected = torch.softmax(model(torch.from_numpy(probe)[None]), dim=1)[0].numpy()
-    served = OnnxRecogniser(pending, providers=[CPU]).predict(probe)
-    if not np.allclose(expected, served, atol=1e-4):
+    if not np.allclose(expected, OnnxRecogniser(pending).predict(probe), atol=1e-4):
         pending.unlink()
         raise SystemExit("Exported model disagrees with the trained model.")
     os.replace(pending, out)
