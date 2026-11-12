@@ -21,48 +21,11 @@ LABELS_KEY = "asigner.labels"  # JSON list of glosses, in output order
 PASS_SCORE_KEY = "asigner.pass_score"  # optional float chosen at training time
 INFO_KEY = "asigner.info"  # optional JSON object: how much data the model was trained on
 
-CPU = "CPUExecutionProvider"
-# GPU execution providers in order of preference. Each exists only in the
-# matching onnxruntime package: onnxruntime-gpu (CUDA), the ROCm/MIGraphX
-# builds (AMD), onnxruntime-directml (any DirectX 12 GPU on Windows),
-# onnxruntime-openvino (Intel) and the standard macOS package (CoreML).
-GPU_PROVIDERS = (
-    ("CUDAExecutionProvider", {}),
-    ("ROCMExecutionProvider", {}),
-    ("MIGraphXExecutionProvider", {}),
-    ("DmlExecutionProvider", {}),
-    ("OpenVINOExecutionProvider", {"device_type": "GPU"}),
-    ("CoreMLExecutionProvider", {}),
-)
-
-
-def pick_providers() -> list:
-    """The first GPU provider this onnxruntime offers, then the CPU for anything it cannot run."""
-    available = set(ort.get_available_providers())
-    gpu = [(name, options) for name, options in GPU_PROVIDERS if name in available][:1]
-    return [*gpu, CPU]
-
-
-def _session(model_path: Path, providers: list | None) -> ort.InferenceSession:
-    """A session on the chosen providers, or on the CPU if a GPU provider will not start."""
-    chosen = pick_providers() if providers is None else providers
-    try:
-        return ort.InferenceSession(str(model_path), providers=chosen)
-    except Exception as exc:  # a missing driver or library surfaces here, in onnxruntime's own types
-        if chosen == [CPU]:
-            raise
-        name = chosen[0][0] if isinstance(chosen[0], tuple) else chosen[0]
-        logger.warning("Running the sign model on the CPU: %s would not start (%s)", name, exc)
-        return ort.InferenceSession(str(model_path), providers=[CPU])
-
 
 class OnnxRecogniser:
-    def __init__(self, model_path: Path, providers: list | None = None):
-        """`providers` defaults to a GPU when onnxruntime offers one (see pick_providers)."""
+    def __init__(self, model_path: Path):
         # InferenceSession.run may be called from several threads at once.
-        self._session = _session(model_path, providers)
-        # The provider that actually took the model, e.g. "CUDAExecutionProvider".
-        self.provider: str = self._session.get_providers()[0]
+        self._session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
         metadata = self._session.get_modelmeta().custom_metadata_map
         if LABELS_KEY not in metadata:
             raise ValueError(f"{model_path} carries no labels; export it with ml/train.py")
@@ -94,9 +57,7 @@ class OnnxRecogniser:
 
 @lru_cache(maxsize=2)
 def _load(path: str, modified: float) -> OnnxRecogniser:
-    recogniser = OnnxRecogniser(Path(path))
-    logger.info("Loaded the sign model at %s on %s", path, recogniser.provider)
-    return recogniser
+    return OnnxRecogniser(Path(path))
 
 
 def load_recogniser(model_path: str) -> OnnxRecogniser | None:
