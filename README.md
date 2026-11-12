@@ -15,6 +15,8 @@ Built so far:
 - Translator: live sign segmentation over a WebSocket, local Ollama sentence layer with a plain-gloss fallback, and a history page with delete and speech. Waiting on the model.
 - Video translator (`/translate/video`): translate a recorded video instead of the live camera, with every model window's top guesses shown and downloadable as JSON. A debugging aid for the model. The video is tracked in the browser; only landmarks and their video times are sent, and sentences are only saved when asked.
 
+- Training page (`/train`): anyone with an access code records labelled takes, and can add signs of their own, into Postgres. No account needed; only landmarks and the label are stored. Meant to run on its own VM ([deploy/training-vm](deploy/training-vm/README.md)); `ml/pull_samples.py` pulls the takes for training.
+
 Not there yet: a trained sign recognition model. Until clips are recorded and a model is trained, practice cannot score real attempts and the translator cannot recognise signs.
 
 ## How it works
@@ -74,6 +76,8 @@ python -m venv .venv
 ```
 
 Training (`train.py` and `pretrain.py`) uses a GPU whenever PyTorch can see one, and the CPU otherwise; it prints which at the start. In order: CUDA (NVIDIA, or AMD on a [ROCm build](https://pytorch.org/get-started/locally/), which PyTorch also reports as `cuda`), XPU (Intel Arc and Core Ultra graphics, on an [XPU build](https://pytorch.org/docs/stable/notes/get_start_xpu.html)), then MPS (Apple Silicon). Each needs the matching PyTorch build; the default one sees only the CPU (and MPS on a Mac). Integrated GPUs other than Intel Core Ultra's are mostly not supported by these builds. For an NVIDIA GPU, install a CUDA build of PyTorch instead (leave out `--extra-index-url ...cpu`, or follow [pytorch.org](https://pytorch.org/get-started/locally/)); `python -c "import torch; print(torch.cuda.is_available())"` should print `True`. On an Apple Silicon Mac the standard macOS build already includes MPS (`torch.backends.mps.is_available()` should print `True`); if an operation is missing there, set `PYTORCH_ENABLE_MPS_FALLBACK=1` to run it on the CPU. For a model this small a GPU may not be much faster, since augmentation runs on the CPU either way. The exported model always runs on the CPU, as the server does: GPU inference was tried and was slower for this model.
+
+To train on takes from the training page as well, pull them first (see [deploy/training-vm](deploy/training-vm/README.md#pull-the-data-for-training)) and pass both folders: `train.py --clips ../server/data/clips data/collected`. Locally, `/train` works without an access code; anywhere else set `TRAINING_ACCESS_CODE`.
 
 This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
