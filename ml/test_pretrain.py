@@ -44,7 +44,7 @@ def test_samples_become_clips_of_one_still_hand_and_bad_files_are_skipped(tmp_pa
     assert not frames[:, LEFT_HAND:RIGHT_HAND].any() and not frames[:, POSE:].any()
 
 
-def test_pretrain_then_train_from_the_checkpoint(tmp_path):
+def test_pretrain_then_train_from_the_checkpoint(tmp_path, monkeypatch):
     write_samples(tmp_path / "public")
     checkpoint = tmp_path / "pretrained.pt"
     report = pretrain(tmp_path / "public", checkpoint, epochs=2, seed=0)
@@ -56,6 +56,24 @@ def test_pretrain_then_train_from_the_checkpoint(tmp_path):
                     runs=tmp_path / "runs", init=checkpoint)
     assert trained["info"]["pretrained"] == SOURCE
     assert load_recogniser(str(out)).info["pretrained"] == SOURCE
+
+    # Freezing the backbone leaves every weight outside the head exactly as pretrained.
+    import train as train_module
+    built = []
+    real = train_module.SignNet
+    monkeypatch.setattr(train_module, "SignNet", lambda *a, **k: built.append(real(*a, **k)) or built[-1])
+    train(tmp_path / "clips", out, epochs=2, seed=0, test_signer=None, runs=tmp_path / "runs",
+          init=checkpoint, freeze_backbone=True)
+    before = real(len(built[0].head[-1].weight), width=320)
+    load_into(before, ["A", "B", "C", IDLE_LABEL], checkpoint)
+    after = built[0]
+    for name, tensor in after.state_dict().items():
+        if not name.startswith("head."):
+            assert torch.equal(tensor, before.state_dict()[name]), name
+    assert not torch.equal(after.head[0].weight, before.head[0].weight)
+    with pytest.raises(SystemExit):
+        train(tmp_path / "clips", out, epochs=1, seed=0, test_signer=None, runs=tmp_path / "runs",
+              freeze_backbone=True)
 
     # Without a checkpoint nothing about the model says it was pretrained.
     plain = train(tmp_path / "clips", out, epochs=1, seed=0, test_signer=None, runs=tmp_path / "runs")

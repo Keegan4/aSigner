@@ -225,7 +225,9 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
 
 
 def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
-          init: Path | None = None):
+          init: Path | None = None, freeze_backbone: bool = False):
+    if freeze_backbone and not init:
+        raise SystemExit("--freeze-backbone needs --init: a frozen random network learns nothing.")
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -248,13 +250,22 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     pretrained = load_into(model, labels, init) if init else None
     if pretrained:
         print(f"starting from {init} ({pretrained})")
-    optimiser = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-2)
+    # Frozen: everything but the classifier head keeps its pretrained weights.
+    frozen = [m for name, m in model.named_children() if name != "head"] if freeze_backbone else []
+    for module in frozen:
+        module.requires_grad_(False)
+    for parameter in (model.cls_token, model.positions):
+        parameter.requires_grad_(not freeze_backbone)
+    optimiser = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
+                                  lr=2e-3, weight_decay=1e-2)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, epochs)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     for epoch in range(1, epochs + 1):
         x_all, y_all = training_batch(train_clips, labels, rng)
         model.train()
+        for module in frozen:
+            module.eval()  # no dropout in the frozen part either, so its output is fixed
         total = 0.0
         # Balanced batches stay at most 64 and never leave a singleton, which
         # BatchNorm cannot train on (e.g. 65 clips become batches of 33 and 32).
@@ -346,5 +357,8 @@ if __name__ == "__main__":
     parser.add_argument("--test-signer", help="signer id to hold out (default: the one with fewest clips)")
     parser.add_argument("--runs", type=Path, default=here / "runs")
     parser.add_argument("--init", type=Path, help="checkpoint from pretrain.py to start from")
+    parser.add_argument("--freeze-backbone", action="store_true",
+                        help="train only the classifier head; the encoder stays as pretrained (needs --init)")
     args = parser.parse_args()
-    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init)
+    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init,
+          args.freeze_backbone)
