@@ -106,7 +106,7 @@ def augment(frames: np.ndarray, rng: np.random.Generator) -> np.ndarray:
 
 
 def transition(sign: np.ndarray, before: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, float]:
-    """What a live two-second window often holds: the end of something else, then this sign.
+    """What a live window often holds: the end of something else, then this sign.
 
     Returns the joined frames and the fraction of them that show the sign. The
     translator slides a window over continuous signing, so most windows straddle
