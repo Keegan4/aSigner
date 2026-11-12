@@ -13,6 +13,7 @@ Built so far:
 - Practice scoring over a WebSocket, spaced repetition and a progress API, waiting on the model.
 - Lesson, practice, quiz and progress screens.
 - Translator: live sign segmentation over a WebSocket, local Ollama sentence layer with a plain-gloss fallback, and a history page with delete and speech. Waiting on the model.
+- Video translator (`/translate/video`): translate a recorded video instead of the live camera, with every model window's top guesses shown and downloadable as JSON. A debugging aid for the model. The video is tracked in the browser; only landmarks and their video times are sent, and sentences are only saved when asked.
 
 Not there yet: a trained sign recognition model. Until clips are recorded and a model is trained, practice cannot score real attempts and the translator cannot recognise signs.
 
