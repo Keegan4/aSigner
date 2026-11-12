@@ -16,6 +16,5 @@ ml/.venv/
 ml/.venv-mp/
 ml/.cache/
 
-# Trained weights (small, ~8 MB each)
-!ml/runs/pretrained.pt
+# Trained weights (small, ~8 MB)
 !server/models/signs.onnx
