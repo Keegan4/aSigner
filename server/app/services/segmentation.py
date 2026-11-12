@@ -23,7 +23,7 @@ STABLE_PREDICTIONS = 3  # the same sign this many times running counts as signed
 SENTENCE_GAP_SECONDS = 2.5  # this long without a sign ends the sentence
 MAX_GLOSSES = 50
 MAX_BUFFERED_FRAMES = 300
-TOP_GUESSES = 3  # reported with each window, for debugging
+TOP_GUESSES = 5  # reported with each window, for debugging
 
 
 @dataclass

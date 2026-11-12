@@ -19,6 +19,7 @@ from app.services.segmentation import (
     SENTENCE_GAP_SECONDS,
     STABLE_PREDICTIONS,
     STRIDE_SECONDS,
+    TOP_GUESSES,
     Segmenter,
 )
 from app.ws import translate as ws_module
@@ -117,6 +118,13 @@ def clock(monkeypatch):
     monkeypatch.setattr(ws_module, "clock", tick)
 
 
+def receive(ws):
+    """The next message that is not a window report."""
+    while (message := ws.receive_json())["type"] == "window":
+        pass
+    return message
+
+
 def test_translate_socket_stores_the_sentence(signed_in, user, db_factory, clock):
     app.dependency_overrides[get_recogniser] = lambda: FakeRecogniser()
     with signed_in.websocket_connect("/ws/translate", headers=ORIGIN) as ws:
@@ -125,18 +133,18 @@ def test_translate_socket_stores_the_sentence(signed_in, user, db_factory, clock
         for label, seconds in (("A", 2), ("B", 2)):
             for _ in range(seconds * FPS):
                 ws.send_bytes(frame(label).tobytes())
-        assert ws.receive_json() == {"type": "gloss", "gloss": "A", "glosses": ["A"]}
-        assert ws.receive_json() == {"type": "gloss", "gloss": "B", "glosses": ["A", "B"]}
+        assert receive(ws) == {"type": "gloss", "gloss": "A", "glosses": ["A"]}
+        assert receive(ws) == {"type": "gloss", "gloss": "B", "glosses": ["A", "B"]}
         ws.send_json({"type": "flush"})
-        sentence = ws.receive_json()
+        sentence = receive(ws)
         assert (sentence["type"], sentence["glosses"], sentence["sentence"]) == ("sentence", ["A", "B"], "A B")
         assert sentence["from_model"] is False
 
         for _ in range(2 * FPS):
             ws.send_bytes(frame("C").tobytes())
-        assert ws.receive_json()["gloss"] == "C"
+        assert receive(ws)["gloss"] == "C"
         ws.send_json({"type": "clear"})
-        assert ws.receive_json() == {"type": "cleared"}
+        assert receive(ws) == {"type": "cleared"}
         ws.send_json({"type": "flush"})  # nothing left to store
 
     with db_factory() as db:
@@ -163,7 +171,7 @@ def test_segmenter_reports_each_window():
             windows.append((update.seen, update.window))
     assert windows[0] == (None, [])  # too little seen yet
     seen, top = windows[-1]
-    assert seen == "A" and top[0] == ("A", pytest.approx(0.9)) and len(top) == 3
+    assert seen == "A" and top[0] == ("A", pytest.approx(0.9)) and len(top) == min(TOP_GUESSES, len(LABELS))
 
 
 def test_translate_video_socket_uses_video_time(signed_in, db_factory):
@@ -214,3 +222,19 @@ def test_translate_video_socket_can_save(signed_in, user, db_factory):
 def test_translate_video_socket_without_a_model(signed_in):
     with signed_in.websocket_connect("/ws/translate-video", headers=ORIGIN) as ws:
         assert ws.receive_json()["code"] == "no_model"
+
+
+def test_translate_socket_reports_each_window(signed_in, clock):
+    app.dependency_overrides[get_recogniser] = lambda: FakeRecogniser()
+    with signed_in.websocket_connect("/ws/translate", headers=ORIGIN) as ws:
+        assert ws.receive_json()["type"] == "ready"
+        for _ in range(2 * FPS):
+            ws.send_bytes(frame("A").tobytes())
+        windows = []
+        while (message := ws.receive_json())["type"] != "gloss":
+            windows.append(message)
+    assert all(w["type"] == "window" and "t" not in w for w in windows)
+    assert windows[0] == {"type": "window", "label": None, "top": []}
+    last = windows[-1]
+    assert last["label"] == "A" and len(last["top"]) == min(TOP_GUESSES, len(LABELS))
+    assert last["top"][0][0] == "A" and last["top"][0][1] == pytest.approx(0.9)
