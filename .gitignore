@@ -8,10 +8,13 @@ node_modules/
 .next/
 *.db
 ml/data/
-ml/runs/
+ml/runs/*
 *.onnx
 server/data/
-server/models/
+server/models/*
 ml/.venv/
 ml/.venv-mp/
 ml/.cache/
+
+# Trained weights (small, ~8 MB)
+!server/models/signs.onnx
