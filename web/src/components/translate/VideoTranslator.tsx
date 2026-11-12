@@ -377,7 +377,7 @@ export function VideoTranslator() {
             What the model saw ({windows.length} windows)
           </h2>
           <p className="text-xs opacity-60">
-            Each row is one look at the last two seconds. A sign is counted once it is read the same way several
+            Each row is one look at the last half second. A sign is counted once it is read the same way several
             times running. A dash means too little seen yet, no hands, or not confident enough.
           </p>
           <div className="max-h-96 overflow-auto rounded-lg border">
