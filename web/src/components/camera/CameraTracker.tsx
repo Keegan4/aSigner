@@ -18,21 +18,38 @@ const ARMS = PoseLandmarker.POSE_CONNECTIONS.filter(
 /**
  * Shows the mirrored camera feed with a landmark overlay and hands each
  * frame's packed features to `onFrame`. Video never leaves this component.
+ *
+ * For debugging, `onVideoFrame` receives the browser's running count of camera
+ * frames shown, which includes frames that slow tracking skipped, and
+ * `onCamera` receives the camera's settings once, including its nominal frame rate.
  */
-export function CameraTracker({ onFrame }: { onFrame?: (frame: Float32Array) => void }) {
+export function CameraTracker({
+  onFrame,
+  onVideoFrame,
+  onCamera,
+}: {
+  onFrame?: (frame: Float32Array) => void;
+  onVideoFrame?: (presentedFrames: number) => void;
+  onCamera?: (settings: MediaTrackSettings) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onFrameRef = useRef(onFrame);
+  const onVideoFrameRef = useRef(onVideoFrame);
+  const onCameraRef = useRef(onCamera);
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Starting camera and loading models…");
 
   useEffect(() => {
     onFrameRef.current = onFrame;
-  }, [onFrame]);
+    onVideoFrameRef.current = onVideoFrame;
+    onCameraRef.current = onCamera;
+  }, [onFrame, onVideoFrame, onCamera]);
 
   useEffect(() => {
     let cancelled = false;
     let raf = 0;
+    let videoFrameCallback = 0;
     let stream: MediaStream | undefined;
     let trackers: Trackers | undefined;
 
@@ -54,6 +71,16 @@ export function CameraTracker({ onFrame }: { onFrame?: (frame: Float32Array) => 
         if (cancelled || !video || !canvas) return release();
         video.srcObject = stream;
         await video.play();
+        const track = stream.getVideoTracks()[0];
+        if (track) onCameraRef.current?.(track.getSettings());
+        if ("requestVideoFrameCallback" in video) {
+          const count: VideoFrameRequestCallback = (_, metadata) => {
+            if (cancelled) return;
+            onVideoFrameRef.current?.(metadata.presentedFrames);
+            videoFrameCallback = video.requestVideoFrameCallback(count);
+          };
+          videoFrameCallback = video.requestVideoFrameCallback(count);
+        }
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext("2d")!;
@@ -105,6 +132,7 @@ export function CameraTracker({ onFrame }: { onFrame?: (frame: Float32Array) => 
 
     function release() {
       cancelAnimationFrame(raf);
+      if (videoFrameCallback) videoRef.current?.cancelVideoFrameCallback(videoFrameCallback);
       stream?.getTracks().forEach((t) => t.stop());
       stream = undefined;
       if (trackers) closeTrackers(trackers);

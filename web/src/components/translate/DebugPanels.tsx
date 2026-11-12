@@ -97,8 +97,32 @@ function Part({
   );
 }
 
-/** The newest frame sent and how many have been sent; written by the page on every frame. */
-export type FrameFeed = { frame: Float32Array | null; sent: number };
+/** Written by the page as frames arrive; read by LandmarksPanel a few times a second. */
+export type FrameFeed = {
+  /** The newest landmark frame. */
+  frame: Float32Array | null;
+  /** Landmark frames produced by tracking so far. */
+  sent: number;
+  /** Landmark points (hand and pose) found in those frames so far. */
+  points: number;
+  /** Camera frames shown so far, whether or not tracking kept up with them. */
+  videoFrames: number;
+  /** The camera's nominal frame rate, if it reports one. */
+  cameraFps?: number;
+};
+
+export const emptyFeed = (): FrameFeed => ({ frame: null, sent: 0, points: 0, videoFrames: 0 });
+
+/** How many hand and pose landmarks a packed frame holds (missing ones are all zeros). */
+export function landmarkCount(frame: Float32Array): number {
+  let count = 0;
+  for (let i = LEFT_HAND; i < POSE + POSE_POINTS * 3; i += 3) {
+    if (frame[i] !== 0 || frame[i + 1] !== 0 || frame[i + 2] !== 0) count++;
+  }
+  return count;
+}
+
+type Rates = { video: number; tracked: number; points: number };
 
 /**
  * The raw landmark values of the frames being sent (the packed layout of
@@ -106,17 +130,23 @@ export type FrameFeed = { frame: Float32Array | null; sent: number };
  */
 export function LandmarksPanel({ feed }: { feed: React.RefObject<FrameFeed> }) {
   const [frame, setFrame] = useState<Float32Array | null>(null);
-  const [fps, setFps] = useState(0);
+  const [rates, setRates] = useState<Rates | null>(null);
 
   useEffect(() => {
     let since = performance.now();
-    let sentBefore = feed.current.sent;
+    let before = { ...feed.current };
     const timer = setInterval(() => {
-      setFrame(feed.current.frame);
+      const current = feed.current;
+      setFrame(current.frame);
       const now = performance.now();
       if (now - since >= 1000) {
-        setFps(((feed.current.sent - sentBefore) * 1000) / (now - since));
-        sentBefore = feed.current.sent;
+        const perSecond = (n: number, m: number) => ((n - m) * 1000) / (now - since);
+        setRates({
+          video: perSecond(current.videoFrames, before.videoFrames),
+          tracked: perSecond(current.sent, before.sent),
+          points: perSecond(current.points, before.points),
+        });
+        before = { ...current };
         since = now;
       }
     }, 200);
@@ -132,7 +162,21 @@ export function LandmarksPanel({ feed }: { feed: React.RefObject<FrameFeed> }) {
         <p className="opacity-60">Waiting for the camera…</p>
       ) : (
         <>
-          <p className="font-mono text-xs opacity-70">{fps.toFixed(0)} frames/s sent</p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 font-mono text-xs">
+            <dt className="opacity-70">Video</dt>
+            <dd>
+              {rates && feed.current.videoFrames > 0 ? `${rates.video.toFixed(1)} fps` : "–"}
+              {feed.current.cameraFps ? (
+                <span className="opacity-60"> (camera {feed.current.cameraFps.toFixed(0)})</span>
+              ) : null}
+            </dd>
+            <dt className="opacity-70">Tracked</dt>
+            <dd>{rates ? `${rates.tracked.toFixed(1)} frames/s` : "–"}</dd>
+            <dt className="opacity-70">Landmarks</dt>
+            <dd>{rates ? `${rates.points.toFixed(0)} points/s` : "–"}</dd>
+            <dt className="opacity-70">This frame</dt>
+            <dd>{landmarkCount(frame)} points</dd>
+          </dl>
           <Part title="Head" present={seen(frame, HEAD, 3)}>
             <p className="font-mono text-xs">
               yaw {deg(frame[HEAD])} · pitch {deg(frame[HEAD + 1])} · roll {deg(frame[HEAD + 2])}

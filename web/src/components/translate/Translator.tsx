@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraTracker } from "@/components/camera/CameraTracker";
 import {
+  emptyFeed,
   type FrameFeed,
+  landmarkCount,
   LandmarksPanel,
   type Prediction,
   PredictionsPanel,
@@ -36,7 +38,7 @@ export function Translator() {
   const [model, setModel] = useState<ModelInfo | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [debug, setDebug] = useState(true);
-  const feed = useRef<FrameFeed>({ frame: null, sent: 0 });
+  const feed = useRef<FrameFeed>(emptyFeed());
 
   useEffect(() => {
     speakRef.current = speak;
@@ -86,8 +88,16 @@ export function Translator() {
   const onFrame = useCallback((frame: Float32Array) => {
     feed.current.frame = frame;
     feed.current.sent++;
+    feed.current.points += landmarkCount(frame);
     const ws = socket.current;
     if (ws?.readyState === WebSocket.OPEN) ws.send(frame);
+  }, []);
+
+  const onVideoFrame = useCallback((presentedFrames: number) => {
+    feed.current.videoFrames = presentedFrames;
+  }, []);
+  const onCamera = useCallback((settings: MediaTrackSettings) => {
+    feed.current.cameraFps = settings.frameRate;
   }, []);
 
   const send = (type: "flush" | "clear") => {
@@ -114,7 +124,7 @@ export function Translator() {
           </aside>
         )}
         <div className="order-1 flex min-w-0 flex-col gap-6 lg:order-2">
-          <CameraTracker onFrame={onFrame} />
+          <CameraTracker onFrame={onFrame} onVideoFrame={onVideoFrame} onCamera={onCamera} />
 
           {unavailable ? (
             <p role="alert" className="rounded-md border p-3 text-sm">
