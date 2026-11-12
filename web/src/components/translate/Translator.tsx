@@ -155,6 +155,10 @@ export function Translator() {
         <Link href="/translations" className="underline underline-offset-4">
           Past translations
         </Link>
+        {" · "}
+        <Link href="/translate/video" className="underline underline-offset-4">
+          Translate a video instead
+        </Link>
       </p>
     </Shell>
   );

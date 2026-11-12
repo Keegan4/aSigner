@@ -23,6 +23,7 @@ STABLE_PREDICTIONS = 3  # the same sign this many times running counts as signed
 SENTENCE_GAP_SECONDS = 2.5  # this long without a sign ends the sentence
 MAX_GLOSSES = 50
 MAX_BUFFERED_FRAMES = 300
+TOP_GUESSES = 3  # reported with each window, for debugging
 
 
 @dataclass
@@ -31,6 +32,11 @@ class Update:
     """A sign that has just been recognised."""
     sentence: list[str] | None = None
     """The glosses of a sentence that has just ended."""
+    window: list[tuple[str, float]] | None = None
+    """When the model was just asked about the window: its best guesses, most
+    likely first (empty if the window was too short or showed no hands)."""
+    seen: str | None = None
+    """The sign the window was read as, before the stability check; None for no sign."""
 
 
 @dataclass
@@ -52,24 +58,29 @@ class Segmenter:
         if at - self._last_prediction < STRIDE_SECONDS:
             return Update()
         self._last_prediction = at
-        return self._step(self._label(at), at)
+        label, window = self._label(at)
+        update = self._step(label, at)
+        update.window, update.seen = window, label
+        return update
 
-    def _label(self, at: float) -> str | None:
-        """What the window shows: a gloss, or None for no sign."""
+    def _label(self, at: float) -> tuple[str | None, list[tuple[str, float]]]:
+        """What the window shows (a gloss, or None for no sign) and the model's top guesses."""
         if (
             len(self._frames) < MIN_WINDOW_FRAMES
             or at - self._frames[0][0] < MIN_WINDOW_SECONDS
             or not any(hand for _, _, hand in list(self._frames)[-MIN_WINDOW_FRAMES:])
         ):
-            return None
+            return None, []
         probabilities = np.asarray(
             self.recogniser.predict(np.stack([frame for _, frame, _ in self._frames]))
         )
-        best = int(probabilities.argmax())
+        order = np.argsort(probabilities)[::-1][:TOP_GUESSES]
+        window = [(self.recogniser.labels[i], float(probabilities[i])) for i in order]
+        best = int(order[0])
         label = self.recogniser.labels[best]
         if label == IDLE_LABEL or probabilities[best] < pass_score(self.recogniser):
-            return None
-        return label
+            return None, window
+        return label, window
 
     def _step(self, label: str | None, at: float) -> Update:
         if label != self._candidate:
