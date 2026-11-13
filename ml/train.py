@@ -36,7 +36,10 @@ SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this mu
 MIN_CLIPS_FOR_THRESHOLD = 30
 MAX_FALSE_ACCEPT = 0.05
 MIN_PASS_SCORE = 0.5
-REGION_HIDDEN = 128  # hidden width of each region encoder
+# Each region's share of the embedding, in REGION_PARTS order: left hand,
+# right hand, pose, face/head. Hands carry most of a sign, so they get the
+# room to keep fine handshape detail (120, 120, 40, 40 at width 320).
+REGION_SHARES = (3, 3, 1, 1)
 
 
 def pick_device() -> torch.device:
@@ -61,12 +64,13 @@ class RegionEncoder(nn.Module):
         super().__init__()
         self.parts = parts
         coordinates = sum(PART_WIDTHS[i] for i in parts)
-        # Two layers through a 128-wide hidden layer: the first mixes positions,
-        # motion and flags; the second combines those features before the
-        # region is joined to the others.
+        inputs = 2 * coordinates + 2 * len(parts)
+        # Two layers: the first mixes positions, motion and flags into half the
+        # input size; the second brings that to the region's width
+        # (e.g. 256 -> 128 -> 120 for a hand).
         self.encoder = nn.Sequential(
-            nn.Linear(2 * coordinates + 2 * len(parts), REGION_HIDDEN), nn.GELU(),
-            nn.Linear(REGION_HIDDEN, width), nn.GELU(), nn.LayerNorm(width),
+            nn.Linear(inputs, inputs // 2), nn.GELU(),
+            nn.Linear(inputs // 2, width), nn.GELU(), nn.LayerNorm(width),
         )
         self.missing = nn.Parameter(torch.empty(width))
         nn.init.normal_(self.missing, std=0.02)
@@ -101,9 +105,13 @@ class SignNet(nn.Module):
 
     def __init__(self, classes: int, width: int = 320):
         super().__init__()
-        if width % 20 or width % 4:
-            raise ValueError("embedding width must be divisible by 20 heads and four regions")
-        self.regions = nn.ModuleList(RegionEncoder(parts, width // 4) for parts in REGION_PARTS)
+        if width % 20 or width % sum(REGION_SHARES):
+            raise ValueError(f"embedding width must be divisible by 20 heads and by {sum(REGION_SHARES)} "
+                             "(the regions' shares)")
+        self.regions = nn.ModuleList(
+            RegionEncoder(parts, width * share // sum(REGION_SHARES))
+            for parts, share in zip(REGION_PARTS, REGION_SHARES)
+        )
         self.temporal_norm = nn.LayerNorm(width)
         self.temporal = nn.Sequential(
             nn.Conv1d(width, width, kernel_size=3, padding=1, groups=width),
