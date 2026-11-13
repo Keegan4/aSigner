@@ -93,16 +93,23 @@ Vector versions of both figures (PDF and SVG), with LaTeX captions, are in [`doc
 
 ### Pretraining on public data (optional)
 
-With few clips of your own, the model can start from hand shapes learned on a public fingerspelling dataset ([ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling), MIT licence: 2,122 single-frame hand landmark samples, A to Z):
+With few clips of your own, the model can start from weights learned on two public landmark datasets, both MIT licensed:
+
+- [ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling): 2,122 single-frame hand landmark samples of the ASL letters A to Z. These are still hands with no body or movement.
+- [CASL-W60](https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks) (optional): 5,889 videos of 60 Central African Sign Language signs, as MediaPipe pose and both hands over 64 frames, with the dataset's own train/test split. It adds movement and the body, but has no face.
 
 ```bash
 cd ml
 git clone https://huggingface.co/datasets/sid220/asl-now-fingerspelling data/public/asl-now-fingerspelling
-python pretrain.py
+mkdir -p data/public/casl-w60/data
+curl -L -o data/public/casl-w60/data/train-00000-of-00001.parquet https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks/resolve/main/data/train-00000-of-00001.parquet
+curl -L -o data/public/casl-w60/data/test-00000-of-00001.parquet https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks/resolve/main/data/test-00000-of-00001.parquet
+python pretrain.py --epochs 100
+python plot_pretrain.py
 python train.py --init runs/pretrained.pt
 ```
 
-The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
+`pretrain.py` uses CASL-W60 when its parquet files are there. It saves loss and macro-F1 for every epoch in `runs/pretrained.json`, and `plot_pretrain.py` (needs `pip install matplotlib`) draws them. Neither dataset is SgSL. CASL labels get a `casl:` prefix so they never collide with SgSL glosses. When `train.py` starts from the checkpoint, it keeps the learned layers, and labels the checkpoint never saw get a fresh output row. The checkpoint is never served, and a model started this way records it in its training details.
 
 ### Ablation: the temporal convolution
 

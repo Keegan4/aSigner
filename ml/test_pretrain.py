@@ -84,3 +84,59 @@ def test_a_checkpoint_for_another_network_is_refused(tmp_path):
     save_checkpoint(SignNet(3, width=160), ["A", "B", IDLE_LABEL], "somewhere", tmp_path / "small.pt")
     with pytest.raises(SystemExit, match="does not fit this model"):
         load_into(SignNet(3), ["A", "B", IDLE_LABEL], tmp_path / "small.pt")
+
+
+def write_casl(folder, signs=("G001", "G002"), per_sign=4, frames=64):
+    """Made-up CASL-W60 parquet files: (frames, 225) pose + left hand + right hand per clip."""
+    pa = pytest.importorskip("pyarrow")
+    pq = pytest.importorskip("pyarrow.parquet")
+    rng = np.random.default_rng(1)
+    (folder / "data").mkdir(parents=True)
+    for split in ("train", "test"):
+        rows, labels = [], []
+        for index, sign in enumerate(signs):
+            for _ in range(per_sign):
+                pose = rng.normal(0, 0.2, (frames, 33, 3))
+                left = np.zeros((frames, 21, 3)) if index == 0 else rng.normal(0, 0.1, (frames, 21, 3))
+                right = rng.normal(0.1 * index, 0.1, (frames, 21, 3))
+                rows.append(np.concatenate([pose.reshape(frames, -1), left.reshape(frames, -1),
+                                            right.reshape(frames, -1)], axis=1).astype(np.float32).tolist())
+                labels.append(sign)
+        pq.write_table(pa.table({"landmarks": rows, "label": labels}),
+                       folder / "data" / f"{split}-00000-of-00001.parquet")
+
+
+def test_casl_clips_keep_their_split_pose_and_hands(tmp_path):
+    from public_data import CASL_PREFIX, load_casl
+
+    write_casl(tmp_path / "casl")
+    train_clips, test_clips = load_casl(tmp_path / "casl")
+    assert len(train_clips) == len(test_clips) == 8
+    assert {c.label for c in train_clips} == {CASL_PREFIX + "G001", CASL_PREFIX + "G002"}
+    assert {c.signer for c in test_clips} == {"casl-test"}
+
+    import pyarrow.parquet as pq
+
+    first = np.asarray(pq.read_table(tmp_path / "casl" / "data" / "train-00000-of-00001.parquet")
+                       .column("landmarks")[0].as_py(), dtype=np.float32)
+    frames = train_clips[0].frames
+    assert frames.shape == (64, FRAME_SIZE)
+    assert np.array_equal(frames[:, POSE:POSE + 75], first[:, :75])  # pose points 0-24
+    assert np.array_equal(frames[:, RIGHT_HAND:POSE], first[:, 162:])
+    assert not frames[:, LEFT_HAND:RIGHT_HAND].any()  # this sign's left hand was never seen
+    assert not frames[:, POSE + 75:].any()  # no face
+    assert load_casl(tmp_path / "missing") == ([], [])
+
+
+def test_pretrain_with_casl_records_both_sources_and_every_epoch(tmp_path):
+    from public_data import CASL_PREFIX, CASL_SOURCE
+
+    write_samples(tmp_path / "public")
+    write_casl(tmp_path / "casl")
+    report = pretrain(tmp_path / "public", tmp_path / "pretrained.pt", epochs=2, seed=0, casl=tmp_path / "casl")
+    assert report["source"] == f"{SOURCE} + {CASL_SOURCE}"
+    assert CASL_PREFIX + "G001" in report["labels"] and "A" in report["labels"]
+    assert [row["epoch"] for row in report["history"]] == [1, 2]
+    assert set(report["history"][0]) == {"epoch", "train", "asl-now", "casl-w60"}
+    assert 0 <= report["history"][-1]["casl-w60"]["f1"] <= 1
+    assert json.loads((tmp_path / "pretrained.json").read_text())["history"] == report["history"]
