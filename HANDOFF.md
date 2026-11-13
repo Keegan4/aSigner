@@ -65,6 +65,23 @@ Never verified:
 - Anything the model or training needs goes in `server/app/recognition/` and must not import FastAPI, settings or the database at module level.
 - A new screen: a page in `web/src/app/` and a component in its feature folder under `web/src/components/`. Server imports are absolute (`from app.services.practice import ...`); web imports use the `@/` alias.
 
+### Branch names
+
+Name branches `<type>/<short-description>`: lowercase, words joined by hyphens, 50 characters at most. For example `feat/practice-streaks`, `fix/ws-origin-check` or `ml/temporal-conv-ablation`.
+
+| Type | For |
+| --- | --- |
+| `feat` | A new feature or screen |
+| `fix` | A bug fix |
+| `docs` | Documentation only |
+| `refactor` | Restructuring without a change in behaviour |
+| `test` | Tests only |
+| `ml` | Training, data and model experiments in `ml/` |
+| `ci` | Workflows and build setup |
+| `chore` | Dependencies and other upkeep |
+
+`main`, `noticeboard`, and branches made by tools (`claude/*`, `dependabot/*`) are exempt. The "Branch name" workflow fails a pull request whose branch breaks the scheme. Check a name before pushing with `scripts/check-branch-name.sh [branch]`, or run it on every push with `ln -s ../../scripts/check-branch-name.sh .git/hooks/pre-push`.
+
 ## Gotchas
 
 - **Next.js is 16.4.** It differs from older versions; read the docs in `web/node_modules/next/dist/docs/` before changing framework-level code.
