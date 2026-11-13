@@ -103,7 +103,7 @@ class SignNet(nn.Module):
     the prepended classification token gathers information from the whole clip.
     """
 
-    def __init__(self, classes: int, width: int = 320):
+    def __init__(self, classes: int, width: int = 320, temporal_conv: bool = True):
         super().__init__()
         if width % 20 or width % sum(REGION_SHARES):
             raise ValueError(f"embedding width must be divisible by 20 heads and by {sum(REGION_SHARES)} "
@@ -112,11 +112,15 @@ class SignNet(nn.Module):
             RegionEncoder(parts, width * share // sum(REGION_SHARES))
             for parts, share in zip(REGION_PARTS, REGION_SHARES)
         )
-        self.temporal_norm = nn.LayerNorm(width)
-        self.temporal = nn.Sequential(
-            nn.Conv1d(width, width, kernel_size=3, padding=1, groups=width),
-            nn.Conv1d(width, width, kernel_size=1), nn.GELU(), nn.Dropout(0.1),
-        )
+        # The residual temporal convolution can be left out to measure what it adds
+        # (ablate.py); attention can still relate neighbouring frames without it.
+        self.temporal_conv = temporal_conv
+        if temporal_conv:
+            self.temporal_norm = nn.LayerNorm(width)
+            self.temporal = nn.Sequential(
+                nn.Conv1d(width, width, kernel_size=3, padding=1, groups=width),
+                nn.Conv1d(width, width, kernel_size=1), nn.GELU(), nn.Dropout(0.1),
+            )
         self.cls_token = nn.Parameter(torch.empty(1, 1, width))
         self.positions = nn.Parameter(torch.empty(1, CLIP_FRAMES + 1, width))
         nn.init.normal_(self.cls_token, std=0.02)
@@ -138,8 +142,9 @@ class SignNet(nn.Module):
 
     def forward(self, clip: torch.Tensor) -> torch.Tensor:  # (batch, time, features)
         frames = torch.cat([region(clip) for region in self.regions], dim=-1)
-        local = self.temporal(self.temporal_norm(frames).transpose(1, 2)).transpose(1, 2)
-        frames = frames + local
+        if self.temporal_conv:
+            local = self.temporal(self.temporal_norm(frames).transpose(1, 2)).transpose(1, 2)
+            frames = frames + local
         cls = self.cls_token.expand(clip.shape[0], -1, -1)
         tokens = torch.cat([cls, frames], dim=1) + self.positions
         encoded = self.encoder(tokens)
@@ -255,7 +260,7 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
 
 
 def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
-          init: Path | None = None):
+          init: Path | None = None, temporal_conv: bool = True):
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -273,7 +278,9 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     print(f"{len(train_clips)} training clips, {len(test_clips)} test clips, "
           f"{len(labels) - 1} signs plus no-sign ({split_note})")
 
-    model = SignNet(len(labels))
+    model = SignNet(len(labels), temporal_conv=temporal_conv)
+    if not temporal_conv:
+        print("without the residual temporal convolution")
     # Optionally start from weights pretrained on public data (pretrain.py).
     pretrained = load_into(model, labels, init) if init else None
     if pretrained:
@@ -306,7 +313,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         if epoch % 10 == 0 or epoch == epochs:
             print(f"epoch {epoch:3d}  loss {total / len(train_clips):.3f}")
 
-    report = {"clips": len(clips), "labels": labels, "split": split_note, "epochs": epochs, "seed": seed}
+    report = {"clips": len(clips), "labels": labels, "split": split_note, "epochs": epochs, "seed": seed,
+              "temporal_conv": temporal_conv}
     confusion, pass_score = None, None
     if test_clips:
         probs = probabilities(model, test_clips)
@@ -356,6 +364,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     }
     if pretrained:
         info["pretrained"] = pretrained
+    if not temporal_conv:
+        info["temporal_conv"] = False
     report["info"] = info
     export(model, out, labels, pass_score, to_model_input(clips[0].frames), info)
 
@@ -381,5 +391,8 @@ if __name__ == "__main__":
     parser.add_argument("--test-signer", help="signer id to hold out (default: the one with fewest clips)")
     parser.add_argument("--runs", type=Path, default=here / "runs")
     parser.add_argument("--init", type=Path, help="checkpoint from pretrain.py to start from")
+    parser.add_argument("--no-temporal-conv", dest="temporal_conv", action="store_false",
+                        help="leave out the residual temporal convolution")
     args = parser.parse_args()
-    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init)
+    train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init,
+          args.temporal_conv)

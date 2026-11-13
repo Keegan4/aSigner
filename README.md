@@ -104,6 +104,17 @@ python train.py --init runs/pretrained.pt
 
 The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
 
+### Ablation: the temporal convolution
+
+To check whether the residual temporal convolution earns its place, train with and without it on several seeds:
+
+```bash
+cd ml
+python ablate.py --seeds 0 1 2 3 4
+```
+
+Both runs of a seed share the same split and augmented clips, so their difference shows the block's effect, and the spread across seeds shows how much accuracy moves by chance. It prints mean ± standard deviation of top-1 and top-5 for each version and for the paired difference, and writes `ablation.json` under `ml/runs/ablation-<time>/`. Models are trained in a scratch folder, so the served model is not replaced. `train.py --no-temporal-conv` trains a single model without the block.
+
 ## Tests
 
 ```bash
