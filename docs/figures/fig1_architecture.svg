@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="592" viewBox="0 0 1140 592" font-family="Helvetica, Arial, FreeSans, sans-serif" font-size="10.5" fill="#222">
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+  <style>
+    .b{fill:#fff;stroke:#333;stroke-width:1.1}
+    .g{fill:#f3f3f3;stroke:#333;stroke-width:1.1}
+    .l{fill:#fff;stroke:#555;stroke-width:0.9}
+    .t{font-weight:bold;font-size:12px}
+    .s{font-size:10px}
+    .c{text-anchor:middle}
+    .ln{stroke:#333;stroke-width:1.1;fill:none}
+    .pl{font-weight:bold;font-size:13px}
+  </style>
+</defs>
+<rect width="1140" height="592" fill="#fff"/>
+
+<!-- (a) -->
+<text x="20" y="28" class="pl">(a) Landmark extraction and normalisation (one shared implementation for training and serving)</text>
+<g class="c">
+  <rect x="20" y="44" width="165" height="100" rx="4" class="g"/>
+  <text x="102.5" y="68" class="t">Camera video</text>
+  <text x="102.5" y="88">RGB frames in the browser;</text>
+  <text x="102.5" y="103">video never leaves</text>
+  <text x="102.5" y="118">the client</text>
+
+  <rect x="207" y="44" width="165" height="100" rx="4" class="b"/>
+  <text x="289.5" y="68" class="t">MediaPipe tracking</text>
+  <text x="289.5" y="88">2 hands × 21 landmarks</text>
+  <text x="289.5" y="103">pose: 25 landmarks</text>
+  <text x="289.5" y="118">52 face blendshapes</text>
+  <text x="289.5" y="133">head yaw / pitch / roll</text>
+
+  <rect x="394" y="44" width="165" height="100" rx="4" class="b"/>
+  <text x="476.5" y="68" class="t">Raw frame <tspan font-style="italic">x</tspan><tspan font-size="8" dy="3" font-style="italic">t</tspan><tspan dy="-3"> ∈ ℝ</tspan><tspan font-size="8" dy="-5">256</tspan></text>
+  <text x="476.5" y="88">63 + 63 + 75 + 52 + 3</text>
+  <text x="476.5" y="103">float32, 1 KB per frame,</text>
+  <text x="476.5" y="118">streamed over WebSocket</text>
+
+  <rect x="581" y="44" width="165" height="100" rx="4" class="b"/>
+  <text x="663.5" y="68" class="t">Normalisation</text>
+  <text x="663.5" y="88">hand shape: wrist origin,</text>
+  <text x="663.5" y="103">÷ palm length</text>
+  <text x="663.5" y="118">placement, pose: shoulder</text>
+  <text x="663.5" y="133">midpoint, ÷ shoulder width</text>
+
+  <rect x="768" y="44" width="165" height="100" rx="4" class="b"/>
+  <text x="850.5" y="68" class="t"><tspan font-style="italic">z</tspan><tspan font-size="8" dy="3" font-style="italic">t</tspan><tspan dy="-3"> ∈ ℝ</tspan><tspan font-size="8" dy="-5">388</tspan></text>
+  <text x="850.5" y="88">382 normalised values</text>
+  <text x="850.5" y="103">+ 6 validity flags</text>
+  <text x="850.5" y="118">(L/R shape, L/R placement,</text>
+  <text x="850.5" y="133">pose, face/head)</text>
+
+  <rect x="955" y="44" width="165" height="100" rx="4" class="b"/>
+  <text x="1037.5" y="68" class="t">Temporal resampling</text>
+  <text x="1037.5" y="88">select <tspan font-style="italic">T</tspan> = 32 frames evenly</text>
+  <text x="1037.5" y="103">(selection, not blending,</text>
+  <text x="1037.5" y="118">so missing parts stay zero)</text>
+  <text x="1037.5" y="133" font-weight="bold"><tspan font-style="italic">X</tspan> ∈ ℝ<tspan font-size="8" dy="-5">32×388</tspan></text>
+</g>
+<g class="ln" marker-end="url(#ar)">
+  <path d="M185,94 H205"/><path d="M372,94 H392"/><path d="M559,94 H579"/><path d="M746,94 H766"/><path d="M933,94 H953"/>
+  <path d="M1037.5,144 V166 H60 V236"/>
+</g>
+
+<!-- (b) -->
+<text x="76" y="196" class="pl" fill="#222">(b) SignNet classifier</text>
+<text x="76" y="230" class="s" fill="#444">input <tspan font-style="italic">X</tspan> (32 × 388)</text>
+
+<!-- input bar: 240 px for 388 features -->
+<g stroke="#333" stroke-width="0.9">
+  <rect x="20" y="240" width="80" height="38.97" fill="#DCE6F2"/>
+  <rect x="20" y="278.97" width="80" height="38.97" fill="#FDE5CC"/>
+  <rect x="20" y="317.94" width="80" height="38.97" fill="#DCE6F2"/>
+  <rect x="20" y="356.91" width="80" height="38.97" fill="#FDE5CC"/>
+  <rect x="20" y="395.88" width="80" height="46.40" fill="#DDEFD9"/>
+  <rect x="20" y="442.28" width="80" height="34.02" fill="#EEDFEA"/>
+  <rect x="20" y="476.30" width="80" height="3.70" fill="#999"/>
+</g>
+<g class="c s">
+  <text x="60" y="256">L-hand shape</text><text x="60" y="269">63</text>
+  <text x="60" y="295">R-hand shape</text><text x="60" y="308">63</text>
+  <text x="60" y="334">L-hand place</text><text x="60" y="347">63</text>
+  <text x="60" y="373">R-hand place</text><text x="60" y="386">63</text>
+  <text x="60" y="415">pose</text><text x="60" y="428">75</text>
+  <text x="60" y="456">face / head</text><text x="60" y="469">55</text>
+  <text x="60" y="494">flags (6)</text>
+</g>
+
+<!-- routing to region encoders -->
+<g fill="none" stroke-width="1.2">
+  <path d="M100,259.5 C125,259.5 125,282 150,282" stroke="#4C78A8"/>
+  <path d="M100,337.4 C125,337.4 125,282 150,282" stroke="#4C78A8"/>
+  <path d="M100,298.5 C125,298.5 125,346 150,346" stroke="#F58518"/>
+  <path d="M100,376.4 C125,376.4 125,346 150,346" stroke="#F58518"/>
+  <path d="M100,419 C125,419 125,410 150,410" stroke="#54A24B"/>
+  <path d="M100,459 C125,459 125,474 150,474" stroke="#B279A2"/>
+</g>
+
+<!-- region encoders -->
+<g class="c">
+  <rect x="150" y="256" width="205" height="52" rx="4" fill="#DCE6F2" stroke="#4C78A8" stroke-width="1.2"/>
+  <text x="252.5" y="276" class="t">Left-hand encoder</text>
+  <text x="252.5" y="294">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">256</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">80</tspan></text>
+
+  <rect x="150" y="320" width="205" height="52" rx="4" fill="#FDE5CC" stroke="#F58518" stroke-width="1.2"/>
+  <text x="252.5" y="340" class="t">Right-hand encoder</text>
+  <text x="252.5" y="358">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">256</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">80</tspan></text>
+
+  <rect x="150" y="384" width="205" height="52" rx="4" fill="#DDEFD9" stroke="#54A24B" stroke-width="1.2"/>
+  <text x="252.5" y="404" class="t">Pose encoder</text>
+  <text x="252.5" y="422">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">152</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">80</tspan></text>
+
+  <rect x="150" y="448" width="205" height="52" rx="4" fill="#EEDFEA" stroke="#B279A2" stroke-width="1.2"/>
+  <text x="252.5" y="468" class="t">Face / head encoder</text>
+  <text x="252.5" y="486">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">112</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">80</tspan></text>
+</g>
+<text x="150" y="530" class="s" fill="#444">each: Linear → GELU → LayerNorm; learned embedding <tspan font-style="italic">e</tspan><tspan font-size="7" dy="2">miss</tspan><tspan dy="-2"> if region absent</tspan></text>
+<text x="150" y="544" class="s" fill="#444"><tspan font-style="italic">p</tspan>: positions · Δ<tspan font-style="italic">p</tspan>: frame difference, 0 unless both frames valid · <tspan font-style="italic">m</tspan>: validity flags</text>
+
+<g class="ln" marker-end="url(#ar)">
+  <path d="M355,282 H388"/><path d="M355,346 H388"/><path d="M355,410 H388"/><path d="M355,474 H388"/>
+</g>
+
+<!-- concat bar -->
+<g stroke="#333" stroke-width="0.9">
+  <rect x="390" y="256" width="28" height="61" fill="#DCE6F2"/>
+  <rect x="390" y="317" width="28" height="61" fill="#FDE5CC"/>
+  <rect x="390" y="378" width="28" height="61" fill="#DDEFD9"/>
+  <rect x="390" y="439" width="28" height="61" fill="#EEDFEA"/>
+</g>
+<text x="404" y="248" class="s c" text-anchor="middle">concat</text>
+<text x="404" y="514" class="s" text-anchor="middle">32 × 320</text>
+
+<!-- temporal residual block -->
+<path d="M418,378 H458" class="ln" marker-end="url(#ar)"/>
+<path d="M432,378 V270 H650 V368" class="ln" marker-end="url(#ar)"/>
+<text x="541" y="264" class="s c" text-anchor="middle" fill="#444">identity</text>
+<rect x="460" y="290" width="165" height="176" rx="4" class="b"/>
+<g class="c">
+  <text x="542.5" y="309" class="t">Residual temporal conv.</text>
+  <rect x="476" y="320" width="133" height="24" rx="3" class="l"/><text x="542.5" y="336">LayerNorm</text>
+  <rect x="476" y="352" width="133" height="24" rx="3" class="l"/><text x="542.5" y="368">Depthwise Conv1d, <tspan font-style="italic">k</tspan> = 3</text>
+  <rect x="476" y="384" width="133" height="24" rx="3" class="l"/><text x="542.5" y="400">Pointwise Conv1d (1×1)</text>
+  <rect x="476" y="416" width="133" height="24" rx="3" class="l"/><text x="542.5" y="432">GELU · Dropout</text>
+  <text x="542.5" y="458" class="s" fill="#444">mixes neighbouring frames</text>
+</g>
+<g class="ln" marker-end="url(#ar)"><path d="M542.5,344 V350"/><path d="M542.5,376 V382"/><path d="M542.5,408 V414"/></g>
+<path d="M625,378 H638" class="ln" marker-end="url(#ar)"/>
+<circle cx="650" cy="378" r="10" fill="#fff" stroke="#333" stroke-width="1.1"/>
+<path d="M644,378 H656 M650,372 V384" stroke="#333" stroke-width="1.3"/>
+<path d="M660,378 H676" class="ln" marker-end="url(#ar)"/>
+
+<!-- token assembly -->
+<rect x="678" y="306" width="108" height="144" rx="4" class="b"/>
+<g class="c">
+  <text x="732" y="324" class="t">Tokens</text>
+  <!-- token strip -->
+  <rect x="694" y="334" width="11" height="40" fill="#555" stroke="#333" stroke-width="0.8"/>
+  <g fill="#e8e8e8" stroke="#333" stroke-width="0.8">
+    <rect x="707" y="334" width="11" height="40"/><rect x="720" y="334" width="11" height="40"/>
+    <rect x="733" y="334" width="11" height="40"/><rect x="759" y="334" width="11" height="40"/>
+  </g>
+  <text x="751.5" y="358" font-size="10">…</text>
+  <text x="699.5" y="386" font-size="9">CLS</text>
+  <text x="739" y="386" font-size="9">frames 1…32</text>
+  <text x="732" y="404" class="s">prepend learned [CLS]</text>
+  <text x="732" y="417" class="s">+ learned positional</text>
+  <text x="732" y="430" class="s">embedding</text>
+  <text x="732" y="444" class="s" font-weight="bold">33 × 320</text>
+</g>
+<path d="M786,378 H806" class="ln" marker-end="url(#ar)"/>
+
+<!-- transformer -->
+<rect x="808" y="262" width="162" height="232" rx="4" class="b"/>
+<g class="c">
+  <text x="889" y="281" class="t">Transformer encoder ×2</text>
+  <text x="889" y="295" class="s">pre-LN, <tspan font-style="italic">d</tspan> = 320</text>
+  <rect x="822" y="304" width="134" height="22" rx="3" class="l"/><text x="889" y="319">LayerNorm</text>
+  <rect x="822" y="334" width="134" height="36" rx="3" class="l" fill="#f3f3f3"/><text x="889" y="349">Multi-head self-attention</text><text x="889" y="363" class="s">20 heads × 16 dims</text>
+  <rect x="822" y="384" width="134" height="22" rx="3" class="l"/><text x="889" y="399">LayerNorm</text>
+  <rect x="822" y="414" width="134" height="36" rx="3" class="l" fill="#f3f3f3"/><text x="889" y="429">Feed-forward, GELU</text><text x="889" y="443" class="s">320 → 640 → 320</text>
+  <text x="889" y="472" class="s" fill="#444">residual after each sub-layer</text>
+  <text x="889" y="486" class="s" fill="#444">every token attends to all 33</text>
+</g>
+<g class="ln" marker-end="url(#ar)"><path d="M889,326 V332"/><path d="M889,406 V412"/></g>
+<path d="M970,378 H990" class="ln" marker-end="url(#ar)"/>
+<text x="980" y="370" font-size="9" text-anchor="middle" fill="#444">CLS</text>
+
+<!-- head -->
+<rect x="992" y="262" width="128" height="232" rx="4" class="b"/>
+<g class="c">
+  <text x="1056" y="281" class="t">Classifier head</text>
+  <rect x="1003" y="292" width="106" height="22" rx="3" class="l"/><text x="1056" y="307">LayerNorm</text>
+  <rect x="1003" y="322" width="106" height="34" rx="3" class="l"/><text x="1056" y="336">Linear 320 → 320</text><text x="1056" y="349" class="s">BN · GELU · Dropout</text>
+  <rect x="1003" y="364" width="106" height="34" rx="3" class="l"/><text x="1056" y="378">Linear 320 → 160</text><text x="1056" y="391" class="s">BN · GELU · Dropout</text>
+  <rect x="1003" y="406" width="106" height="22" rx="3" class="l"/><text x="1056" y="421">Linear 160 → <tspan font-style="italic">C</tspan></text>
+  <text x="1056" y="450">softmax</text>
+  <text x="1056" y="466" font-weight="bold"><tspan font-style="italic">p</tspan>(<tspan font-style="italic">y</tspan> | <tspan font-style="italic">X</tspan>)</text>
+  <text x="1056" y="484" class="s" fill="#444"><tspan font-style="italic">C</tspan> = signs + no-sign</text>
+</g>
+<g class="ln" marker-end="url(#ar)"><path d="M1056,314 V320"/><path d="M1056,356 V362"/><path d="M1056,398 V404"/><path d="M1056,428 V440"/></g>
+
+<line x1="20" y1="558" x2="1120" y2="558" stroke="#bbb" stroke-width="0.8"/>
+<text x="20" y="578" class="s" fill="#333">Trainable parameters: 1,980,000 + 161·<tspan font-style="italic">C</tspan> (1,996,261 for 100 signs + no-sign). Embedding width <tspan font-style="italic">d</tspan> = 320 (4 regions × 80). All dropout <tspan font-style="italic">p</tspan> = 0.1. Exported to ONNX and run on CPU.</text>
+</svg>
