@@ -60,8 +60,11 @@ class RegionEncoder(nn.Module):
         super().__init__()
         self.parts = parts
         coordinates = sum(PART_WIDTHS[i] for i in parts)
+        # Two layers: the first mixes positions, motion and flags; the second
+        # combines those features before the region is joined to the others.
         self.encoder = nn.Sequential(
-            nn.Linear(2 * coordinates + 2 * len(parts), width), nn.GELU(), nn.LayerNorm(width),
+            nn.Linear(2 * coordinates + 2 * len(parts), width), nn.GELU(),
+            nn.Linear(width, width), nn.GELU(), nn.LayerNorm(width),
         )
         self.missing = nn.Parameter(torch.empty(width))
         nn.init.normal_(self.missing, std=0.02)
