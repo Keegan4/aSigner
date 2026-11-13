@@ -1,10 +1,11 @@
-"""Pretrain the sign model on public data: ASLNow! fingerspelling, plus CASL-W60 when present.
+"""Pretrain the sign model on public data: ASLNow! fingerspelling, plus CASL-W60 and WLASL when present.
 
-    python pretrain.py --data data/public/asl-now-fingerspelling --casl data/public/casl-w60 --out runs/pretrained.pt
+    python pretrain.py --data data/public/asl-now-fingerspelling --casl data/public/casl-w60 \\
+        --wlasl data/public/wlasl-landmarks --out runs/pretrained.pt
     python train.py --init runs/pretrained.pt
 
-ASLNow! samples are still hands with no body; CASL-W60 adds movement and pose
-from another sign language (see public_data.py). Loss and macro-F1 for every
+ASLNow! samples are still hands with no body; CASL-W60 and WLASL add movement
+and pose (see public_data.py). Loss and macro-F1 for every
 epoch go into runs/pretrained.json next to the checkpoint (plot_pretrain.py
 draws them). Training on recorded clips afterwards (train.py --init) is what makes the
 model fit the signs as they are made here; the checkpoint is never served.
@@ -19,7 +20,7 @@ from torch import nn
 
 from checkpoint import save_checkpoint
 from data import Clip
-from public_data import CASL_SOURCE, SOURCE, load_casl, load_samples
+from public_data import CASL_SOURCE, SOURCE, WLASL_SOURCE, load_casl, load_samples, load_wlasl
 from train import SignNet, pick_device, probabilities, training_batch
 
 from app.recognition.features import IDLE_LABEL  # path set up by data.py
@@ -62,7 +63,8 @@ def evaluate(model: nn.Module, clips: list[Clip], labels: list[str], loss_fn: nn
     }
 
 
-def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = None) -> dict:
+def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = None,
+             wlasl: Path | None = None) -> dict:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -79,7 +81,15 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
         sources.append(CASL_SOURCE)
         print(f"CASL-W60: {len(casl_train)} training clips, {len(casl_test)} test clips")
     elif casl:
-        print(f"no CASL-W60 parquet files under {casl}; using ASLNow! only")
+        print(f"no CASL-W60 parquet files under {casl}; leaving it out")
+    wlasl_train, wlasl_test = load_wlasl(wlasl) if wlasl else ([], [])
+    if wlasl_train:
+        train_clips += wlasl_train
+        held_out["wlasl"] = wlasl_test
+        sources.append(WLASL_SOURCE)
+        print(f"WLASL: {len(wlasl_train)} training clips, {len(wlasl_test)} held out")
+    elif wlasl:
+        print(f"no WLASL parquet files under {wlasl}; leaving it out")
     source = " + ".join(sources)
     # Same label set shape as train.py: straddling windows are labelled idle.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
@@ -119,7 +129,8 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
         print(f"epoch {epoch:3d}  loss {row['train']['loss']:.3f}  "
               + "  ".join(f"{name} f1 {row[name]['f1']:.3f}" for name in held_out))
 
-    report = {"samples": len(clips) + len(casl_train) + len(casl_test), "labels": labels, "epochs": epochs,
+    report = {"samples": len(clips) + len(casl_train) + len(casl_test) + len(wlasl_train) + len(wlasl_test),
+              "labels": labels, "epochs": epochs,
               "seed": seed, "source": source, "history": history}
     if "asl-now" in held_out:
         report |= {"test_samples": len(held_out["asl-now"]), "top1": history[-1]["asl-now"]["top1"]}
@@ -128,6 +139,9 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
     if "casl-w60" in held_out:
         report["casl_top1"] = history[-1]["casl-w60"]["top1"]
         print(f"CASL-W60 test top-1 {report['casl_top1']:.1%} on {len(held_out['casl-w60'])} clips")
+    if "wlasl" in held_out:
+        report["wlasl_top1"] = history[-1]["wlasl"]["top1"]
+        print(f"WLASL held-out top-1 {report['wlasl_top1']:.1%} on {len(held_out['wlasl'])} clips")
     save_checkpoint(model, labels, source, out)
     out.with_suffix(".json").write_text(json.dumps(report, indent=1))
     print(f"checkpoint: {out}\nhistory: {out.with_suffix('.json')}")
@@ -141,7 +155,9 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, default=here / "runs" / "pretrained.pt")
     parser.add_argument("--casl", type=Path, default=here / "data" / "public" / "casl-w60",
                         help="CASL-W60 parquet files; used when present")
+    parser.add_argument("--wlasl", type=Path, default=here / "data" / "public" / "wlasl-landmarks",
+                        help="WLASL landmark parquet files (academic, non-commercial); used when present")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
-    pretrain(args.data, args.out, args.epochs, args.seed, args.casl)
+    pretrain(args.data, args.out, args.epochs, args.seed, args.casl, args.wlasl)

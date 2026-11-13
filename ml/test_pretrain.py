@@ -140,3 +140,31 @@ def test_pretrain_with_casl_records_both_sources_and_every_epoch(tmp_path):
     assert set(report["history"][0]) == {"epoch", "train", "asl-now", "casl-w60"}
     assert 0 <= report["history"][-1]["casl-w60"]["f1"] <= 1
     assert json.loads((tmp_path / "pretrained.json").read_text())["history"] == report["history"]
+
+
+def test_wlasl_points_map_to_pose_and_hands_and_each_word_keeps_a_fixed_test_clip(tmp_path):
+    pa = pytest.importorskip("pyarrow")
+    pq = pytest.importorskip("pyarrow.parquet")
+    from public_data import WLASL_PREFIX, load_wlasl, wlasl_to_clip
+
+    rng = np.random.default_rng(2)
+    frames = rng.uniform(0.2, 0.8, (10, 76, 3)).astype(np.float32)
+    frames[:4, 34:55] = 0  # left hand not tracked at first
+    clip = wlasl_to_clip(frames).reshape(10, -1)
+    pose = clip[:, POSE:POSE + 75].reshape(10, 25, 3)
+    assert np.array_equal(pose[:, [0, 11, 12, 13, 14, 15, 16, 23, 24]], frames[:, 25:34])
+    assert np.array_equal(pose[:, 5], frames[:, 25])  # an eye, at the nose
+    assert np.array_equal(pose[:4, 19], pose[:4, 15])  # left index at the wrist while the hand is missing
+    assert np.array_equal(pose[4:, 19], frames[4:, 34 + 5])  # then at the hand's index knuckle
+    assert np.array_equal(clip[:, RIGHT_HAND:POSE], frames[:, 55:].reshape(10, -1))
+    assert not clip[:4, LEFT_HAND:RIGHT_HAND].any() and not clip[:, POSE + 75:].any()
+
+    (tmp_path / "data").mkdir()
+    rows = [rng.uniform(0.2, 0.8, (8, 76, 3)).tolist() for _ in range(9)]
+    labels = ["book"] * 6 + ["drink"] * 2 + ["unknown"]
+    pq.write_table(pa.table({"landmarks": rows, "label": labels}), tmp_path / "data" / "train-0.parquet")
+    train_clips, test_clips = load_wlasl(tmp_path)
+    assert [c.label for c in test_clips] == [WLASL_PREFIX + "book"]  # only words with five or more clips
+    assert sorted({c.label for c in train_clips}) == [WLASL_PREFIX + "book", WLASL_PREFIX + "drink"]
+    assert len(train_clips) == 7
+    assert [c.frames.tobytes() for c in load_wlasl(tmp_path)[1]] == [c.frames.tobytes() for c in test_clips]
