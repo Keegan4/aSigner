@@ -83,11 +83,11 @@ This writes `server/models/signs.onnx` (one file, with the labels and pass score
 
 The model takes 32 frames of 388 features: the original 382 normalised values plus six validity flags for left/right hand shape, left/right hand placement, pose and face/head. These flags are inferred from existing recordings; the browser's 256-value frame format is unchanged. Face presence is inferred from nonzero face/head values, so a completely neutral face cannot be distinguished from missing face tracking.
 
-Separate left-hand, right-hand, pose and face/head encoders each produce 80 dimensions from positions, frame differences and validity flags. Differences are zero for the first frame and whenever either adjacent observation is invalid, preventing tracking loss/recovery from appearing as motion. They describe motion over resampled clip time, not physical velocity. Entirely missing regions use learned embeddings. The four outputs are concatenated into 320 dimensions and processed by a residual temporal convolution (depthwise kernel 3, then a pointwise projection).
+Separate left-hand, right-hand, pose and face/head encoders turn positions, frame differences and validity flags into 120, 120, 40 and 40 dimensions. Hands carry most of a sign, so they get the most room. Each encoder has two layers, applied to each frame on its own: the first halves the input size, the second brings it to the region's width (`Linear → GELU → Linear → GELU → LayerNorm`). Hands go 256 → 128 → 120, pose 152 → 76 → 40 and face/head 112 → 56 → 40. Differences are zero for the first frame and whenever either adjacent observation is invalid, preventing tracking loss/recovery from appearing as motion. They describe motion over resampled clip time, not physical velocity. Entirely missing regions use learned embeddings. The four outputs are concatenated into 320 dimensions and processed by a residual temporal convolution (depthwise kernel 3, then a pointwise projection).
 
 The model then prepends a learned classification token and adds learned positional embeddings. Two Transformer encoder layers, each with 20 attention heads (16 dimensions per head), let every token attend to the entire clip. The classification token's output passes through layer normalisation and a three-layer classifier (`320 → 320 → 160 → labels`, including the no-sign class). Each hidden classifier layer uses batch normalisation, GELU and dropout. All dropout probabilities are 0.1. Training requires at least two clips after the signer split; inference accepts a single clip using the saved batch-normalisation statistics.
 
-There are `1,980,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (1,996,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time.
+There are `2,037,668 + 161 × C` trainable parameters, where `C` includes the no-sign class (2,053,929 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time. Checkpoints from `pretrain.py` made before the region encoders had two layers and uneven widths no longer fit; run `pretrain.py` again.
 
 Vector versions of both figures (PDF and SVG), with LaTeX captions, are in [`docs/figures/`](docs/figures/).
 
@@ -103,6 +103,27 @@ python train.py --init runs/pretrained.pt
 ```
 
 The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
+
+### Ablation: the temporal convolution
+
+To check whether the residual temporal convolution earns its place, train with and without it on several seeds:
+
+```bash
+cd ml
+python ablate.py --seeds 0 1 2 3 4
+```
+
+Both runs of a seed share the same split and augmented clips, so their difference shows the block's effect, and the spread across seeds shows how much accuracy moves by chance. It prints mean ± standard deviation of top-1 and top-5 for each version and for the paired difference, and writes `ablation.json` under `ml/runs/ablation-<time>/`. Models are trained in a scratch folder, so the served model is not replaced. `train.py --no-temporal-conv` trains a single model without the block.
+
+On the ASLNow! fingerspelling data (converted to clips; 5 seeds, 80 epochs, 413 test clips), the block was slightly better on every seed:
+
+| | top-1 | top-5 |
+|---|---|---|
+| with temporal conv | 94.6% ± 1.1% | 99.6% ± 0.3% |
+| without temporal conv | 93.8% ± 1.1% | 99.5% ± 0.5% |
+| paired difference | +0.8% ± 0.4% | +0.1% ± 0.3% |
+
+Those clips are a single still frame repeated, from one signer, so they contain no motion and the split is optimistic. The gain there most likely comes from smoothing per-frame augmentation noise and from the extra 104,640 parameters, not from motion. Whether the block helps on real SgSL signs needs the same run on recorded clips with a second signer held out.
 
 ## Tests
 

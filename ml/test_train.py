@@ -111,6 +111,21 @@ def test_hand_encoder_groups_shape_and_placement_without_the_other_hand():
     assert (flags == 1).all()
 
 
+def test_region_encoders_halve_their_input_then_give_hands_the_most_room():
+    expected = [(256, 128, 120), (256, 128, 120), (152, 76, 40), (112, 56, 40)]
+    for region, (inputs, hidden, width) in zip(SignNet(classes=4).regions, expected):
+        linears = [m for m in region.encoder if isinstance(m, torch.nn.Linear)]
+        assert [(m.in_features, m.out_features) for m in linears] == [(inputs, hidden), (hidden, width)]
+        assert region.missing.shape == (width,)
+
+
+def test_parameter_count_matches_the_readme():
+    for classes in (2, 101):
+        model = SignNet(classes)
+        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        assert trainable == 2_037_668 + 161 * classes
+
+
 def test_missing_regions_are_finite_and_ignore_invalid_coordinates():
     torch.manual_seed(3)
     model = SignNet(classes=4).eval()
@@ -292,3 +307,38 @@ def test_info_records_where_clips_came_from(tmp_path):
     both = tmp_path / "both.onnx"
     report = train(tmp_path / "clips", both, epochs=1, seed=0, test_signer="x", runs=tmp_path / "runs")
     assert report["info"]["sources"] == {"recorded": 9, "signbank": 9}
+
+
+def test_signnet_can_leave_out_the_temporal_conv():
+    torch.manual_seed(4)
+    with_conv, without = SignNet(classes=4), SignNet(classes=4, temporal_conv=False)
+    count = lambda model: sum(p.numel() for p in model.parameters())  # noqa: E731
+    # LayerNorm 640, depthwise 3·320 + 320, pointwise 320·320 + 320.
+    assert count(with_conv) - count(without) == 104_640
+    assert not any(name.startswith("temporal") for name, _ in without.named_parameters())
+    logits = without.eval()(torch.randn(2, CLIP_FRAMES, NORMALISED_SIZE))
+    assert logits.shape == (2, 4) and torch.isfinite(logits).all()
+
+
+def test_a_model_without_the_temporal_conv_exports_and_says_so(tmp_path):
+    write_clips(tmp_path / "clips", per_sign=4)
+    out = tmp_path / "signs.onnx"
+    report = train(tmp_path / "clips", out, epochs=2, seed=0, test_signer="u2", runs=tmp_path / "runs",
+                   temporal_conv=False)
+    assert report["temporal_conv"] is False
+    assert load_recogniser(str(out)).info["temporal_conv"] is False
+
+
+def test_ablation_pairs_each_seed_and_leaves_no_model_behind(tmp_path):
+    from ablate import ablate
+
+    write_clips(tmp_path / "clips", per_sign=4)
+    result = ablate(tmp_path / "clips", seeds=[0, 1], epochs=2, test_signer="u2", runs=tmp_path / "runs")
+    assert set(result["variants"]) == {"with temporal conv", "without temporal conv"}
+    for summary in result["variants"].values():
+        assert len(summary["top1"]["runs"]) == 2 and len(summary["top5"]["runs"]) == 2
+    paired = [a - b for a, b in zip(result["variants"]["with temporal conv"]["top1"]["runs"],
+                                    result["variants"]["without temporal conv"]["top1"]["runs"])]
+    assert result["difference"]["top1"]["runs"] == pytest.approx(paired)
+    assert list((tmp_path / "runs").glob("ablation-*/ablation.json"))
+    assert not list(tmp_path.rglob("*.onnx"))  # the served model is never touched

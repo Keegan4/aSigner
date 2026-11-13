@@ -7,10 +7,14 @@
   hand placement and pose relative to the shoulder midpoint and shoulder width), augmented
   with six validity flags, and resampled to $T{=}32$ frames, giving $X \in \mathbb{R}^{32\times388}$.
   (b) SignNet encodes four anatomical regions separately from positions, masked frame
-  differences and validity flags (80 dimensions each, with a learned embedding for absent
-  regions), mixes neighbouring frames with a residual depthwise-separable temporal
+  differences and validity flags (120 dimensions per hand and 40 each for pose and face/head,
+  via a hidden layer half the input size, with a learned embedding for absent regions), mixes neighbouring frames with a residual depthwise-separable temporal
   convolution, and classifies a learned [CLS] token after two pre-LN Transformer encoder
-  layers. The output covers all signs plus a no-sign class.}
+  layers. The output covers all signs plus a no-sign class. (c) One encoder layer: the
+  layer-normalised tokens are projected to queries, keys and values, split into 20 heads of
+  16 dimensions, combined by scaled dot-product attention over all 33 tokens and projected back
+  by $W_O$; a GELU feed-forward network ($320{\to}640{\to}320$) follows. Each sub-layer is
+  wrapped in a residual connection, with dropout 0.1 throughout.}
   \label{fig:architecture}
 \end{figure*}
 
