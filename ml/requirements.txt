@@ -4,3 +4,4 @@ onnxscript>=0.2
 onnxruntime>=1.20
 numpy>=2.3
 pytest>=8.3
+pyarrow>=17

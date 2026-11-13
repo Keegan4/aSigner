@@ -93,16 +93,26 @@ Vector versions of both figures (PDF and SVG), with LaTeX captions, are in [`doc
 
 ### Pretraining on public data (optional)
 
-With few clips of your own, the model can start from hand shapes learned on a public fingerspelling dataset ([ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling), MIT licence: 2,122 single-frame hand landmark samples, A to Z):
+With few clips of your own, the model can start from weights learned on public landmark data. None of it is SgSL:
+
+| Dataset | What it is | Licence |
+|---|---|---|
+| [ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling) | 2,122 single-frame hand samples of the ASL letters A to Z: still hands, no body or movement | MIT |
+| [CASL-W60](https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks) (optional) | 5,889 videos of 60 Central African Sign Language signs: pose and both hands over 64 frames, with the dataset's own train/test split | MIT |
+| [WLASL landmarks](https://huggingface.co/datasets/Kibalama/poseformer-sign-language) (optional) | 11,980 videos of 2,000 ASL words: pose and both hands, up to 150 frames | [C-UDA](https://github.com/dxli94/WLASL): academic, non-commercial use only |
 
 ```bash
 cd ml
 git clone https://huggingface.co/datasets/sid220/asl-now-fingerspelling data/public/asl-now-fingerspelling
-python pretrain.py
+mkdir -p data/public/casl-w60/data data/public/wlasl-landmarks/data
+for f in train test; do curl -L -o data/public/casl-w60/data/$f-00000-of-00001.parquet https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks/resolve/main/data/$f-00000-of-00001.parquet; done
+for i in 0 1 2 3; do curl -L -o data/public/wlasl-landmarks/data/train-0000$i-of-00004.parquet https://huggingface.co/datasets/Kibalama/poseformer-sign-language/resolve/main/data/train-0000$i-of-00004.parquet; done
+python pretrain.py --epochs 100
+python plot_pretrain.py
 python train.py --init runs/pretrained.pt
 ```
 
-The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
+`pretrain.py` uses CASL-W60 and WLASL when their parquet files are there. It saves loss and macro-F1 for every epoch in `runs/pretrained.json`, and `plot_pretrain.py` (needs `pip install matplotlib`) draws them. Neither video set has the face blendshapes the app uses, so the face counts as not tracked. WLASL's points are in an undocumented order. `public_data.py` explains how they were mapped and how its 9 pose points are filled out to the app's 25. Labels get `casl:` and `wlasl:` prefixes so they never collide with SgSL glosses. When `train.py` starts from the checkpoint, it keeps the learned layers, and labels the checkpoint never saw get a fresh output row. The checkpoint is never served, and a model started this way records it in its training details. Because WLASL is for non-commercial use only, a checkpoint pretrained with it is for academic use; leave out `data/public/wlasl-landmarks` to train without it.
 
 ### Ablation: the temporal convolution
 
