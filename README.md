@@ -132,27 +132,6 @@ On the ASLNow! fingerspelling data (converted to clips; 5 seeds, 80 epochs, 413 
 
 Those clips are a single still frame repeated, from one signer, so they contain no motion and the split is optimistic. The gain there most likely comes from smoothing per-frame augmentation noise and from the extra 104,640 parameters, not from motion. Whether the block helps on real SgSL signs needs the same run on recorded clips with a second signer held out.
 
-### Ablation: the temporal convolution
-
-To check whether the residual temporal convolution earns its place, train with and without it on several seeds:
-
-```bash
-cd ml
-python ablate.py --seeds 0 1 2 3 4
-```
-
-Both runs of a seed share the same split and augmented clips, so their difference shows the block's effect, and the spread across seeds shows how much accuracy moves by chance. It prints mean ± standard deviation of top-1 and top-5 for each version and for the paired difference, and writes `ablation.json` under `ml/runs/ablation-<time>/`. Models are trained in a scratch folder, so the served model is not replaced. `train.py --no-temporal-conv` trains a single model without the block.
-
-On the ASLNow! fingerspelling data (converted to clips; 5 seeds, 80 epochs, 413 test clips), the block was slightly better on every seed:
-
-| | top-1 | top-5 |
-|---|---|---|
-| with temporal conv | 94.6% ± 1.1% | 99.6% ± 0.3% |
-| without temporal conv | 93.8% ± 1.1% | 99.5% ± 0.5% |
-| paired difference | +0.8% ± 0.4% | +0.1% ± 0.3% |
-
-Those clips are a single still frame repeated, from one signer, so they contain no motion and the split is optimistic. The gain there most likely comes from smoothing per-frame augmentation noise and from the extra 104,640 parameters, not from motion. Whether the block helps on real SgSL signs needs the same run on recorded clips with a second signer held out.
-
 ## Tests
 
 ```bash
