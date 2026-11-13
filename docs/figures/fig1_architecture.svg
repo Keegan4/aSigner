@@ -114,7 +114,7 @@
   <text x="252.5" y="468" class="t">Face / head encoder</text>
   <text x="252.5" y="486">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">112</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">80</tspan></text>
 </g>
-<text x="150" y="530" class="s" fill="#444">each, per frame: Linear → GELU → Linear (80 → 80) → GELU → LayerNorm; learned embedding <tspan font-style="italic">e</tspan><tspan font-size="7" dy="2">miss</tspan><tspan dy="-2"> if region absent</tspan></text>
+<text x="150" y="530" class="s" fill="#444">each, per frame: Linear (→ 320) → GELU → Linear (320 → 160) → GELU → Linear (160 → 80) → GELU → LayerNorm; learned embedding <tspan font-style="italic">e</tspan><tspan font-size="7" dy="2">miss</tspan><tspan dy="-2"> if region absent</tspan></text>
 <text x="150" y="544" class="s" fill="#444"><tspan font-style="italic">p</tspan>: positions · Δ<tspan font-style="italic">p</tspan>: frame difference, 0 unless both frames valid · <tspan font-style="italic">m</tspan>: validity flags</text>
 
 <g class="ln" marker-end="url(#ar)">
@@ -201,5 +201,5 @@
 <g class="ln" marker-end="url(#ar)"><path d="M1056,314 V320"/><path d="M1056,356 V362"/><path d="M1056,398 V404"/><path d="M1056,428 V440"/></g>
 
 <line x1="20" y1="558" x2="1120" y2="558" stroke="#bbb" stroke-width="0.8"/>
-<text x="20" y="578" class="s" fill="#333">Trainable parameters: 2,005,920 + 161·<tspan font-style="italic">C</tspan> (2,022,181 for 100 signs + no-sign). Embedding width <tspan font-style="italic">d</tspan> = 320 (4 regions × 80). All dropout <tspan font-style="italic">p</tspan> = 0.1. Exported to ONNX and run on CPU.</text>
+<text x="20" y="578" class="s" fill="#333">Trainable parameters: 2,424,160 + 161·<tspan font-style="italic">C</tspan> (2,440,421 for 100 signs + no-sign). Embedding width <tspan font-style="italic">d</tspan> = 320 (4 regions × 80). All dropout <tspan font-style="italic">p</tspan> = 0.1. Exported to ONNX and run on CPU.</text>
 </svg>
