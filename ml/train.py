@@ -36,6 +36,7 @@ SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this mu
 MIN_CLIPS_FOR_THRESHOLD = 30
 MAX_FALSE_ACCEPT = 0.05
 MIN_PASS_SCORE = 0.5
+REGION_HIDDEN = 128  # hidden width of each region encoder
 
 
 def pick_device() -> torch.device:
@@ -60,13 +61,12 @@ class RegionEncoder(nn.Module):
         super().__init__()
         self.parts = parts
         coordinates = sum(PART_WIDTHS[i] for i in parts)
-        # Three layers narrowing to the region's width (320 -> 160 -> 80 for
-        # width 80): the first mixes positions, motion and flags, the others
-        # combine those features before the region is joined to the others.
+        # Two layers through a 128-wide hidden layer: the first mixes positions,
+        # motion and flags; the second combines those features before the
+        # region is joined to the others.
         self.encoder = nn.Sequential(
-            nn.Linear(2 * coordinates + 2 * len(parts), 4 * width), nn.GELU(),
-            nn.Linear(4 * width, 2 * width), nn.GELU(),
-            nn.Linear(2 * width, width), nn.GELU(), nn.LayerNorm(width),
+            nn.Linear(2 * coordinates + 2 * len(parts), REGION_HIDDEN), nn.GELU(),
+            nn.Linear(REGION_HIDDEN, width), nn.GELU(), nn.LayerNorm(width),
         )
         self.missing = nn.Parameter(torch.empty(width))
         nn.init.normal_(self.missing, std=0.02)

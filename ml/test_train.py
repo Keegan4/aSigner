@@ -111,17 +111,17 @@ def test_hand_encoder_groups_shape_and_placement_without_the_other_hand():
     assert (flags == 1).all()
 
 
-def test_region_encoders_narrow_from_320_to_80():
+def test_region_encoders_go_through_a_128_wide_hidden_layer():
     for parts, inputs in (((0, 2), 256), ((1, 3), 256), ((4,), 152), ((5,), 112)):
         linears = [m for m in RegionEncoder(parts, 80).encoder if isinstance(m, torch.nn.Linear)]
-        assert [(m.in_features, m.out_features) for m in linears] == [(inputs, 320), (320, 160), (160, 80)]
+        assert [(m.in_features, m.out_features) for m in linears] == [(inputs, 128), (128, 80)]
 
 
 def test_parameter_count_matches_the_readme():
     for classes in (2, 101):
         model = SignNet(classes)
         trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        assert trainable == 2_424_160 + 161 * classes
+        assert trainable == 2_058_720 + 161 * classes
 
 
 def test_missing_regions_are_finite_and_ignore_invalid_coordinates():
