@@ -125,6 +125,9 @@ export function Home() {
             Record training clips
           </Link>
         )}
+        <Link href="/train" className="underline underline-offset-4">
+          Help train the sign model
+        </Link>
       </nav>
     </main>
   );

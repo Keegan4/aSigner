@@ -1,6 +1,9 @@
 """Train the sign classifier and export it for the server.
 
     python train.py --clips ../server/data/clips --out ../server/models/signs.onnx
+    python train.py --clips ../server/data/clips data/collected   # several folders
+
+data/collected is where pull_samples.py puts takes from the training page.
 
 Writes signs.onnx (labels and pass score inside it), plus report.json and
 confusion.csv under runs/<time>/.
@@ -152,8 +155,9 @@ class SignNet(nn.Module):
 
 
 def clip_source(signer: str) -> str:
-    """"recorded" for clips made on /record, otherwise the outside source's id."""
-    return "recorded" if re.fullmatch(r"u\d+", signer) else signer
+    """"recorded" for clips made in the app (/record, or /train via pull_samples.py),
+    otherwise the outside source's id."""
+    return "recorded" if re.fullmatch(r"u\d+|t[0-9a-f]{16}", signer) else signer
 
 
 def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
@@ -259,12 +263,13 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     os.replace(pending, out)
 
 
-def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
+def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
           init: Path | None = None, temporal_conv: bool = True):
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
-    clips = load_clips(clips_dir)
+    folders = clips_dir if isinstance(clips_dir, list) else [clips_dir]
+    clips = [clip for folder in folders for clip in load_clips(folder)]
     if len({c.label for c in clips} - {IDLE_LABEL}) < 2:
         raise SystemExit(f"Need clips for at least two signs; found {len(clips)} clips.")
     train_clips, test_clips, split_note = split(clips, test_signer, rng)
@@ -384,7 +389,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
 if __name__ == "__main__":
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--clips", type=Path, default=here.parent / "server" / "data" / "clips")
+    parser.add_argument("--clips", type=Path, nargs="+", default=[here.parent / "server" / "data" / "clips"],
+                        help="one or more clip folders (default: the /record clips)")
     parser.add_argument("--out", type=Path, default=here.parent / "server" / "models" / "signs.onnx")
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--seed", type=int, default=0)

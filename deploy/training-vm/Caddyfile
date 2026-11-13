@@ -1,0 +1,16 @@
+# SITE_ADDRESS is a domain name (Caddy gets a Let's Encrypt certificate, which
+# needs ports 80 and 443 reachable from the internet) or the VM's IP address
+# (Caddy signs its own certificate, and browsers warn once until it is trusted).
+{$SITE_ADDRESS} {
+	encode gzip
+
+	# Contributors only need the training page.
+	redir / /train
+
+	handle /api/* {
+		reverse_proxy server:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

@@ -2,8 +2,8 @@
 with its own `router` and including it here."""
 from fastapi import APIRouter
 
-from app.routes import auth, clips, lessons, me, progress, translations
+from app.routes import auth, clips, lessons, me, progress, training, translations
 
 router = APIRouter()
-for module in (auth, me, lessons, translations, progress, clips):
+for module in (auth, me, lessons, translations, progress, clips, training):
     router.include_router(module.router)

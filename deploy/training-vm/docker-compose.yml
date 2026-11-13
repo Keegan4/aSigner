@@ -1,0 +1,67 @@
+# The training-data collector for a Linux VM: Postgres, the API server, the web app
+# and Caddy for HTTPS (browsers only give camera access over HTTPS). See README.md here.
+#
+#   cp .env.example .env   # then fill it in
+#   docker compose up -d --build
+name: asigner-training
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: asigner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: asigner
+    ports:
+      # Local to the VM by default: reach it over an SSH tunnel. Set POSTGRES_BIND=0.0.0.0
+      # in .env to connect straight from another machine on the network instead.
+      - "${POSTGRES_BIND:-127.0.0.1}:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asigner"]
+      interval: 5s
+      retries: 10
+
+  server:
+    build: ../../server
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://asigner:${POSTGRES_PASSWORD}@postgres:5432/asigner
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      FRONTEND_URL: https://${SITE_ADDRESS:?Set SITE_ADDRESS in .env}
+      TRAINING_ACCESS_CODE: ${TRAINING_ACCESS_CODE:?Set TRAINING_ACCESS_CODE in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../../web
+      args:
+        API_URL: http://server:8000
+    restart: unless-stopped
+    depends_on:
+      - server
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - server
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

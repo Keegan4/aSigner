@@ -52,9 +52,10 @@ Never verified:
 | `server/app/ws/` | WebSocket endpoints, one module per socket (message formats in their docstrings); `session.py` has `authorise` |
 | `server/seed/lessons.yaml` | Lesson content |
 | `server/tests/` | pytest; `conftest.py` has the signed-in client fixture |
-| `ml/` | Training: `data.py` (loading, augmentation), `train.py` (model, evaluation, export) |
+| `ml/` | Training: `data.py` (loading, augmentation), `train.py` (model, evaluation, export), `pull_samples.py` (takes from the training page's database into clip files) |
+| `deploy/training-vm/` | Docker Compose and Caddy for running the training page on its own Linux VM |
 | `web/src/app/` | Routes only; each page renders one component |
-| `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `translate` (live and history), `ui` (shared page frame and small parts) |
+| `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `train` (training page), `translate` (live and history), `ui` (shared page frame and small parts) |
 | `web/src/lib/` | `api.ts` (types and fetch helper), `practice.ts` (practice socket and its mock), `tracking/` (frame packing, MediaPipe setup) |
 | `web/src/hooks/` | Shared data hooks |
 
@@ -104,6 +105,10 @@ Done in code: Ollama client with fallback, storage, history page with delete, sp
 ### T6. Infrastructure: done, apart from the `ollama` service, which has not been started
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.
 Can start now.
+
+### T8. Training page on a VM: built, not yet deployed
+`/train` (`web/src/components/train/Trainer.tsx`) and `/api/training` (`server/app/routes/training.py`, `server/app/services/training.py`). Takes go into Postgres (`training_samples`: raw frames as bytea, label, frame count, fps, anonymous contributor hash, time); signs added on the page go into `training_signs`. No Google sign-in: a shared `TRAINING_ACCESS_CODE`, required unless `FRONTEND_URL` is localhost. `ml/pull_samples.py` syncs the takes into clip files that `train.py` reads. `deploy/training-vm/` runs Postgres, server, web and Caddy (HTTPS, needed for the camera) on a Linux VM.
+Tested: server endpoints (pytest, SQLite), the pull script against made-up rows, and the page's code, sign list, add and remove flows in a browser against a stubbed API. Not yet: a real take recorded through `/train`, the Docker stack on a VM, or a pull from a real Postgres.
 
 ### T7. Human-only tasks (owner)
 - Create the Google OAuth client and `.env`.
