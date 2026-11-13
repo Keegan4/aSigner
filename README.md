@@ -25,6 +25,8 @@ Browser: camera -> MediaPipe hands + pose + face -> 1 KB landmark frame
 FastAPI: normalise -> sign model -> scoring / captions -> Postgres
 ```
 
+![Landmark pipeline and SignNet architecture](docs/figures/fig1_architecture.png)
+
 Video never leaves the browser. Only landmark coordinates are sent. Progress and past translations are stored as text. Training clips recorded on `/record` are stored as landmark coordinates (no video) until you delete them or your account.
 
 ## Run locally
@@ -75,6 +77,8 @@ python -m venv .venv
 
 Training (`train.py` and `pretrain.py`) uses a GPU whenever PyTorch can see one, and the CPU otherwise; it prints which at the start. In order: CUDA (NVIDIA, or AMD on a [ROCm build](https://pytorch.org/get-started/locally/), which PyTorch also reports as `cuda`), XPU (Intel Arc and Core Ultra graphics, on an [XPU build](https://pytorch.org/docs/stable/notes/get_start_xpu.html)), then MPS (Apple Silicon). Each needs the matching PyTorch build; the default one sees only the CPU (and MPS on a Mac). Integrated GPUs other than Intel Core Ultra's are mostly not supported by these builds. For an NVIDIA GPU, install a CUDA build of PyTorch instead (leave out `--extra-index-url ...cpu`, or follow [pytorch.org](https://pytorch.org/get-started/locally/)); `python -c "import torch; print(torch.cuda.is_available())"` should print `True`. On an Apple Silicon Mac the standard macOS build already includes MPS (`torch.backends.mps.is_available()` should print `True`); if an operation is missing there, set `PYTORCH_ENABLE_MPS_FALLBACK=1` to run it on the CPU. For a model this small a GPU may not be much faster, since augmentation runs on the CPU either way. The exported model always runs on the CPU, as the server does: GPU inference was tried and was slower for this model.
 
+![Training, evaluation and serving pipeline](docs/figures/fig2_training.png)
+
 This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
 The model takes 32 frames of 388 features: the original 382 normalised values plus six validity flags for left/right hand shape, left/right hand placement, pose and face/head. These flags are inferred from existing recordings; the browser's 256-value frame format is unchanged. Face presence is inferred from nonzero face/head values, so a completely neutral face cannot be distinguished from missing face tracking.
@@ -84,6 +88,8 @@ Separate left-hand, right-hand, pose and face/head encoders each produce 80 dime
 The model then prepends a learned classification token and adds learned positional embeddings. Two Transformer encoder layers, each with 20 attention heads (16 dimensions per head), let every token attend to the entire clip. The classification token's output passes through layer normalisation and a three-layer classifier (`320 → 320 → 160 → labels`, including the no-sign class). Each hidden classifier layer uses batch normalisation, GELU and dropout. All dropout probabilities are 0.1. Training requires at least two clips after the signer split; inference accepts a single clip using the saved batch-normalisation statistics.
 
 There are `1,980,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (1,996,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time.
+
+Vector versions of both figures (PDF and SVG), with LaTeX captions, are in [`docs/figures/`](docs/figures/).
 
 ### Pretraining on public data (optional)
 
