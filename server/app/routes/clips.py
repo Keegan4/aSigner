@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.models import Sign, User
-from app.recognition.features import FRAME_SIZE, IDLE_LABEL
+from app.recognition.features import FRAME_SIZE, IDLE_LABEL, X_UNITS
 from app.routes.deps import current_user
 from app.services.clips import get_clips_dir, signer_id
 
@@ -32,11 +32,19 @@ async def save_clip(
     request: Request,
     label: str = Query(max_length=80),
     fps: float = Query(gt=0, le=120),
+    x_units: str | None = Query(default=None, max_length=20),
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
     clips_dir: Path = Depends(get_clips_dir),
 ):
-    """Store one clip. The body is the raw frames back to back, 1024 bytes each."""
+    """Store one clip. The body is the raw frames back to back, 1024 bytes each.
+
+    `x_units` is "height" from a browser that packs x in units of image height.
+    A clip without it is from an older page and keeps image-width units, which
+    training converts on load.
+    """
+    if x_units not in (None, X_UNITS):
+        raise HTTPException(400, f"x_units must be {X_UNITS!r}.")
     known = label == IDLE_LABEL or (
         _SAFE.fullmatch(label) and db.scalar(select(Sign).where(Sign.gloss == label)) is not None
     )
@@ -56,8 +64,9 @@ async def save_clip(
     clip_id = f"{signer}_{uuid.uuid4().hex}"
     folder = clips_dir / label
     folder.mkdir(parents=True, exist_ok=True)
+    extra = {"x_units": x_units} if x_units else {}
     np.savez_compressed(
-        folder / f"{clip_id}.npz", frames=frames, label=label, signer=signer, fps=np.float32(fps)
+        folder / f"{clip_id}.npz", frames=frames, label=label, signer=signer, fps=np.float32(fps), **extra
     )
     return {"id": clip_id, "label": label, "frames": count}
 

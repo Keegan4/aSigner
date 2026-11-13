@@ -11,6 +11,8 @@ Keep it under ml/data/, which is not committed. What it does not have: a body,
 a face, a note of which hand it is, or any movement. A sample becomes a short
 clip of one still hand, so it can teach hand shapes and nothing else, and the
 letters that are traced in the air (J, Z) are present as a handshape only.
+Nor does it record the camera image's size, so x and z are converted to units
+of image height assuming the same 4:3 image as old recordings (LEGACY_ASPECT).
 """
 import json
 import math
@@ -18,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-from data import Clip
+from data import LEGACY_ASPECT, Clip, to_height_units
 
 from app.recognition.features import FRAME_SIZE, HAND_POINTS, POSE, RIGHT_HAND  # path set up by data.py
 
@@ -43,7 +45,7 @@ def sample_to_clip(points: np.ndarray, frames: int = FRAMES_PER_CLIP) -> np.ndar
     """A raw clip of one still hand. Augmentation mirrors it into the other hand's slot half the time."""
     clip = np.zeros((frames, FRAME_SIZE), dtype=np.float32)
     clip[:, RIGHT_HAND:POSE] = points.ravel()
-    return clip
+    return to_height_units(clip, LEGACY_ASPECT)
 
 
 def load_samples(folder: Path) -> list[Clip]:

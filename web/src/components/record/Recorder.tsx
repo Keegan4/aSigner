@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraTracker } from "@/components/camera/CameraTracker";
 import { getJson, type LessonSummary, type Me } from "@/lib/api";
-import { FRAME_SIZE, LEFT_HAND, POSE } from "@/lib/tracking/features";
+import { FRAME_SIZE, LEFT_HAND, POSE, X_UNITS } from "@/lib/tracking/features";
 
 type SignRow = { id: number; gloss: string };
 type Phase = "idle" | "countdown" | "recording" | "saving";
@@ -84,7 +84,7 @@ export function Recorder() {
     }
     const body = new Float32Array(frames.length * FRAME_SIZE);
     frames.forEach((frame, i) => body.set(frame, i * FRAME_SIZE));
-    const query = new URLSearchParams({ label, fps: (frames.length / elapsed).toFixed(2) });
+    const query = new URLSearchParams({ label, fps: (frames.length / elapsed).toFixed(2), x_units: X_UNITS });
     const res = await fetch(`/api/clips?${query}`, {
       method: "POST",
       headers: { "Content-Type": "application/octet-stream" },

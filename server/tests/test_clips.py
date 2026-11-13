@@ -3,7 +3,7 @@ import pytest
 
 from app.main import app
 from app.models import User
-from app.recognition.features import FRAME_SIZE, normalise
+from app.recognition.features import FRAME_SIZE, X_UNITS, normalise
 from app.services.clips import get_clips_dir
 
 
@@ -18,8 +18,8 @@ def clip_bytes(frames: int = 30, seed: int = 0) -> bytes:
     return rng.uniform(0.2, 0.8, (frames, FRAME_SIZE)).astype("<f4").tobytes()
 
 
-def post(client, body: bytes, label: str = "A", fps: float = 30):
-    return client.post("/api/clips", params={"label": label, "fps": fps}, content=body)
+def post(client, body: bytes, label: str = "A", fps: float = 30, **params):
+    return client.post("/api/clips", params={"label": label, "fps": fps, **params}, content=body)
 
 
 def test_clips_need_a_session(client, clips_dir):
@@ -94,3 +94,13 @@ def test_deleting_the_account_deletes_its_clips(signed_in, user, db_factory, cli
 def test_idle_clips_are_accepted_without_a_sign_row(signed_in, clips_dir):
     assert post(signed_in, clip_bytes(), label="_idle").status_code == 201
     assert signed_in.get("/api/clips/counts").json() == {"_idle": 1}
+
+
+def test_clip_records_x_units_only_when_the_browser_sends_them(signed_in, clips_dir):
+    new = post(signed_in, clip_bytes(), x_units=X_UNITS).json()
+    old = post(signed_in, clip_bytes()).json()
+    with np.load(clips_dir / "A" / f"{new['id']}.npz") as clip:
+        assert str(clip["x_units"]) == X_UNITS
+    with np.load(clips_dir / "A" / f"{old['id']}.npz") as clip:
+        assert "x_units" not in clip
+    assert post(signed_in, clip_bytes(), x_units="width").status_code == 400

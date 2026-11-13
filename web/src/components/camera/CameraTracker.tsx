@@ -82,7 +82,7 @@ export function CameraTracker({ onFrame }: { onFrame?: (frame: Float32Array) => 
               });
               draw.drawLandmarks(hand, { color: "#fef3c7", radius: 2 });
             }
-            onFrameRef.current?.(packFrame(result));
+            onFrameRef.current?.(packFrame(result, video.videoWidth, video.videoHeight));
           }
           raf = requestAnimationFrame(loop);
         };

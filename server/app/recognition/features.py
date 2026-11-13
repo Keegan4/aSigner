@@ -2,7 +2,11 @@
 
 This is the only normaliser: the live server and the training code in ml/
 both import it, so model inputs cannot drift between training and serving.
-The raw layout must match web/src/lib/tracking/features.ts.
+The raw layout must match web/src/lib/tracking/features.ts. Raw x and z are
+in units of image height (MediaPipe's x times width / height), so on a
+non-square image x and y still measure the same distance and turning a hand in
+the picture does not change its shape. Clips recorded before that change are
+in image-width units; ml/data.py converts them when it loads them.
 
 Each hand's shape part holds 138 values: 63 wrist-relative coordinates, then
 75 "detail" values from `hand_detail` (the hand in its own palm frame, and
@@ -20,6 +24,8 @@ POSE = RIGHT_HAND + HAND_POINTS * 3
 FACE = POSE + POSE_POINTS * 3
 HEAD = FACE + BLENDSHAPES
 FRAME_SIZE = HEAD + 3  # 256 float32 values, 1024 bytes
+# Stored with each clip (and sent by the browser) when x and z are in units of image height.
+X_UNITS = "height"
 
 # Thumb tip to the middle joint, end joint and tip of each finger.
 THUMB_TIP = 4
@@ -72,8 +78,8 @@ def hand_detail(shape: np.ndarray, left: bool) -> np.ndarray:
     thumb lies in front of or behind the fingers is always the n axis. The last
     12 are distances from the thumb tip to finger joints.
 
-    x and y are in image units and z roughly in x's units, so on a non-square
-    image the frame is slightly skewed and rotation invariance is approximate.
+    This is only rotation invariant if x, y and z share units, which is why
+    raw frames carry x and z in units of image height.
     """
     if left:
         shape = shape * np.array([-1.0, 1.0, 1.0], dtype=shape.dtype)

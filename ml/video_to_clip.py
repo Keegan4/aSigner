@@ -27,8 +27,9 @@ from mediapipe.tasks.python import vision
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "server"))
 
 from app.recognition.features import (  # noqa: E402
-    BLENDSHAPES, FACE, FRAME_SIZE, HAND_POINTS, HEAD, LEFT_HAND, POSE, POSE_POINTS, RIGHT_HAND,
+    BLENDSHAPES, FACE, FRAME_SIZE, HAND_POINTS, HEAD, LEFT_HAND, POSE, POSE_POINTS, RIGHT_HAND, X_UNITS,
 )
+from data import to_height_units  # noqa: E402
 
 # The same model files web/src/lib/tracking/landmarkers.ts loads.
 MODELS = "https://storage.googleapis.com/mediapipe-models"
@@ -74,7 +75,10 @@ def points(landmarks, count: int) -> np.ndarray:
 
 
 def extract(frames: list[np.ndarray], fps: float) -> np.ndarray:
-    """Raw landmark frames, laid out exactly as web/src/lib/tracking/features.ts packs them."""
+    """Raw landmark frames, laid out exactly as web/src/lib/tracking/features.ts packs them.
+
+    Like the browser, x and z are in units of image height.
+    """
     video = vision.RunningMode.VIDEO
     base = lambda name: tasks.BaseOptions(model_asset_path=model(name))  # noqa: E731
     hands = vision.HandLandmarker.create_from_options(
@@ -109,6 +113,9 @@ def extract(frames: list[np.ndarray], fps: float) -> np.ndarray:
             )
     for tracker in (hands, pose, face):
         tracker.close()
+    if frames:
+        height, width = frames[0].shape[:2]
+        out = to_height_units(out, width / height)
     return out
 
 
@@ -132,7 +139,7 @@ def convert(source: Path, label: str, signer: str, clips_dir: Path, trim: bool =
     folder = clips_dir / label
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"{signer}_{uuid.uuid4().hex}.npz"
-    np.savez_compressed(path, frames=raw, label=label, signer=signer, fps=np.float32(fps))
+    np.savez_compressed(path, frames=raw, label=label, signer=signer, fps=np.float32(fps), x_units=X_UNITS)
     return summary | {"path": str(path)}
 
 

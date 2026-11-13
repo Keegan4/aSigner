@@ -1,9 +1,12 @@
 /**
  * Per-frame feature layout sent to the server. Must match server/app/recognition/features.py.
  *
- * Values are raw MediaPipe outputs (image-normalised x, y and relative z).
- * Normalisation (centring, scaling) happens once, in Python, so training
- * and live inference cannot drift apart. Missing parts are all zeros.
+ * Values are MediaPipe outputs with x rescaled to units of image height
+ * (x * width / height), so x and y measure the same distance on screen and a
+ * hand turned in the picture keeps its shape. MediaPipe's z is in the units of
+ * its x, so it is rescaled the same way. Normalisation (centring, scaling)
+ * happens once, in Python, so training and live inference cannot drift apart.
+ * Missing parts are all zeros.
  */
 export const HAND_POINTS = 21;
 export const POSE_POINTS = 25; // MediaPipe pose landmarks 0-24: head, arms, hips
@@ -16,6 +19,9 @@ export const FACE = POSE + POSE_POINTS * 3; // 201
 export const HEAD = FACE + BLENDSHAPES; // 253: yaw, pitch, roll in radians
 export const FRAME_SIZE = HEAD + 3; // 256 floats = 1024 bytes
 
+/** Sent as the `x_units` query value with recorded clips, so the server knows how they were packed. */
+export const X_UNITS = "height";
+
 export type Point = { x: number; y: number; z: number };
 
 export type FrameParts = {
@@ -27,12 +33,18 @@ export type FrameParts = {
   faceMatrix?: ArrayLike<number>;
 };
 
-function writePoints(out: Float32Array, offset: number, points: Point[] | undefined, count: number) {
+function writePoints(
+  out: Float32Array,
+  offset: number,
+  points: Point[] | undefined,
+  count: number,
+  aspect: number,
+) {
   if (!points) return;
   for (let i = 0; i < Math.min(count, points.length); i++) {
-    out[offset + i * 3] = points[i].x;
+    out[offset + i * 3] = points[i].x * aspect;
     out[offset + i * 3 + 1] = points[i].y;
-    out[offset + i * 3 + 2] = points[i].z;
+    out[offset + i * 3 + 2] = points[i].z * aspect;
   }
 }
 
@@ -45,11 +57,13 @@ export function headAngles(m: ArrayLike<number>): [number, number, number] {
   return [yaw, pitch, roll];
 }
 
-export function packFrame(parts: FrameParts): Float32Array {
+/** `width` and `height` are the size of the image the landmarks were found in. */
+export function packFrame(parts: FrameParts, width: number, height: number): Float32Array {
+  const aspect = width > 0 && height > 0 ? width / height : 1;
   const out = new Float32Array(FRAME_SIZE);
-  writePoints(out, LEFT_HAND, parts.leftHand, HAND_POINTS);
-  writePoints(out, RIGHT_HAND, parts.rightHand, HAND_POINTS);
-  writePoints(out, POSE, parts.pose, POSE_POINTS);
+  writePoints(out, LEFT_HAND, parts.leftHand, HAND_POINTS, aspect);
+  writePoints(out, RIGHT_HAND, parts.rightHand, HAND_POINTS, aspect);
+  writePoints(out, POSE, parts.pose, POSE_POINTS, aspect);
   if (parts.blendshapes) out.set(parts.blendshapes.slice(0, BLENDSHAPES), FACE);
   if (parts.faceMatrix) out.set(headAngles(parts.faceMatrix), HEAD);
   return out;

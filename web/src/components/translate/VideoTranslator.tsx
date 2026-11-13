@@ -202,7 +202,7 @@ export function VideoTranslator() {
           draw.drawLandmarks(hand, { color: "#fef3c7", radius: 2 });
         }
         const message = new ArrayBuffer(FRAME_SIZE * 4 + 8);
-        new Float32Array(message, 0, FRAME_SIZE).set(packFrame(result));
+        new Float32Array(message, 0, FRAME_SIZE).set(packFrame(result, ctx.canvas.width, ctx.canvas.height));
         new DataView(message).setFloat64(FRAME_SIZE * 4, t, true);
         if (ws.readyState !== WebSocket.OPEN) throw new Error("The connection to the aSigner server was lost.");
         ws.send(message);

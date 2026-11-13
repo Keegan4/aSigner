@@ -21,6 +21,7 @@ from app.recognition.features import (  # noqa: E402
     POSE,
     POSE_POINTS,
     RIGHT_HAND,
+    X_UNITS,
     normalise,
     resample,
 )
@@ -28,6 +29,24 @@ from app.recognition.features import (  # noqa: E402
 # MediaPipe pose landmarks that trade places when the image is mirrored.
 _POSE_PAIRS = [(1, 4), (2, 5), (3, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16),
                (17, 18), (19, 20), (21, 22), (23, 24)]
+
+
+# Width / height of the camera image behind clips saved before raw x was in
+# units of image height. The recorder asks the browser for 640x480.
+LEGACY_ASPECT = 640 / 480
+
+
+def to_height_units(frames: np.ndarray, aspect: float) -> np.ndarray:
+    """Raw frames with x and z rescaled from image-width to image-height units.
+
+    `aspect` is the image's width / height. Only landmark coordinates change;
+    missing landmarks stay zero.
+    """
+    out = frames.copy()
+    points = out[:, :FACE].reshape(len(out), -1, 3)
+    points[..., 0] *= aspect
+    points[..., 2] *= aspect
+    return out
 
 
 @dataclass
@@ -41,7 +60,10 @@ def load_clips(folder: Path) -> list[Clip]:
     clips = []
     for path in sorted(folder.glob("*/*.npz")):
         with np.load(path) as data:
-            clips.append(Clip(data["frames"].astype(np.float32), str(data["label"]), str(data["signer"])))
+            frames = data["frames"].astype(np.float32)
+            if "x_units" not in data or str(data["x_units"]) != X_UNITS:
+                frames = to_height_units(frames, LEGACY_ASPECT)
+            clips.append(Clip(frames, str(data["label"]), str(data["signer"])))
     return clips
 
 
