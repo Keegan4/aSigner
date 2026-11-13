@@ -1,0 +1,4593 @@
+{
+ "samples": 19891,
+ "labels": [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
+  "_idle",
+  "casl:G001",
+  "casl:G002",
+  "casl:G003",
+  "casl:G004",
+  "casl:G005",
+  "casl:G006",
+  "casl:G007",
+  "casl:G008",
+  "casl:G009",
+  "casl:G010",
+  "casl:G011",
+  "casl:G012",
+  "casl:G013",
+  "casl:G014",
+  "casl:G015",
+  "casl:G016",
+  "casl:G017",
+  "casl:G018",
+  "casl:G019",
+  "casl:G020",
+  "casl:G021",
+  "casl:G022",
+  "casl:G023",
+  "casl:G024",
+  "casl:G025",
+  "casl:G026",
+  "casl:G027",
+  "casl:G028",
+  "casl:G029",
+  "casl:G030",
+  "casl:G031",
+  "casl:G032",
+  "casl:G033",
+  "casl:G034",
+  "casl:G035",
+  "casl:G036",
+  "casl:G037",
+  "casl:G038",
+  "casl:G039",
+  "casl:G040",
+  "casl:G041",
+  "casl:G042",
+  "casl:G043",
+  "casl:G044",
+  "casl:G045",
+  "casl:G046",
+  "casl:G047",
+  "casl:G048",
+  "casl:G049",
+  "casl:G050",
+  "casl:G051",
+  "casl:G052",
+  "casl:G053",
+  "casl:G054",
+  "casl:G055",
+  "casl:G056",
+  "casl:G057",
+  "casl:G058",
+  "casl:G059",
+  "casl:G060",
+  "wlasl:a",
+  "wlasl:a lot",
+  "wlasl:abdomen",
+  "wlasl:able",
+  "wlasl:about",
+  "wlasl:above",
+  "wlasl:accent",
+  "wlasl:accept",
+  "wlasl:accident",
+  "wlasl:accomplish",
+  "wlasl:accountant",
+  "wlasl:across",
+  "wlasl:act",
+  "wlasl:action",
+  "wlasl:active",
+  "wlasl:activity",
+  "wlasl:actor",
+  "wlasl:adapt",
+  "wlasl:add",
+  "wlasl:address",
+  "wlasl:adjective",
+  "wlasl:adjust",
+  "wlasl:admire",
+  "wlasl:admit",
+  "wlasl:adopt",
+  "wlasl:adult",
+  "wlasl:advanced",
+  "wlasl:advantage",
+  "wlasl:adverb",
+  "wlasl:affect",
+  "wlasl:afraid",
+  "wlasl:africa",
+  "wlasl:after",
+  "wlasl:afternoon",
+  "wlasl:again",
+  "wlasl:against",
+  "wlasl:age",
+  "wlasl:agenda",
+  "wlasl:ago",
+  "wlasl:agree",
+  "wlasl:agreement",
+  "wlasl:ahead",
+  "wlasl:aid",
+  "wlasl:aim",
+  "wlasl:airplane",
+  "wlasl:alarm",
+  "wlasl:alcohol",
+  "wlasl:algebra",
+  "wlasl:all",
+  "wlasl:all day",
+  "wlasl:allergy",
+  "wlasl:alligator",
+  "wlasl:allow",
+  "wlasl:almost",
+  "wlasl:alone",
+  "wlasl:alphabet",
+  "wlasl:already",
+  "wlasl:also",
+  "wlasl:always",
+  "wlasl:amazing",
+  "wlasl:america",
+  "wlasl:amputate",
+  "wlasl:analyze",
+  "wlasl:anatomy",
+  "wlasl:and",
+  "wlasl:angel",
+  "wlasl:angle",
+  "wlasl:angry",
+  "wlasl:animal",
+  "wlasl:anniversary",
+  "wlasl:announce",
+  "wlasl:annoy",
+  "wlasl:another",
+  "wlasl:answer",
+  "wlasl:any",
+  "wlasl:anyway",
+  "wlasl:apart",
+  "wlasl:apartment",
+  "wlasl:apostrophe",
+  "wlasl:appear",
+  "wlasl:appetite",
+  "wlasl:apple",
+  "wlasl:appointment",
+  "wlasl:appreciate",
+  "wlasl:approach",
+  "wlasl:appropriate",
+  "wlasl:approve",
+  "wlasl:april",
+  "wlasl:archery",
+  "wlasl:area",
+  "wlasl:argue",
+  "wlasl:arizona",
+  "wlasl:arm",
+  "wlasl:army",
+  "wlasl:around",
+  "wlasl:arrest",
+  "wlasl:arrive",
+  "wlasl:arrogant",
+  "wlasl:art",
+  "wlasl:article",
+  "wlasl:artist",
+  "wlasl:asia",
+  "wlasl:ask",
+  "wlasl:asl",
+  "wlasl:assist",
+  "wlasl:assistant",
+  "wlasl:assume",
+  "wlasl:attend",
+  "wlasl:attention",
+  "wlasl:attitude",
+  "wlasl:attorney",
+  "wlasl:attract",
+  "wlasl:auction",
+  "wlasl:audience",
+  "wlasl:audiologist",
+  "wlasl:audiology",
+  "wlasl:august",
+  "wlasl:aunt",
+  "wlasl:australia",
+  "wlasl:austria",
+  "wlasl:author",
+  "wlasl:authority",
+  "wlasl:autumn",
+  "wlasl:available",
+  "wlasl:average",
+  "wlasl:avoid",
+  "wlasl:awake",
+  "wlasl:award",
+  "wlasl:aware",
+  "wlasl:away",
+  "wlasl:awful",
+  "wlasl:awkward",
+  "wlasl:b",
+  "wlasl:baby",
+  "wlasl:babysitter",
+  "wlasl:back",
+  "wlasl:background",
+  "wlasl:backpack",
+  "wlasl:bacon",
+  "wlasl:bad",
+  "wlasl:bake",
+  "wlasl:balance",
+  "wlasl:bald",
+  "wlasl:ball",
+  "wlasl:balloon",
+  "wlasl:banana",
+  "wlasl:bank",
+  "wlasl:baptize",
+  "wlasl:bar",
+  "wlasl:barely",
+  "wlasl:bark",
+  "wlasl:baseball",
+  "wlasl:basement",
+  "wlasl:basic",
+  "wlasl:basketball",
+  "wlasl:bath",
+  "wlasl:bathroom",
+  "wlasl:battery",
+  "wlasl:battle",
+  "wlasl:bear",
+  "wlasl:beard",
+  "wlasl:beautiful",
+  "wlasl:because",
+  "wlasl:become",
+  "wlasl:bed",
+  "wlasl:bedroom",
+  "wlasl:bee",
+  "wlasl:beer",
+  "wlasl:before",
+  "wlasl:beg",
+  "wlasl:beginning",
+  "wlasl:behavior",
+  "wlasl:behind",
+  "wlasl:belief",
+  "wlasl:believe",
+  "wlasl:bell",
+  "wlasl:below",
+  "wlasl:belt",
+  "wlasl:benefit",
+  "wlasl:berry",
+  "wlasl:beside",
+  "wlasl:best",
+  "wlasl:bet",
+  "wlasl:better",
+  "wlasl:between",
+  "wlasl:bible",
+  "wlasl:bicycle",
+  "wlasl:big",
+  "wlasl:bike",
+  "wlasl:binoculars",
+  "wlasl:biology",
+  "wlasl:bird",
+  "wlasl:birth",
+  "wlasl:birthday",
+  "wlasl:bite",
+  "wlasl:bitter",
+  "wlasl:black",
+  "wlasl:blame",
+  "wlasl:blanket",
+  "wlasl:blend",
+  "wlasl:bless",
+  "wlasl:blind",
+  "wlasl:blood",
+  "wlasl:blow",
+  "wlasl:blue",
+  "wlasl:boast",
+  "wlasl:boat",
+  "wlasl:body",
+  "wlasl:boil",
+  "wlasl:bone",
+  "wlasl:book",
+  "wlasl:bookshelf",
+  "wlasl:bookstore",
+  "wlasl:boots",
+  "wlasl:bored",
+  "wlasl:borrow",
+  "wlasl:boss",
+  "wlasl:both",
+  "wlasl:bother",
+  "wlasl:bottle",
+  "wlasl:bottom",
+  "wlasl:bowl",
+  "wlasl:bowling",
+  "wlasl:box",
+  "wlasl:boxing",
+  "wlasl:boy",
+  "wlasl:boyfriend",
+  "wlasl:bra",
+  "wlasl:bracelet",
+  "wlasl:brag",
+  "wlasl:braid",
+  "wlasl:brain",
+  "wlasl:brave",
+  "wlasl:bread",
+  "wlasl:break",
+  "wlasl:breakdown",
+  "wlasl:breakfast",
+  "wlasl:breathe",
+  "wlasl:breeze",
+  "wlasl:bribe",
+  "wlasl:bridge",
+  "wlasl:brief",
+  "wlasl:bright",
+  "wlasl:bring",
+  "wlasl:brochure",
+  "wlasl:broke",
+  "wlasl:brother",
+  "wlasl:brown",
+  "wlasl:brush",
+  "wlasl:buffalo",
+  "wlasl:bug",
+  "wlasl:build",
+  "wlasl:building",
+  "wlasl:bull",
+  "wlasl:bully",
+  "wlasl:burp",
+  "wlasl:bus",
+  "wlasl:bush",
+  "wlasl:business",
+  "wlasl:busy",
+  "wlasl:but",
+  "wlasl:butter",
+  "wlasl:butterfly",
+  "wlasl:button",
+  "wlasl:buy",
+  "wlasl:bye",
+  "wlasl:cabbage",
+  "wlasl:cabinet",
+  "wlasl:cafeteria",
+  "wlasl:cake",
+  "wlasl:calculate",
+  "wlasl:calculator",
+  "wlasl:calculus",
+  "wlasl:california",
+  "wlasl:call",
+  "wlasl:calm",
+  "wlasl:camel",
+  "wlasl:camera",
+  "wlasl:camp",
+  "wlasl:camping",
+  "wlasl:can",
+  "wlasl:canada",
+  "wlasl:cancel",
+  "wlasl:candidate",
+  "wlasl:candle",
+  "wlasl:candy",
+  "wlasl:cannot",
+  "wlasl:canoe",
+  "wlasl:captain",
+  "wlasl:caption",
+  "wlasl:car",
+  "wlasl:card",
+  "wlasl:cards",
+  "wlasl:care",
+  "wlasl:careful",
+  "wlasl:careless",
+  "wlasl:carnival",
+  "wlasl:carrot",
+  "wlasl:carry",
+  "wlasl:cat",
+  "wlasl:catch",
+  "wlasl:category",
+  "wlasl:caterpillar",
+  "wlasl:catholic",
+  "wlasl:cause",
+  "wlasl:ceiling",
+  "wlasl:celebrate",
+  "wlasl:cemetery",
+  "wlasl:cent",
+  "wlasl:center",
+  "wlasl:cereal",
+  "wlasl:certificate",
+  "wlasl:chain",
+  "wlasl:chair",
+  "wlasl:challenge",
+  "wlasl:champion",
+  "wlasl:chance",
+  "wlasl:change",
+  "wlasl:chapter",
+  "wlasl:character",
+  "wlasl:chase",
+  "wlasl:chat",
+  "wlasl:cheap",
+  "wlasl:cheat",
+  "wlasl:check",
+  "wlasl:cheerleader",
+  "wlasl:cheese",
+  "wlasl:chemical",
+  "wlasl:chemistry",
+  "wlasl:cherry",
+  "wlasl:chicago",
+  "wlasl:chicken",
+  "wlasl:child",
+  "wlasl:children",
+  "wlasl:chocolate",
+  "wlasl:chop",
+  "wlasl:christian",
+  "wlasl:christmas",
+  "wlasl:cigarette",
+  "wlasl:circle",
+  "wlasl:city",
+  "wlasl:class",
+  "wlasl:clean",
+  "wlasl:clear",
+  "wlasl:clever",
+  "wlasl:click",
+  "wlasl:climb",
+  "wlasl:clock",
+  "wlasl:close",
+  "wlasl:closet",
+  "wlasl:clothes",
+  "wlasl:cloud",
+  "wlasl:clown",
+  "wlasl:clueless",
+  "wlasl:clumsy",
+  "wlasl:coach",
+  "wlasl:coat",
+  "wlasl:cochlear implant",
+  "wlasl:coconut",
+  "wlasl:coffee",
+  "wlasl:cold",
+  "wlasl:collect",
+  "wlasl:college",
+  "wlasl:color",
+  "wlasl:comb",
+  "wlasl:come",
+  "wlasl:come here",
+  "wlasl:comfortable",
+  "wlasl:comma",
+  "wlasl:command",
+  "wlasl:comment",
+  "wlasl:commit",
+  "wlasl:committee",
+  "wlasl:common",
+  "wlasl:common sense",
+  "wlasl:community",
+  "wlasl:commute",
+  "wlasl:company",
+  "wlasl:compare",
+  "wlasl:compete",
+  "wlasl:complain",
+  "wlasl:complete",
+  "wlasl:complex",
+  "wlasl:compromise",
+  "wlasl:computer",
+  "wlasl:concentrate",
+  "wlasl:concept",
+  "wlasl:concern",
+  "wlasl:conflict",
+  "wlasl:confront",
+  "wlasl:confused",
+  "wlasl:congratulations",
+  "wlasl:congress",
+  "wlasl:connect",
+  "wlasl:conquer",
+  "wlasl:consider",
+  "wlasl:constitution",
+  "wlasl:construct",
+  "wlasl:consume",
+  "wlasl:contact",
+  "wlasl:contest",
+  "wlasl:continue",
+  "wlasl:contract",
+  "wlasl:contribute",
+  "wlasl:control",
+  "wlasl:conversation",
+  "wlasl:convert",
+  "wlasl:convince",
+  "wlasl:cook",
+  "wlasl:cookie",
+  "wlasl:cool",
+  "wlasl:cooperate",
+  "wlasl:cop",
+  "wlasl:copy",
+  "wlasl:corn",
+  "wlasl:corner",
+  "wlasl:correct",
+  "wlasl:cost",
+  "wlasl:couch",
+  "wlasl:cough",
+  "wlasl:counsel",
+  "wlasl:counselor",
+  "wlasl:count",
+  "wlasl:country",
+  "wlasl:court",
+  "wlasl:cousin",
+  "wlasl:cover",
+  "wlasl:cow",
+  "wlasl:crab",
+  "wlasl:cracker",
+  "wlasl:crash",
+  "wlasl:crave",
+  "wlasl:crazy",
+  "wlasl:create",
+  "wlasl:crocodile",
+  "wlasl:cross",
+  "wlasl:crown",
+  "wlasl:cruel",
+  "wlasl:crush",
+  "wlasl:cry",
+  "wlasl:cuba",
+  "wlasl:culture",
+  "wlasl:cup",
+  "wlasl:curious",
+  "wlasl:curriculum",
+  "wlasl:curse",
+  "wlasl:curtain",
+  "wlasl:customer",
+  "wlasl:cut",
+  "wlasl:cute",
+  "wlasl:d",
+  "wlasl:dad",
+  "wlasl:daily",
+  "wlasl:damage",
+  "wlasl:dance",
+  "wlasl:dancer",
+  "wlasl:danger",
+  "wlasl:dangerous",
+  "wlasl:dark",
+  "wlasl:date",
+  "wlasl:daughter",
+  "wlasl:dawn",
+  "wlasl:day",
+  "wlasl:dead",
+  "wlasl:deaf",
+  "wlasl:death",
+  "wlasl:debate",
+  "wlasl:debt",
+  "wlasl:december",
+  "wlasl:decide",
+  "wlasl:decorate",
+  "wlasl:decrease",
+  "wlasl:deduct",
+  "wlasl:deep",
+  "wlasl:deer",
+  "wlasl:defeat",
+  "wlasl:defend",
+  "wlasl:degree",
+  "wlasl:delay",
+  "wlasl:delicious",
+  "wlasl:deliver",
+  "wlasl:demand",
+  "wlasl:democrat",
+  "wlasl:demonstrate",
+  "wlasl:dentist",
+  "wlasl:deny",
+  "wlasl:deodorant",
+  "wlasl:department",
+  "wlasl:depend",
+  "wlasl:deposit",
+  "wlasl:depressed",
+  "wlasl:descend",
+  "wlasl:describe",
+  "wlasl:desert",
+  "wlasl:design",
+  "wlasl:desk",
+  "wlasl:dessert",
+  "wlasl:destroy",
+  "wlasl:detach",
+  "wlasl:detective",
+  "wlasl:determine",
+  "wlasl:develop",
+  "wlasl:devil",
+  "wlasl:diabetes",
+  "wlasl:diamond",
+  "wlasl:diaper",
+  "wlasl:diarrhea",
+  "wlasl:dice",
+  "wlasl:dictionary",
+  "wlasl:die",
+  "wlasl:different",
+  "wlasl:difficult",
+  "wlasl:dig",
+  "wlasl:dime",
+  "wlasl:dining room",
+  "wlasl:dinner",
+  "wlasl:dinosaur",
+  "wlasl:diploma",
+  "wlasl:director",
+  "wlasl:dirt",
+  "wlasl:dirty",
+  "wlasl:disagree",
+  "wlasl:disappear",
+  "wlasl:discipline",
+  "wlasl:disconnect",
+  "wlasl:discount",
+  "wlasl:discover",
+  "wlasl:discuss",
+  "wlasl:disgust",
+  "wlasl:disgusted",
+  "wlasl:dismiss",
+  "wlasl:dissolve",
+  "wlasl:disturb",
+  "wlasl:dive",
+  "wlasl:divide",
+  "wlasl:division",
+  "wlasl:divorce",
+  "wlasl:dizzy",
+  "wlasl:doctor",
+  "wlasl:document",
+  "wlasl:dog",
+  "wlasl:doll",
+  "wlasl:dollar",
+  "wlasl:dolphin",
+  "wlasl:don't want",
+  "wlasl:done",
+  "wlasl:door",
+  "wlasl:dorm",
+  "wlasl:dormitory",
+  "wlasl:double",
+  "wlasl:doubt",
+  "wlasl:down",
+  "wlasl:downstairs",
+  "wlasl:drag",
+  "wlasl:dragon",
+  "wlasl:drama",
+  "wlasl:draw",
+  "wlasl:drawer",
+  "wlasl:dream",
+  "wlasl:dress",
+  "wlasl:drink",
+  "wlasl:drive",
+  "wlasl:drop",
+  "wlasl:drug",
+  "wlasl:drum",
+  "wlasl:drunk",
+  "wlasl:dry",
+  "wlasl:duck",
+  "wlasl:due",
+  "wlasl:dull",
+  "wlasl:dumb",
+  "wlasl:during",
+  "wlasl:dusk",
+  "wlasl:duty",
+  "wlasl:dvd",
+  "wlasl:dye",
+  "wlasl:e",
+  "wlasl:each",
+  "wlasl:eagle",
+  "wlasl:ear",
+  "wlasl:early",
+  "wlasl:earn",
+  "wlasl:earring",
+  "wlasl:earth",
+  "wlasl:earthquake",
+  "wlasl:east",
+  "wlasl:easter",
+  "wlasl:easy",
+  "wlasl:eat",
+  "wlasl:economy",
+  "wlasl:educate",
+  "wlasl:education",
+  "wlasl:effort",
+  "wlasl:egg",
+  "wlasl:egypt",
+  "wlasl:eight",
+  "wlasl:eighteen",
+  "wlasl:either",
+  "wlasl:electrician",
+  "wlasl:electricity",
+  "wlasl:elementary",
+  "wlasl:elephant",
+  "wlasl:elevator",
+  "wlasl:else",
+  "wlasl:email",
+  "wlasl:embarrass",
+  "wlasl:emergency",
+  "wlasl:emotion",
+  "wlasl:empty",
+  "wlasl:encourage",
+  "wlasl:end",
+  "wlasl:energy",
+  "wlasl:engage",
+  "wlasl:engagement",
+  "wlasl:engine",
+  "wlasl:engineer",
+  "wlasl:england",
+  "wlasl:english",
+  "wlasl:enjoy",
+  "wlasl:enormous",
+  "wlasl:enough",
+  "wlasl:enter",
+  "wlasl:envelope",
+  "wlasl:environment",
+  "wlasl:equal",
+  "wlasl:erase",
+  "wlasl:eraser",
+  "wlasl:escape",
+  "wlasl:establish",
+  "wlasl:eternity",
+  "wlasl:europe",
+  "wlasl:evaluate",
+  "wlasl:evening",
+  "wlasl:event",
+  "wlasl:every",
+  "wlasl:every monday",
+  "wlasl:every tuesday",
+  "wlasl:everyday",
+  "wlasl:everything",
+  "wlasl:evidence",
+  "wlasl:exact",
+  "wlasl:exaggerate",
+  "wlasl:example",
+  "wlasl:except",
+  "wlasl:exchange",
+  "wlasl:excited",
+  "wlasl:excuse",
+  "wlasl:exercise",
+  "wlasl:exhibit",
+  "wlasl:expand",
+  "wlasl:expect",
+  "wlasl:expensive",
+  "wlasl:experience",
+  "wlasl:experiment",
+  "wlasl:expert",
+  "wlasl:explain",
+  "wlasl:explode",
+  "wlasl:express",
+  "wlasl:eye",
+  "wlasl:eyeglasses",
+  "wlasl:eyes",
+  "wlasl:f",
+  "wlasl:face",
+  "wlasl:fact",
+  "wlasl:faculty",
+  "wlasl:fail",
+  "wlasl:fairy",
+  "wlasl:fake",
+  "wlasl:fall in love",
+  "wlasl:familiar",
+  "wlasl:family",
+  "wlasl:famous",
+  "wlasl:fancy",
+  "wlasl:far",
+  "wlasl:farm",
+  "wlasl:farmer",
+  "wlasl:fast",
+  "wlasl:fat",
+  "wlasl:father",
+  "wlasl:fault",
+  "wlasl:favorite",
+  "wlasl:fear",
+  "wlasl:february",
+  "wlasl:federal",
+  "wlasl:feed",
+  "wlasl:feedback",
+  "wlasl:feel",
+  "wlasl:fence",
+  "wlasl:festival",
+  "wlasl:few",
+  "wlasl:fight",
+  "wlasl:final",
+  "wlasl:finally",
+  "wlasl:finance",
+  "wlasl:find",
+  "wlasl:fine",
+  "wlasl:fingerspell",
+  "wlasl:finish",
+  "wlasl:fire",
+  "wlasl:firefighter",
+  "wlasl:first",
+  "wlasl:fish",
+  "wlasl:fishing",
+  "wlasl:five",
+  "wlasl:fix",
+  "wlasl:flag",
+  "wlasl:flatter",
+  "wlasl:flexible",
+  "wlasl:flirt",
+  "wlasl:flood",
+  "wlasl:floor",
+  "wlasl:florida",
+  "wlasl:flower",
+  "wlasl:flute",
+  "wlasl:fly",
+  "wlasl:fold",
+  "wlasl:follow",
+  "wlasl:food",
+  "wlasl:fool",
+  "wlasl:football",
+  "wlasl:for",
+  "wlasl:forbid",
+  "wlasl:forest",
+  "wlasl:forever",
+  "wlasl:forget",
+  "wlasl:forgive",
+  "wlasl:fork",
+  "wlasl:form",
+  "wlasl:former",
+  "wlasl:four",
+  "wlasl:fourth",
+  "wlasl:fox",
+  "wlasl:france",
+  "wlasl:free",
+  "wlasl:freeway",
+  "wlasl:freeze",
+  "wlasl:french",
+  "wlasl:french fries",
+  "wlasl:friday",
+  "wlasl:friend",
+  "wlasl:friendly",
+  "wlasl:frog",
+  "wlasl:from",
+  "wlasl:from now on",
+  "wlasl:front",
+  "wlasl:fruit",
+  "wlasl:full",
+  "wlasl:fun",
+  "wlasl:function",
+  "wlasl:funeral",
+  "wlasl:funny",
+  "wlasl:furniture",
+  "wlasl:future",
+  "wlasl:g",
+  "wlasl:gallaudet",
+  "wlasl:gamble",
+  "wlasl:game",
+  "wlasl:gang",
+  "wlasl:garage",
+  "wlasl:gas",
+  "wlasl:gasoline",
+  "wlasl:gather",
+  "wlasl:gay",
+  "wlasl:general",
+  "wlasl:generation",
+  "wlasl:geography",
+  "wlasl:geometry",
+  "wlasl:german",
+  "wlasl:germany",
+  "wlasl:get",
+  "wlasl:get up",
+  "wlasl:ghost",
+  "wlasl:gift",
+  "wlasl:giraffe",
+  "wlasl:girl",
+  "wlasl:girlfriend",
+  "wlasl:give",
+  "wlasl:give up",
+  "wlasl:glass",
+  "wlasl:glasses",
+  "wlasl:gloves",
+  "wlasl:go",
+  "wlasl:goal",
+  "wlasl:goat",
+  "wlasl:god",
+  "wlasl:gold",
+  "wlasl:golf",
+  "wlasl:gone",
+  "wlasl:good",
+  "wlasl:goodbye",
+  "wlasl:gorilla",
+  "wlasl:gossip",
+  "wlasl:government",
+  "wlasl:grab",
+  "wlasl:graduate",
+  "wlasl:graduation",
+  "wlasl:grammar",
+  "wlasl:grandfather",
+  "wlasl:grandma",
+  "wlasl:grandmother",
+  "wlasl:grapes",
+  "wlasl:grass",
+  "wlasl:grateful",
+  "wlasl:gray",
+  "wlasl:great",
+  "wlasl:greece",
+  "wlasl:green",
+  "wlasl:grey",
+  "wlasl:group",
+  "wlasl:grow",
+  "wlasl:grow up",
+  "wlasl:guess",
+  "wlasl:guide",
+  "wlasl:guilty",
+  "wlasl:guitar",
+  "wlasl:gum",
+  "wlasl:gun",
+  "wlasl:gymnastics",
+  "wlasl:h",
+  "wlasl:habit",
+  "wlasl:hair",
+  "wlasl:haircut",
+  "wlasl:half",
+  "wlasl:halloween",
+  "wlasl:hamburger",
+  "wlasl:hammer",
+  "wlasl:hang up",
+  "wlasl:hanukkah",
+  "wlasl:happen",
+  "wlasl:happy",
+  "wlasl:hard",
+  "wlasl:hard of hearing",
+  "wlasl:hat",
+  "wlasl:hate",
+  "wlasl:have",
+  "wlasl:hawaii",
+  "wlasl:head",
+  "wlasl:headache",
+  "wlasl:health",
+  "wlasl:heap",
+  "wlasl:hear",
+  "wlasl:hearing",
+  "wlasl:hearing aid",
+  "wlasl:heart",
+  "wlasl:heart attack",
+  "wlasl:heaven",
+  "wlasl:heavy",
+  "wlasl:helicopter",
+  "wlasl:hello",
+  "wlasl:helmet",
+  "wlasl:help",
+  "wlasl:her",
+  "wlasl:here",
+  "wlasl:herself",
+  "wlasl:hide",
+  "wlasl:high",
+  "wlasl:high school",
+  "wlasl:highway",
+  "wlasl:hill",
+  "wlasl:hippopotamus",
+  "wlasl:his",
+  "wlasl:history",
+  "wlasl:hit",
+  "wlasl:hockey",
+  "wlasl:hold",
+  "wlasl:holy",
+  "wlasl:home",
+  "wlasl:homework",
+  "wlasl:honest",
+  "wlasl:honey",
+  "wlasl:honor",
+  "wlasl:hop",
+  "wlasl:hope",
+  "wlasl:horse",
+  "wlasl:hospital",
+  "wlasl:host",
+  "wlasl:hot",
+  "wlasl:hot dog",
+  "wlasl:hour",
+  "wlasl:house",
+  "wlasl:how",
+  "wlasl:hug",
+  "wlasl:human",
+  "wlasl:humble",
+  "wlasl:hungry",
+  "wlasl:hunt",
+  "wlasl:hurricane",
+  "wlasl:hurry",
+  "wlasl:hurt",
+  "wlasl:husband",
+  "wlasl:i",
+  "wlasl:ice cream",
+  "wlasl:idea",
+  "wlasl:identify",
+  "wlasl:if",
+  "wlasl:ignore",
+  "wlasl:ill",
+  "wlasl:illegal",
+  "wlasl:image",
+  "wlasl:impact",
+  "wlasl:important",
+  "wlasl:impossible",
+  "wlasl:improve",
+  "wlasl:in",
+  "wlasl:include",
+  "wlasl:increase",
+  "wlasl:independent",
+  "wlasl:india",
+  "wlasl:individual",
+  "wlasl:infection",
+  "wlasl:influence",
+  "wlasl:inform",
+  "wlasl:information",
+  "wlasl:innocent",
+  "wlasl:insect",
+  "wlasl:inside",
+  "wlasl:inspect",
+  "wlasl:inspire",
+  "wlasl:instead",
+  "wlasl:institute",
+  "wlasl:insurance",
+  "wlasl:interest",
+  "wlasl:interesting",
+  "wlasl:international",
+  "wlasl:internet",
+  "wlasl:interpret",
+  "wlasl:interpreter",
+  "wlasl:interrupt",
+  "wlasl:intersection",
+  "wlasl:interview",
+  "wlasl:introduce",
+  "wlasl:invest",
+  "wlasl:investigate",
+  "wlasl:invite",
+  "wlasl:involve",
+  "wlasl:iran",
+  "wlasl:ireland",
+  "wlasl:iron",
+  "wlasl:island",
+  "wlasl:israel",
+  "wlasl:italy",
+  "wlasl:j",
+  "wlasl:jacket",
+  "wlasl:jail",
+  "wlasl:january",
+  "wlasl:japan",
+  "wlasl:jealous",
+  "wlasl:jesus",
+  "wlasl:jewelry",
+  "wlasl:jewish",
+  "wlasl:join",
+  "wlasl:joke",
+  "wlasl:journey",
+  "wlasl:joy",
+  "wlasl:judge",
+  "wlasl:july",
+  "wlasl:jump",
+  "wlasl:june",
+  "wlasl:k",
+  "wlasl:kangaroo",
+  "wlasl:karate",
+  "wlasl:keep",
+  "wlasl:key",
+  "wlasl:keyboard",
+  "wlasl:kick",
+  "wlasl:kid",
+  "wlasl:kill",
+  "wlasl:kindergarten",
+  "wlasl:king",
+  "wlasl:kiss",
+  "wlasl:kitchen",
+  "wlasl:kneel",
+  "wlasl:knife",
+  "wlasl:knock",
+  "wlasl:know",
+  "wlasl:label",
+  "wlasl:lady",
+  "wlasl:lamp",
+  "wlasl:land",
+  "wlasl:language",
+  "wlasl:laptop",
+  "wlasl:large",
+  "wlasl:last",
+  "wlasl:last week",
+  "wlasl:last year",
+  "wlasl:late",
+  "wlasl:later",
+  "wlasl:laugh",
+  "wlasl:laundry",
+  "wlasl:law",
+  "wlasl:lawyer",
+  "wlasl:lazy",
+  "wlasl:lead",
+  "wlasl:leader",
+  "wlasl:leaf",
+  "wlasl:league",
+  "wlasl:leak",
+  "wlasl:learn",
+  "wlasl:leave",
+  "wlasl:lecture",
+  "wlasl:left",
+  "wlasl:legal",
+  "wlasl:lemon",
+  "wlasl:lend",
+  "wlasl:lesbian",
+  "wlasl:less",
+  "wlasl:lesson",
+  "wlasl:let",
+  "wlasl:letter",
+  "wlasl:lettuce",
+  "wlasl:liability",
+  "wlasl:librarian",
+  "wlasl:library",
+  "wlasl:license",
+  "wlasl:lie",
+  "wlasl:lift",
+  "wlasl:light",
+  "wlasl:lightning",
+  "wlasl:like",
+  "wlasl:limit",
+  "wlasl:line",
+  "wlasl:linguistics",
+  "wlasl:lion",
+  "wlasl:lip",
+  "wlasl:lipstick",
+  "wlasl:list",
+  "wlasl:listen",
+  "wlasl:little bit",
+  "wlasl:live",
+  "wlasl:loan",
+  "wlasl:lobster",
+  "wlasl:local",
+  "wlasl:lock",
+  "wlasl:lonely",
+  "wlasl:long",
+  "wlasl:look at",
+  "wlasl:look for",
+  "wlasl:lord",
+  "wlasl:lose",
+  "wlasl:loud",
+  "wlasl:lousy",
+  "wlasl:love",
+  "wlasl:lucky",
+  "wlasl:lunch",
+  "wlasl:m",
+  "wlasl:machine",
+  "wlasl:mad",
+  "wlasl:magazine",
+  "wlasl:magic",
+  "wlasl:mainstream",
+  "wlasl:major",
+  "wlasl:make",
+  "wlasl:man",
+  "wlasl:manage",
+  "wlasl:manager",
+  "wlasl:many",
+  "wlasl:march",
+  "wlasl:marry",
+  "wlasl:match",
+  "wlasl:math",
+  "wlasl:mature",
+  "wlasl:maximum",
+  "wlasl:maybe",
+  "wlasl:me",
+  "wlasl:mean",
+  "wlasl:meaning",
+  "wlasl:measure",
+  "wlasl:meat",
+  "wlasl:mechanic",
+  "wlasl:medicine",
+  "wlasl:meet",
+  "wlasl:meeting",
+  "wlasl:melody",
+  "wlasl:melt",
+  "wlasl:member",
+  "wlasl:memorize",
+  "wlasl:mention",
+  "wlasl:message",
+  "wlasl:metal",
+  "wlasl:mexico",
+  "wlasl:microphone",
+  "wlasl:microscope",
+  "wlasl:microwave",
+  "wlasl:middle",
+  "wlasl:midnight",
+  "wlasl:military",
+  "wlasl:milk",
+  "wlasl:mind",
+  "wlasl:mine",
+  "wlasl:minus",
+  "wlasl:minute",
+  "wlasl:mirror",
+  "wlasl:miss",
+  "wlasl:mistake",
+  "wlasl:misunderstand",
+  "wlasl:mix",
+  "wlasl:mock",
+  "wlasl:mom",
+  "wlasl:monday",
+  "wlasl:money",
+  "wlasl:monkey",
+  "wlasl:monster",
+  "wlasl:month",
+  "wlasl:monthly",
+  "wlasl:moon",
+  "wlasl:moose",
+  "wlasl:more",
+  "wlasl:morning",
+  "wlasl:mosquito",
+  "wlasl:most",
+  "wlasl:mother",
+  "wlasl:motivate",
+  "wlasl:motor",
+  "wlasl:motorcycle",
+  "wlasl:mountain",
+  "wlasl:mouse",
+  "wlasl:mouth",
+  "wlasl:move",
+  "wlasl:movie",
+  "wlasl:much",
+  "wlasl:multiply",
+  "wlasl:murder",
+  "wlasl:muscle",
+  "wlasl:museum",
+  "wlasl:mushroom",
+  "wlasl:music",
+  "wlasl:must",
+  "wlasl:mustache",
+  "wlasl:my",
+  "wlasl:myself",
+  "wlasl:n",
+  "wlasl:name",
+  "wlasl:napkin",
+  "wlasl:narrow",
+  "wlasl:nation",
+  "wlasl:near",
+  "wlasl:necessary",
+  "wlasl:neck",
+  "wlasl:necklace",
+  "wlasl:need",
+  "wlasl:negative",
+  "wlasl:negotiate",
+  "wlasl:neighbor",
+  "wlasl:nephew",
+  "wlasl:nervous",
+  "wlasl:network",
+  "wlasl:neutral",
+  "wlasl:never",
+  "wlasl:new",
+  "wlasl:new york",
+  "wlasl:newspaper",
+  "wlasl:next",
+  "wlasl:nice",
+  "wlasl:nickel",
+  "wlasl:niece",
+  "wlasl:night",
+  "wlasl:nine",
+  "wlasl:nineteen",
+  "wlasl:no",
+  "wlasl:none",
+  "wlasl:noon",
+  "wlasl:normal",
+  "wlasl:north",
+  "wlasl:northwest",
+  "wlasl:nose",
+  "wlasl:not",
+  "wlasl:not yet",
+  "wlasl:nothing",
+  "wlasl:notice",
+  "wlasl:november",
+  "wlasl:now",
+  "wlasl:number",
+  "wlasl:numerous",
+  "wlasl:nun",
+  "wlasl:nurse",
+  "wlasl:nut",
+  "wlasl:o",
+  "wlasl:objective",
+  "wlasl:obsess",
+  "wlasl:obtain",
+  "wlasl:occur",
+  "wlasl:ocean",
+  "wlasl:october",
+  "wlasl:octopus",
+  "wlasl:odd",
+  "wlasl:odor",
+  "wlasl:off",
+  "wlasl:offer",
+  "wlasl:office",
+  "wlasl:often",
+  "wlasl:ok",
+  "wlasl:old",
+  "wlasl:olympics",
+  "wlasl:on",
+  "wlasl:once",
+  "wlasl:one",
+  "wlasl:onion",
+  "wlasl:only",
+  "wlasl:open",
+  "wlasl:operate",
+  "wlasl:opinion",
+  "wlasl:opposite",
+  "wlasl:or",
+  "wlasl:oral",
+  "wlasl:orange",
+  "wlasl:order",
+  "wlasl:organize",
+  "wlasl:other",
+  "wlasl:our",
+  "wlasl:out",
+  "wlasl:outside",
+  "wlasl:over",
+  "wlasl:overcome",
+  "wlasl:overlook",
+  "wlasl:overwhelm",
+  "wlasl:owe",
+  "wlasl:owl",
+  "wlasl:p",
+  "wlasl:pack",
+  "wlasl:page",
+  "wlasl:pain",
+  "wlasl:paint",
+  "wlasl:painter",
+  "wlasl:pants",
+  "wlasl:paper",
+  "wlasl:parachute",
+  "wlasl:parade",
+  "wlasl:paragraph",
+  "wlasl:parallel",
+  "wlasl:parents",
+  "wlasl:part",
+  "wlasl:party",
+  "wlasl:pass",
+  "wlasl:past",
+  "wlasl:path",
+  "wlasl:patient",
+  "wlasl:pause",
+  "wlasl:pay",
+  "wlasl:pay attention",
+  "wlasl:peace",
+  "wlasl:peaceful",
+  "wlasl:peach",
+  "wlasl:peanut butter",
+  "wlasl:pear",
+  "wlasl:peel",
+  "wlasl:penalty",
+  "wlasl:pencil",
+  "wlasl:pennsylvania",
+  "wlasl:penny",
+  "wlasl:people",
+  "wlasl:pepper",
+  "wlasl:percent",
+  "wlasl:perfect",
+  "wlasl:perfume",
+  "wlasl:period",
+  "wlasl:permit",
+  "wlasl:person",
+  "wlasl:personality",
+  "wlasl:perspective",
+  "wlasl:pet",
+  "wlasl:philadelphia",
+  "wlasl:philosophy",
+  "wlasl:phone",
+  "wlasl:photographer",
+  "wlasl:phrase",
+  "wlasl:physician",
+  "wlasl:physics",
+  "wlasl:piano",
+  "wlasl:pick",
+  "wlasl:pickle",
+  "wlasl:picture",
+  "wlasl:pie",
+  "wlasl:piece",
+  "wlasl:pig",
+  "wlasl:pillow",
+  "wlasl:pilot",
+  "wlasl:pink",
+  "wlasl:pity",
+  "wlasl:pizza",
+  "wlasl:place",
+  "wlasl:plan",
+  "wlasl:plant",
+  "wlasl:plate",
+  "wlasl:play",
+  "wlasl:player",
+  "wlasl:please",
+  "wlasl:plenty",
+  "wlasl:plus",
+  "wlasl:pneumonia",
+  "wlasl:pocket",
+  "wlasl:point",
+  "wlasl:polar bear",
+  "wlasl:police",
+  "wlasl:policeman",
+  "wlasl:policy",
+  "wlasl:polite",
+  "wlasl:politics",
+  "wlasl:poop",
+  "wlasl:poor",
+  "wlasl:popcorn",
+  "wlasl:popular",
+  "wlasl:position",
+  "wlasl:positive",
+  "wlasl:possible",
+  "wlasl:post",
+  "wlasl:postpone",
+  "wlasl:potato",
+  "wlasl:potential",
+  "wlasl:pound",
+  "wlasl:pour",
+  "wlasl:poverty",
+  "wlasl:power",
+  "wlasl:practice",
+  "wlasl:praise",
+  "wlasl:pray",
+  "wlasl:preach",
+  "wlasl:preacher",
+  "wlasl:precious",
+  "wlasl:precipitation",
+  "wlasl:precise",
+  "wlasl:predict",
+  "wlasl:prefer",
+  "wlasl:pregnant",
+  "wlasl:prepare",
+  "wlasl:preschool",
+  "wlasl:present",
+  "wlasl:presentation",
+  "wlasl:president",
+  "wlasl:pressure",
+  "wlasl:pretty",
+  "wlasl:prevent",
+  "wlasl:price",
+  "wlasl:pride",
+  "wlasl:priest",
+  "wlasl:prince",
+  "wlasl:princess",
+  "wlasl:principal",
+  "wlasl:principle",
+  "wlasl:print",
+  "wlasl:printer",
+  "wlasl:priority",
+  "wlasl:prison",
+  "wlasl:private",
+  "wlasl:problem",
+  "wlasl:process",
+  "wlasl:procrastinate",
+  "wlasl:professional",
+  "wlasl:professor",
+  "wlasl:profit",
+  "wlasl:program",
+  "wlasl:progress",
+  "wlasl:project",
+  "wlasl:promise",
+  "wlasl:promote",
+  "wlasl:proof",
+  "wlasl:propaganda",
+  "wlasl:proper",
+  "wlasl:prostitute",
+  "wlasl:protect",
+  "wlasl:proud",
+  "wlasl:prove",
+  "wlasl:provide",
+  "wlasl:psychologist",
+  "wlasl:psychology",
+  "wlasl:public",
+  "wlasl:publish",
+  "wlasl:pull",
+  "wlasl:pumpkin",
+  "wlasl:punish",
+  "wlasl:purchase",
+  "wlasl:pure",
+  "wlasl:purple",
+  "wlasl:purpose",
+  "wlasl:pursue",
+  "wlasl:push",
+  "wlasl:put",
+  "wlasl:put off",
+  "wlasl:puzzled",
+  "wlasl:q",
+  "wlasl:quality",
+  "wlasl:quarrel",
+  "wlasl:quarter",
+  "wlasl:queen",
+  "wlasl:question",
+  "wlasl:quick",
+  "wlasl:quiet",
+  "wlasl:quit",
+  "wlasl:quote",
+  "wlasl:r",
+  "wlasl:rabbit",
+  "wlasl:raccoon",
+  "wlasl:race",
+  "wlasl:radio",
+  "wlasl:rage",
+  "wlasl:rain",
+  "wlasl:rainbow",
+  "wlasl:rake",
+  "wlasl:rat",
+  "wlasl:rather",
+  "wlasl:read",
+  "wlasl:ready",
+  "wlasl:real",
+  "wlasl:realize",
+  "wlasl:really",
+  "wlasl:reason",
+  "wlasl:receive",
+  "wlasl:recent",
+  "wlasl:recliner",
+  "wlasl:recognize",
+  "wlasl:recommend",
+  "wlasl:recover",
+  "wlasl:red",
+  "wlasl:reduce",
+  "wlasl:refer",
+  "wlasl:referee",
+  "wlasl:refuse",
+  "wlasl:regular",
+  "wlasl:rehearse",
+  "wlasl:reject",
+  "wlasl:relate",
+  "wlasl:relationship",
+  "wlasl:relax",
+  "wlasl:release",
+  "wlasl:relief",
+  "wlasl:religion",
+  "wlasl:rely",
+  "wlasl:remember",
+  "wlasl:remote control",
+  "wlasl:remove",
+  "wlasl:rent",
+  "wlasl:repeat",
+  "wlasl:replace",
+  "wlasl:reply",
+  "wlasl:report",
+  "wlasl:represent",
+  "wlasl:reputation",
+  "wlasl:request",
+  "wlasl:require",
+  "wlasl:rescue",
+  "wlasl:research",
+  "wlasl:resign",
+  "wlasl:resist",
+  "wlasl:respect",
+  "wlasl:responsibility",
+  "wlasl:responsible",
+  "wlasl:rest",
+  "wlasl:restaurant",
+  "wlasl:restroom",
+  "wlasl:result",
+  "wlasl:retire",
+  "wlasl:retreat",
+  "wlasl:reveal",
+  "wlasl:revenge",
+  "wlasl:review",
+  "wlasl:rich",
+  "wlasl:ride",
+  "wlasl:ridiculous",
+  "wlasl:right",
+  "wlasl:ring",
+  "wlasl:rise",
+  "wlasl:river",
+  "wlasl:road",
+  "wlasl:roar",
+  "wlasl:rob",
+  "wlasl:robber",
+  "wlasl:robot",
+  "wlasl:rock",
+  "wlasl:role",
+  "wlasl:roof",
+  "wlasl:room",
+  "wlasl:roommate",
+  "wlasl:rooster",
+  "wlasl:rope",
+  "wlasl:rose",
+  "wlasl:rough",
+  "wlasl:rubber",
+  "wlasl:rude",
+  "wlasl:ruin",
+  "wlasl:rule",
+  "wlasl:run",
+  "wlasl:rush",
+  "wlasl:russia",
+  "wlasl:s",
+  "wlasl:sad",
+  "wlasl:safe",
+  "wlasl:salad",
+  "wlasl:salary",
+  "wlasl:salt",
+  "wlasl:salute",
+  "wlasl:same",
+  "wlasl:sandwich",
+  "wlasl:satisfy",
+  "wlasl:saturday",
+  "wlasl:sauce",
+  "wlasl:sausage",
+  "wlasl:save",
+  "wlasl:saw",
+  "wlasl:say",
+  "wlasl:scan",
+  "wlasl:scared",
+  "wlasl:schedule",
+  "wlasl:school",
+  "wlasl:science",
+  "wlasl:scientist",
+  "wlasl:scissors",
+  "wlasl:scold",
+  "wlasl:score",
+  "wlasl:scotland",
+  "wlasl:scream",
+  "wlasl:screwdriver",
+  "wlasl:sculpture",
+  "wlasl:sea",
+  "wlasl:search",
+  "wlasl:second",
+  "wlasl:secret",
+  "wlasl:secretary",
+  "wlasl:see",
+  "wlasl:seem",
+  "wlasl:seldom",
+  "wlasl:selfish",
+  "wlasl:sell",
+  "wlasl:senate",
+  "wlasl:send",
+  "wlasl:senior",
+  "wlasl:sensitive",
+  "wlasl:sentence",
+  "wlasl:separate",
+  "wlasl:september",
+  "wlasl:sequence",
+  "wlasl:serious",
+  "wlasl:serve",
+  "wlasl:service",
+  "wlasl:settle",
+  "wlasl:seven",
+  "wlasl:several",
+  "wlasl:sew",
+  "wlasl:shame",
+  "wlasl:shampoo",
+  "wlasl:shape",
+  "wlasl:share",
+  "wlasl:shave",
+  "wlasl:she",
+  "wlasl:sheep",
+  "wlasl:shelf",
+  "wlasl:shine",
+  "wlasl:shirt",
+  "wlasl:shock",
+  "wlasl:shoes",
+  "wlasl:shoot",
+  "wlasl:shop",
+  "wlasl:shopping",
+  "wlasl:short",
+  "wlasl:should",
+  "wlasl:shoulder",
+  "wlasl:shout",
+  "wlasl:shovel",
+  "wlasl:show",
+  "wlasl:shower",
+  "wlasl:shrimp",
+  "wlasl:shy",
+  "wlasl:sick",
+  "wlasl:side",
+  "wlasl:sign",
+  "wlasl:sign language",
+  "wlasl:silent",
+  "wlasl:silly",
+  "wlasl:silver",
+  "wlasl:similar",
+  "wlasl:simple",
+  "wlasl:sin",
+  "wlasl:since",
+  "wlasl:sing",
+  "wlasl:singer",
+  "wlasl:single",
+  "wlasl:siren",
+  "wlasl:sister",
+  "wlasl:sit",
+  "wlasl:situation",
+  "wlasl:six",
+  "wlasl:sixteen",
+  "wlasl:size",
+  "wlasl:skate",
+  "wlasl:skeleton",
+  "wlasl:sketch",
+  "wlasl:ski",
+  "wlasl:skill",
+  "wlasl:skin",
+  "wlasl:skinny",
+  "wlasl:skip",
+  "wlasl:skirt",
+  "wlasl:skunk",
+  "wlasl:sky",
+  "wlasl:slave",
+  "wlasl:sleep",
+  "wlasl:sleepy",
+  "wlasl:slice",
+  "wlasl:slip",
+  "wlasl:slow",
+  "wlasl:small",
+  "wlasl:smart",
+  "wlasl:smell",
+  "wlasl:smile",
+  "wlasl:smoking",
+  "wlasl:smooth",
+  "wlasl:snack",
+  "wlasl:snake",
+  "wlasl:sneeze",
+  "wlasl:snob",
+  "wlasl:snow",
+  "wlasl:snowman",
+  "wlasl:soap",
+  "wlasl:soccer",
+  "wlasl:society",
+  "wlasl:socks",
+  "wlasl:soda",
+  "wlasl:sofa",
+  "wlasl:soft",
+  "wlasl:soldier",
+  "wlasl:solid",
+  "wlasl:solve",
+  "wlasl:some",
+  "wlasl:someday",
+  "wlasl:someone",
+  "wlasl:something",
+  "wlasl:sometimes",
+  "wlasl:somewhere",
+  "wlasl:son",
+  "wlasl:song",
+  "wlasl:soon",
+  "wlasl:sore throat",
+  "wlasl:sorry",
+  "wlasl:soul",
+  "wlasl:sound",
+  "wlasl:soup",
+  "wlasl:sour",
+  "wlasl:south",
+  "wlasl:south america",
+  "wlasl:spain",
+  "wlasl:spanish",
+  "wlasl:speak",
+  "wlasl:special",
+  "wlasl:specific",
+  "wlasl:speech",
+  "wlasl:speed",
+  "wlasl:spell",
+  "wlasl:spider",
+  "wlasl:spill",
+  "wlasl:spin",
+  "wlasl:spirit",
+  "wlasl:spit",
+  "wlasl:spoon",
+  "wlasl:spray",
+  "wlasl:spread",
+  "wlasl:spring",
+  "wlasl:sprint",
+  "wlasl:square",
+  "wlasl:squeeze",
+  "wlasl:squirrel",
+  "wlasl:stadium",
+  "wlasl:staff",
+  "wlasl:stairs",
+  "wlasl:stamp",
+  "wlasl:stand",
+  "wlasl:standard",
+  "wlasl:star",
+  "wlasl:stare",
+  "wlasl:start",
+  "wlasl:statistics",
+  "wlasl:stay",
+  "wlasl:steal",
+  "wlasl:steel",
+  "wlasl:stepfather",
+  "wlasl:sticky",
+  "wlasl:still",
+  "wlasl:sting",
+  "wlasl:stink",
+  "wlasl:stir",
+  "wlasl:stitch",
+  "wlasl:stomach",
+  "wlasl:stop",
+  "wlasl:store",
+  "wlasl:story",
+  "wlasl:straight",
+  "wlasl:strange",
+  "wlasl:straw",
+  "wlasl:strawberry",
+  "wlasl:street",
+  "wlasl:stress",
+  "wlasl:stretch",
+  "wlasl:strict",
+  "wlasl:strong",
+  "wlasl:structure",
+  "wlasl:struggle",
+  "wlasl:stubborn",
+  "wlasl:stuck",
+  "wlasl:student",
+  "wlasl:study",
+  "wlasl:stupid",
+  "wlasl:subtract",
+  "wlasl:subway",
+  "wlasl:sue",
+  "wlasl:suffer",
+  "wlasl:sugar",
+  "wlasl:suggest",
+  "wlasl:summer",
+  "wlasl:summon",
+  "wlasl:sun",
+  "wlasl:sunday",
+  "wlasl:sunrise",
+  "wlasl:sunset",
+  "wlasl:sunshine",
+  "wlasl:superman",
+  "wlasl:support",
+  "wlasl:suppose",
+  "wlasl:sure",
+  "wlasl:surface",
+  "wlasl:surgeon",
+  "wlasl:surgery",
+  "wlasl:surprise",
+  "wlasl:surrender",
+  "wlasl:suspect",
+  "wlasl:suspend",
+  "wlasl:swallow",
+  "wlasl:sweater",
+  "wlasl:sweden",
+  "wlasl:sweep",
+  "wlasl:sweet",
+  "wlasl:sweetheart",
+  "wlasl:swim",
+  "wlasl:swimming",
+  "wlasl:swimsuit",
+  "wlasl:swing",
+  "wlasl:switzerland",
+  "wlasl:symbol",
+  "wlasl:sympathy",
+  "wlasl:t",
+  "wlasl:table",
+  "wlasl:take",
+  "wlasl:take turns",
+  "wlasl:take up",
+  "wlasl:tale",
+  "wlasl:talent",
+  "wlasl:talk",
+  "wlasl:tall",
+  "wlasl:tan",
+  "wlasl:taste",
+  "wlasl:tea",
+  "wlasl:teach",
+  "wlasl:teacher",
+  "wlasl:team",
+  "wlasl:tease",
+  "wlasl:technology",
+  "wlasl:teeth",
+  "wlasl:telephone",
+  "wlasl:telescope",
+  "wlasl:television",
+  "wlasl:tell",
+  "wlasl:temperature",
+  "wlasl:temple",
+  "wlasl:tempt",
+  "wlasl:ten",
+  "wlasl:tend",
+  "wlasl:tender",
+  "wlasl:tennis",
+  "wlasl:tent",
+  "wlasl:terrible",
+  "wlasl:test",
+  "wlasl:testify",
+  "wlasl:texas",
+  "wlasl:text",
+  "wlasl:thailand",
+  "wlasl:than",
+  "wlasl:thank you",
+  "wlasl:thankful",
+  "wlasl:thanksgiving",
+  "wlasl:that",
+  "wlasl:theater",
+  "wlasl:their",
+  "wlasl:them",
+  "wlasl:theme",
+  "wlasl:themselves",
+  "wlasl:then",
+  "wlasl:theory",
+  "wlasl:therapy",
+  "wlasl:there",
+  "wlasl:therefore",
+  "wlasl:thermometer",
+  "wlasl:they",
+  "wlasl:thick",
+  "wlasl:thin",
+  "wlasl:thing",
+  "wlasl:think",
+  "wlasl:third",
+  "wlasl:thirsty",
+  "wlasl:this",
+  "wlasl:thousand",
+  "wlasl:three",
+  "wlasl:thrill",
+  "wlasl:throat",
+  "wlasl:through",
+  "wlasl:throw",
+  "wlasl:thursday",
+  "wlasl:ticket",
+  "wlasl:tie",
+  "wlasl:tiger",
+  "wlasl:time",
+  "wlasl:tiptoe",
+  "wlasl:tired",
+  "wlasl:tissue",
+  "wlasl:title",
+  "wlasl:to",
+  "wlasl:toast",
+  "wlasl:tobacco",
+  "wlasl:today",
+  "wlasl:together",
+  "wlasl:toilet",
+  "wlasl:toilet paper",
+  "wlasl:tolerate",
+  "wlasl:tomato",
+  "wlasl:tomorrow",
+  "wlasl:tongue",
+  "wlasl:tonight",
+  "wlasl:tooth",
+  "wlasl:toothbrush",
+  "wlasl:top",
+  "wlasl:topic",
+  "wlasl:tornado",
+  "wlasl:torture",
+  "wlasl:total",
+  "wlasl:touch",
+  "wlasl:tough",
+  "wlasl:tournament",
+  "wlasl:towel",
+  "wlasl:tower",
+  "wlasl:town",
+  "wlasl:trade",
+  "wlasl:tradition",
+  "wlasl:traffic",
+  "wlasl:train",
+  "wlasl:tranquil",
+  "wlasl:transfer",
+  "wlasl:transform",
+  "wlasl:translate",
+  "wlasl:travel",
+  "wlasl:tree",
+  "wlasl:triangle",
+  "wlasl:trip",
+  "wlasl:trophy",
+  "wlasl:trouble",
+  "wlasl:truck",
+  "wlasl:true",
+  "wlasl:trust",
+  "wlasl:truth",
+  "wlasl:try",
+  "wlasl:tuesday",
+  "wlasl:turkey",
+  "wlasl:turn",
+  "wlasl:turtle",
+  "wlasl:tutor",
+  "wlasl:tv",
+  "wlasl:twin",
+  "wlasl:two",
+  "wlasl:type",
+  "wlasl:u",
+  "wlasl:ugly",
+  "wlasl:umbrella",
+  "wlasl:uncle",
+  "wlasl:under",
+  "wlasl:understand",
+  "wlasl:underwear",
+  "wlasl:unique",
+  "wlasl:united states",
+  "wlasl:university",
+  "wlasl:until",
+  "wlasl:up",
+  "wlasl:upset",
+  "wlasl:upstairs",
+  "wlasl:use",
+  "wlasl:v",
+  "wlasl:vacant",
+  "wlasl:vacation",
+  "wlasl:vague",
+  "wlasl:valley",
+  "wlasl:value",
+  "wlasl:vampire",
+  "wlasl:vegetable",
+  "wlasl:verb",
+  "wlasl:very",
+  "wlasl:vice president",
+  "wlasl:viewpoint",
+  "wlasl:violin",
+  "wlasl:visit",
+  "wlasl:visitor",
+  "wlasl:visualize",
+  "wlasl:vlog",
+  "wlasl:vocabulary",
+  "wlasl:voice",
+  "wlasl:volleyball",
+  "wlasl:volunteer",
+  "wlasl:vomit",
+  "wlasl:vote",
+  "wlasl:w",
+  "wlasl:wait",
+  "wlasl:waiter",
+  "wlasl:wake up",
+  "wlasl:walk",
+  "wlasl:wall",
+  "wlasl:wallet",
+  "wlasl:wander",
+  "wlasl:want",
+  "wlasl:war",
+  "wlasl:warm",
+  "wlasl:warn",
+  "wlasl:wash",
+  "wlasl:wash face",
+  "wlasl:washington",
+  "wlasl:waste",
+  "wlasl:watch",
+  "wlasl:water",
+  "wlasl:waterfall",
+  "wlasl:watermelon",
+  "wlasl:way",
+  "wlasl:we",
+  "wlasl:weak",
+  "wlasl:wear",
+  "wlasl:weather",
+  "wlasl:wedding",
+  "wlasl:wednesday",
+  "wlasl:week",
+  "wlasl:weekend",
+  "wlasl:weekly",
+  "wlasl:weigh",
+  "wlasl:weight",
+  "wlasl:weird",
+  "wlasl:welcome",
+  "wlasl:west",
+  "wlasl:wet",
+  "wlasl:whale",
+  "wlasl:what",
+  "wlasl:whatever",
+  "wlasl:wheelchair",
+  "wlasl:when",
+  "wlasl:where",
+  "wlasl:which",
+  "wlasl:while",
+  "wlasl:whistle",
+  "wlasl:white",
+  "wlasl:who",
+  "wlasl:why",
+  "wlasl:wide",
+  "wlasl:wife",
+  "wlasl:will",
+  "wlasl:willing",
+  "wlasl:win",
+  "wlasl:wind",
+  "wlasl:window",
+  "wlasl:wine",
+  "wlasl:winter",
+  "wlasl:wish",
+  "wlasl:with",
+  "wlasl:within",
+  "wlasl:without",
+  "wlasl:witness",
+  "wlasl:wolf",
+  "wlasl:woman",
+  "wlasl:wonder",
+  "wlasl:wonderful",
+  "wlasl:wood",
+  "wlasl:word",
+  "wlasl:work",
+  "wlasl:worker",
+  "wlasl:workshop",
+  "wlasl:world",
+  "wlasl:worm",
+  "wlasl:worry",
+  "wlasl:worse",
+  "wlasl:worthless",
+  "wlasl:wow",
+  "wlasl:wrap",
+  "wlasl:wrench",
+  "wlasl:wristwatch",
+  "wlasl:write",
+  "wlasl:wrong",
+  "wlasl:year",
+  "wlasl:yellow",
+  "wlasl:yes",
+  "wlasl:yesterday",
+  "wlasl:you",
+  "wlasl:young",
+  "wlasl:your",
+  "wlasl:yourself",
+  "wlasl:zero"
+ ],
+ "epochs": 100,
+ "seed": 0,
+ "source": "asl-now-fingerspelling (MIT) + CASL-W60 landmarks (MIT) + WLASL landmarks (C-UDA, academic non-commercial)",
+ "history": [
+  {
+   "epoch": 1,
+   "train": {
+    "loss": 7.402827734066062,
+    "f1": 0.001069039013828749
+   },
+   "asl-now": {
+    "loss": 5.751934051513672,
+    "f1": 0.035323530185778884,
+    "top1": 0.14426229508196722,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 6.36600923538208,
+    "f1": 0.03149050792909721,
+    "top1": 0.08865886588658865,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.64602518081665,
+    "f1": 0.0,
+    "top1": 0.0,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 2,
+   "train": {
+    "loss": 6.873543425133004,
+    "f1": 0.00306742385231596
+   },
+   "asl-now": {
+    "loss": 4.685629844665527,
+    "f1": 0.04825383696351438,
+    "top1": 0.14426229508196722,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 5.230313301086426,
+    "f1": 0.07772507906642125,
+    "top1": 0.1476147614761476,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.6428327560424805,
+    "f1": 0.0,
+    "top1": 0.0,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 3,
+   "train": {
+    "loss": 6.390274910161705,
+    "f1": 0.005755814266310797
+   },
+   "asl-now": {
+    "loss": 3.9173617362976074,
+    "f1": 0.12057172712196507,
+    "top1": 0.25245901639344265,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 4.247900485992432,
+    "f1": 0.15113789718259812,
+    "top1": 0.22682268226822683,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.629208564758301,
+    "f1": 3.285205078927052e-05,
+    "top1": 0.0006006006006006006,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 4,
+   "train": {
+    "loss": 5.959524498767052,
+    "f1": 0.009591956161310554
+   },
+   "asl-now": {
+    "loss": 3.161937713623047,
+    "f1": 0.22666759142601184,
+    "top1": 0.39344262295081966,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 3.2893238067626953,
+    "f1": 0.32687027506552285,
+    "top1": 0.4018901890189019,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.634586334228516,
+    "f1": 1.9122835534052987e-05,
+    "top1": 0.0006006006006006006,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 5,
+   "train": {
+    "loss": 5.693918812145085,
+    "f1": 0.016565653365593486
+   },
+   "asl-now": {
+    "loss": 2.7713828086853027,
+    "f1": 0.35941285543506696,
+    "top1": 0.4491803278688525,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 2.7278075218200684,
+    "f1": 0.49617631551528757,
+    "top1": 0.5396039603960396,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.6196417808532715,
+    "f1": 0.0,
+    "top1": 0.0,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 6,
+   "train": {
+    "loss": 5.509192436574728,
+    "f1": 0.022788010835109878
+   },
+   "asl-now": {
+    "loss": 2.2716777324676514,
+    "f1": 0.6247016343825389,
+    "top1": 0.6524590163934426,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 2.4799232482910156,
+    "f1": 0.582378527746911,
+    "top1": 0.6075607560756076,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.604064464569092,
+    "f1": 0.00015193108388663078,
+    "top1": 0.0024024024024024023,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 7,
+   "train": {
+    "loss": 5.374518348150279,
+    "f1": 0.02444559961010683
+   },
+   "asl-now": {
+    "loss": 2.0477054119110107,
+    "f1": 0.6654991230825151,
+    "top1": 0.7114754098360656,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 2.191391944885254,
+    "f1": 0.6661553887465171,
+    "top1": 0.6831683168316832,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.566704273223877,
+    "f1": 0.0001607818015098416,
+    "top1": 0.0012012012012012011,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 8,
+   "train": {
+    "loss": 5.204070619234075,
+    "f1": 0.02384734442564925
+   },
+   "asl-now": {
+    "loss": 1.9107120037078857,
+    "f1": 0.8002613113337164,
+    "top1": 0.8065573770491803,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 2.127265453338623,
+    "f1": 0.7177063713285812,
+    "top1": 0.7335733573357336,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.375071048736572,
+    "f1": 0.00114305812010903,
+    "top1": 0.0024024024024024023,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 9,
+   "train": {
+    "loss": 5.008956587916765,
+    "f1": 0.02435509405263768
+   },
+   "asl-now": {
+    "loss": 1.8690402507781982,
+    "f1": 0.7425877225212096,
+    "top1": 0.7639344262295082,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.9913949966430664,
+    "f1": 0.7628408625038844,
+    "top1": 0.7718271827182718,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 7.072126865386963,
+    "f1": 0.0014307068118727313,
+    "top1": 0.0024024024024024023,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 10,
+   "train": {
+    "loss": 4.780996230508318,
+    "f1": 0.025500048804673624
+   },
+   "asl-now": {
+    "loss": 1.7304103374481201,
+    "f1": 0.7888736604142964,
+    "top1": 0.8032786885245902,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.916426181793213,
+    "f1": 0.792613589666262,
+    "top1": 0.7934293429342935,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 6.603978633880615,
+    "f1": 0.0013411973238670028,
+    "top1": 0.004204204204204204,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 11,
+   "train": {
+    "loss": 4.536682267972364,
+    "f1": 0.028113697284375776
+   },
+   "asl-now": {
+    "loss": 1.7843692302703857,
+    "f1": 0.7861650227417585,
+    "top1": 0.7967213114754098,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.8831926584243774,
+    "f1": 0.7935457496206271,
+    "top1": 0.7947794779477948,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 6.168651580810547,
+    "f1": 0.0061354607944176034,
+    "top1": 0.015615615615615615,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 12,
+   "train": {
+    "loss": 4.238808380205074,
+    "f1": 0.03877965422977279
+   },
+   "asl-now": {
+    "loss": 1.8435930013656616,
+    "f1": 0.7013239727712837,
+    "top1": 0.7344262295081967,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.8618953227996826,
+    "f1": 0.8031872229199305,
+    "top1": 0.8037803780378038,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 5.691814422607422,
+    "f1": 0.030842857680331445,
+    "top1": 0.06846846846846846,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 13,
+   "train": {
+    "loss": 3.965014193982742,
+    "f1": 0.05939619036414112
+   },
+   "asl-now": {
+    "loss": 1.8464115858078003,
+    "f1": 0.7298806202969883,
+    "top1": 0.7344262295081967,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.8573088645935059,
+    "f1": 0.7919491114734656,
+    "top1": 0.801980198019802,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 5.2936201095581055,
+    "f1": 0.06045279725973435,
+    "top1": 0.11231231231231231,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 14,
+   "train": {
+    "loss": 3.7176965883381237,
+    "f1": 0.08906009904381774
+   },
+   "asl-now": {
+    "loss": 1.6321097612380981,
+    "f1": 0.8479540884148842,
+    "top1": 0.8524590163934426,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.8667545318603516,
+    "f1": 0.775111596094544,
+    "top1": 0.7884788478847885,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.997536659240723,
+    "f1": 0.08148966958152429,
+    "top1": 0.14054054054054055,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 15,
+   "train": {
+    "loss": 3.5156077481932044,
+    "f1": 0.1198139584096905
+   },
+   "asl-now": {
+    "loss": 1.648266315460205,
+    "f1": 0.833405038066134,
+    "top1": 0.8295081967213115,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.907724380493164,
+    "f1": 0.796744691328023,
+    "top1": 0.806030603060306,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.756612300872803,
+    "f1": 0.1120397374712105,
+    "top1": 0.178978978978979,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 16,
+   "train": {
+    "loss": 3.362649963618737,
+    "f1": 0.157331619239445
+   },
+   "asl-now": {
+    "loss": 1.5758423805236816,
+    "f1": 0.8916620440506947,
+    "top1": 0.8852459016393442,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.9426770210266113,
+    "f1": 0.7514067206750213,
+    "top1": 0.7682268226822683,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.606374263763428,
+    "f1": 0.1315404970683951,
+    "top1": 0.1933933933933934,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 17,
+   "train": {
+    "loss": 3.2243659422347344,
+    "f1": 0.19759602341419974
+   },
+   "asl-now": {
+    "loss": 1.624354362487793,
+    "f1": 0.7799669988313507,
+    "top1": 0.8098360655737705,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.8013489246368408,
+    "f1": 0.7969347398402156,
+    "top1": 0.8028802880288028,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.444935321807861,
+    "f1": 0.15455669677322464,
+    "top1": 0.21981981981981982,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 18,
+   "train": {
+    "loss": 3.0963735086263777,
+    "f1": 0.23956858944467124
+   },
+   "asl-now": {
+    "loss": 1.6129992008209229,
+    "f1": 0.8654279494603875,
+    "top1": 0.8655737704918033,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 2.0460710525512695,
+    "f1": 0.7379107743069035,
+    "top1": 0.7349234923492349,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.398591041564941,
+    "f1": 0.16382100145492312,
+    "top1": 0.22762762762762762,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 19,
+   "train": {
+    "loss": 2.988553156419289,
+    "f1": 0.26573224749777435
+   },
+   "asl-now": {
+    "loss": 1.7642322778701782,
+    "f1": 0.7612085216302622,
+    "top1": 0.7737704918032787,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.837836503982544,
+    "f1": 0.8181817203661752,
+    "top1": 0.8213321332133213,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.219368934631348,
+    "f1": 0.18219325695302635,
+    "top1": 0.24504504504504504,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 20,
+   "train": {
+    "loss": 2.912465561285954,
+    "f1": 0.2905001010677233
+   },
+   "asl-now": {
+    "loss": 1.6351890563964844,
+    "f1": 0.8288757040130625,
+    "top1": 0.8295081967213115,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7869634628295898,
+    "f1": 0.8405844982765911,
+    "top1": 0.8357335733573358,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.2212018966674805,
+    "f1": 0.18986248999061298,
+    "top1": 0.2510510510510511,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 21,
+   "train": {
+    "loss": 2.824110538688114,
+    "f1": 0.3214738409031137
+   },
+   "asl-now": {
+    "loss": 1.5840717554092407,
+    "f1": 0.8409447857065432,
+    "top1": 0.8491803278688524,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.733672857284546,
+    "f1": 0.8465232676137082,
+    "top1": 0.8492349234923492,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.131185054779053,
+    "f1": 0.21447338340355637,
+    "top1": 0.2756756756756757,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 22,
+   "train": {
+    "loss": 2.7553326453484654,
+    "f1": 0.34370607377525625
+   },
+   "asl-now": {
+    "loss": 1.5557175874710083,
+    "f1": 0.8380609119517699,
+    "top1": 0.8590163934426229,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.8090507984161377,
+    "f1": 0.8265893169879966,
+    "top1": 0.8298829882988299,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.028280258178711,
+    "f1": 0.21912799635413346,
+    "top1": 0.2828828828828829,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 23,
+   "train": {
+    "loss": 2.6743279559512496,
+    "f1": 0.3788952014193704
+   },
+   "asl-now": {
+    "loss": 1.5867009162902832,
+    "f1": 0.827163833417289,
+    "top1": 0.8295081967213115,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7850894927978516,
+    "f1": 0.83064797304082,
+    "top1": 0.8303330333033303,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 4.033085346221924,
+    "f1": 0.24267270435827545,
+    "top1": 0.3063063063063063,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 24,
+   "train": {
+    "loss": 2.640169068911826,
+    "f1": 0.4036804624765789
+   },
+   "asl-now": {
+    "loss": 1.5264660120010376,
+    "f1": 0.8900520591730714,
+    "top1": 0.8852459016393442,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6623353958129883,
+    "f1": 0.8795600851012442,
+    "top1": 0.8811881188118812,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.822132110595703,
+    "f1": 0.25386809432293095,
+    "top1": 0.3225225225225225,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 25,
+   "train": {
+    "loss": 2.552707605889226,
+    "f1": 0.42113859700555584
+   },
+   "asl-now": {
+    "loss": 1.497849941253662,
+    "f1": 0.9028398565401422,
+    "top1": 0.9016393442622951,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7847574949264526,
+    "f1": 0.8269909145066978,
+    "top1": 0.8267326732673267,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.9015510082244873,
+    "f1": 0.25072103851732297,
+    "top1": 0.3219219219219219,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 26,
+   "train": {
+    "loss": 2.5097170596563463,
+    "f1": 0.4399919279543456
+   },
+   "asl-now": {
+    "loss": 1.5927846431732178,
+    "f1": 0.8933273226880586,
+    "top1": 0.898360655737705,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.679630160331726,
+    "f1": 0.8742285358586409,
+    "top1": 0.8807380738073808,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.7741003036499023,
+    "f1": 0.28259815136817057,
+    "top1": 0.34894894894894896,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 27,
+   "train": {
+    "loss": 2.4447247412062136,
+    "f1": 0.4614855861776947
+   },
+   "asl-now": {
+    "loss": 1.4885306358337402,
+    "f1": 0.8775798008491166,
+    "top1": 0.8819672131147541,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6904078722000122,
+    "f1": 0.8833949669098743,
+    "top1": 0.882988298829883,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.782464027404785,
+    "f1": 0.27093489114629404,
+    "top1": 0.3333333333333333,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 28,
+   "train": {
+    "loss": 2.4105281920195827,
+    "f1": 0.48551012993259396
+   },
+   "asl-now": {
+    "loss": 1.7220375537872314,
+    "f1": 0.7840689363382753,
+    "top1": 0.7967213114754098,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7428865432739258,
+    "f1": 0.8537125234438718,
+    "top1": 0.8541854185418541,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.7831339836120605,
+    "f1": 0.2793116947825468,
+    "top1": 0.3429429429429429,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 29,
+   "train": {
+    "loss": 2.363407749880331,
+    "f1": 0.5086018935685536
+   },
+   "asl-now": {
+    "loss": 1.472762107849121,
+    "f1": 0.8938938381897773,
+    "top1": 0.8950819672131147,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6691210269927979,
+    "f1": 0.8769084442041402,
+    "top1": 0.8789378937893789,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.667539119720459,
+    "f1": 0.29790732436472345,
+    "top1": 0.36396396396396397,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 30,
+   "train": {
+    "loss": 2.3136050735767406,
+    "f1": 0.5221977270256853
+   },
+   "asl-now": {
+    "loss": 1.4576795101165771,
+    "f1": 0.9237151019678926,
+    "top1": 0.9245901639344263,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6512236595153809,
+    "f1": 0.8745880992537423,
+    "top1": 0.878037803780378,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.7670044898986816,
+    "f1": 0.2716868511231099,
+    "top1": 0.33633633633633636,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 31,
+   "train": {
+    "loss": 2.276737103166683,
+    "f1": 0.5438708756778365
+   },
+   "asl-now": {
+    "loss": 1.4704291820526123,
+    "f1": 0.9075671360158194,
+    "top1": 0.9016393442622951,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7208877801895142,
+    "f1": 0.8719802867328552,
+    "top1": 0.873987398739874,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.6587820053100586,
+    "f1": 0.3003858942680211,
+    "top1": 0.36456456456456454,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 32,
+   "train": {
+    "loss": 2.237320498771991,
+    "f1": 0.5670810525335738
+   },
+   "asl-now": {
+    "loss": 1.6057631969451904,
+    "f1": 0.8429966687670903,
+    "top1": 0.8426229508196721,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6732779741287231,
+    "f1": 0.8757168295685294,
+    "top1": 0.8766876687668766,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.66337251663208,
+    "f1": 0.2982479688437408,
+    "top1": 0.35915915915915914,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 33,
+   "train": {
+    "loss": 2.208789511602907,
+    "f1": 0.5845714800134328
+   },
+   "asl-now": {
+    "loss": 1.4276176691055298,
+    "f1": 0.9315904137829261,
+    "top1": 0.9278688524590164,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7502586841583252,
+    "f1": 0.8508035976947937,
+    "top1": 0.8537353735373537,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.6454787254333496,
+    "f1": 0.3102992032524383,
+    "top1": 0.3741741741741742,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 34,
+   "train": {
+    "loss": 2.1830132351201676,
+    "f1": 0.5964901306063705
+   },
+   "asl-now": {
+    "loss": 1.7313072681427002,
+    "f1": 0.8005802148456548,
+    "top1": 0.8065573770491803,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6807713508605957,
+    "f1": 0.8687014674192551,
+    "top1": 0.869036903690369,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.550877094268799,
+    "f1": 0.31202627538309796,
+    "top1": 0.37657657657657656,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 35,
+   "train": {
+    "loss": 2.14758089426422,
+    "f1": 0.61140998438397
+   },
+   "asl-now": {
+    "loss": 1.4367835521697998,
+    "f1": 0.9329550153768746,
+    "top1": 0.9311475409836065,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.785059928894043,
+    "f1": 0.8354840095692986,
+    "top1": 0.8415841584158416,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.622413396835327,
+    "f1": 0.3110917909764802,
+    "top1": 0.3705705705705706,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 36,
+   "train": {
+    "loss": 2.1158470754995795,
+    "f1": 0.620329416441168
+   },
+   "asl-now": {
+    "loss": 1.4616799354553223,
+    "f1": 0.9192315696102831,
+    "top1": 0.921311475409836,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6445512771606445,
+    "f1": 0.8839995245104902,
+    "top1": 0.8834383438343835,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.577198028564453,
+    "f1": 0.3097968335316189,
+    "top1": 0.3705705705705706,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 37,
+   "train": {
+    "loss": 2.0936121836962447,
+    "f1": 0.6336216628915284
+   },
+   "asl-now": {
+    "loss": 1.5283021926879883,
+    "f1": 0.8813832680413302,
+    "top1": 0.8754098360655738,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6949727535247803,
+    "f1": 0.856854627611411,
+    "top1": 0.8582358235823583,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.5670688152313232,
+    "f1": 0.32108080900521646,
+    "top1": 0.38198198198198197,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 38,
+   "train": {
+    "loss": 2.0750580533643204,
+    "f1": 0.6502729475312763
+   },
+   "asl-now": {
+    "loss": 1.4919122457504272,
+    "f1": 0.8456712286024402,
+    "top1": 0.8590163934426229,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6193650960922241,
+    "f1": 0.8824324618547686,
+    "top1": 0.8825382538253825,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.5587613582611084,
+    "f1": 0.32371597368394295,
+    "top1": 0.3831831831831832,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 39,
+   "train": {
+    "loss": 2.0403987898235223,
+    "f1": 0.6579678176417721
+   },
+   "asl-now": {
+    "loss": 1.4289045333862305,
+    "f1": 0.9108067146499335,
+    "top1": 0.9081967213114754,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6670150756835938,
+    "f1": 0.8824253941850948,
+    "top1": 0.8834383438343835,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.515364408493042,
+    "f1": 0.3460220859644306,
+    "top1": 0.406006006006006,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 40,
+   "train": {
+    "loss": 2.009846602718468,
+    "f1": 0.6754850580929446
+   },
+   "asl-now": {
+    "loss": 1.372070550918579,
+    "f1": 0.9393373369491438,
+    "top1": 0.9377049180327869,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.644937515258789,
+    "f1": 0.8669932283689737,
+    "top1": 0.869036903690369,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.552117347717285,
+    "f1": 0.33223818675452244,
+    "top1": 0.3963963963963964,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 41,
+   "train": {
+    "loss": 2.012829440203022,
+    "f1": 0.6764089898185824
+   },
+   "asl-now": {
+    "loss": 1.3805631399154663,
+    "f1": 0.9493762226810019,
+    "top1": 0.9475409836065574,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7088885307312012,
+    "f1": 0.8680213735315142,
+    "top1": 0.869036903690369,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.522371292114258,
+    "f1": 0.32922577102589917,
+    "top1": 0.393993993993994,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 42,
+   "train": {
+    "loss": 1.967689054248758,
+    "f1": 0.6941578217431158
+   },
+   "asl-now": {
+    "loss": 1.4406440258026123,
+    "f1": 0.8910161801329989,
+    "top1": 0.8918032786885246,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6709721088409424,
+    "f1": 0.8768102537003972,
+    "top1": 0.8721872187218722,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.482891082763672,
+    "f1": 0.34194045331136935,
+    "top1": 0.3993993993993994,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 43,
+   "train": {
+    "loss": 1.95161181249788,
+    "f1": 0.7095793405946533
+   },
+   "asl-now": {
+    "loss": 1.3818913698196411,
+    "f1": 0.9327462601462962,
+    "top1": 0.9278688524590164,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6950515508651733,
+    "f1": 0.8630485593352925,
+    "top1": 0.8667866786678667,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.490892171859741,
+    "f1": 0.34938989048534214,
+    "top1": 0.403003003003003,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 44,
+   "train": {
+    "loss": 1.9351473034198925,
+    "f1": 0.7170918070566068
+   },
+   "asl-now": {
+    "loss": 1.4511469602584839,
+    "f1": 0.9017912636351808,
+    "top1": 0.898360655737705,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6599009037017822,
+    "f1": 0.8716346757412554,
+    "top1": 0.8726372637263726,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4871366024017334,
+    "f1": 0.3367713004484305,
+    "top1": 0.4006006006006006,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 45,
+   "train": {
+    "loss": 1.9176157437294818,
+    "f1": 0.7226168528711778
+   },
+   "asl-now": {
+    "loss": 1.3939093351364136,
+    "f1": 0.9218436451991743,
+    "top1": 0.9147540983606557,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6873496770858765,
+    "f1": 0.8693155870718255,
+    "top1": 0.8703870387038704,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.488457202911377,
+    "f1": 0.3502669229126628,
+    "top1": 0.40540540540540543,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 46,
+   "train": {
+    "loss": 1.903994635355929,
+    "f1": 0.722138180353703
+   },
+   "asl-now": {
+    "loss": 1.4074879884719849,
+    "f1": 0.9359701223379572,
+    "top1": 0.9344262295081968,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6377313137054443,
+    "f1": 0.8896081955077171,
+    "top1": 0.8892889288928892,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4685235023498535,
+    "f1": 0.3521735151459687,
+    "top1": 0.412012012012012,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 47,
+   "train": {
+    "loss": 1.8972977280912904,
+    "f1": 0.7352873944235865
+   },
+   "asl-now": {
+    "loss": 1.4528932571411133,
+    "f1": 0.8998349185251864,
+    "top1": 0.898360655737705,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6964030265808105,
+    "f1": 0.867421294975032,
+    "top1": 0.8703870387038704,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.43290376663208,
+    "f1": 0.35192489551874556,
+    "top1": 0.412012012012012,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 48,
+   "train": {
+    "loss": 1.8665805426256863,
+    "f1": 0.7430180665380923
+   },
+   "asl-now": {
+    "loss": 1.4160031080245972,
+    "f1": 0.9095137491970071,
+    "top1": 0.9049180327868852,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.7008142471313477,
+    "f1": 0.8617667288794871,
+    "top1": 0.8640864086408641,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4324874877929688,
+    "f1": 0.3719075073975779,
+    "top1": 0.4252252252252252,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 49,
+   "train": {
+    "loss": 1.8452327334202736,
+    "f1": 0.7588302406380275
+   },
+   "asl-now": {
+    "loss": 1.370924472808838,
+    "f1": 0.93317659690802,
+    "top1": 0.9311475409836065,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.637618064880371,
+    "f1": 0.8702727525823216,
+    "top1": 0.8726372637263726,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.427205801010132,
+    "f1": 0.36412556053811657,
+    "top1": 0.42162162162162165,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 50,
+   "train": {
+    "loss": 1.8315187678518428,
+    "f1": 0.7581199282866328
+   },
+   "asl-now": {
+    "loss": 1.430908441543579,
+    "f1": 0.8908172556406163,
+    "top1": 0.8852459016393442,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6445648670196533,
+    "f1": 0.8828286878021548,
+    "top1": 0.8838883888388839,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.477806329727173,
+    "f1": 0.35096854885451945,
+    "top1": 0.40540540540540543,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 51,
+   "train": {
+    "loss": 1.817311018551601,
+    "f1": 0.7660805339993082
+   },
+   "asl-now": {
+    "loss": 1.3593430519104004,
+    "f1": 0.9489153107694006,
+    "top1": 0.9475409836065574,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.607187271118164,
+    "f1": 0.897769159458427,
+    "top1": 0.8987398739873987,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.403110980987549,
+    "f1": 0.37170312071016737,
+    "top1": 0.4264264264264264,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 52,
+   "train": {
+    "loss": 1.8071415934245885,
+    "f1": 0.7625805703522744
+   },
+   "asl-now": {
+    "loss": 1.3429962396621704,
+    "f1": 0.9284671705724692,
+    "top1": 0.9344262295081968,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.661831259727478,
+    "f1": 0.8572401000309976,
+    "top1": 0.8591359135913591,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4501991271972656,
+    "f1": 0.3599066532442573,
+    "top1": 0.41921921921921923,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 53,
+   "train": {
+    "loss": 1.8040061307732516,
+    "f1": 0.7750767279412921
+   },
+   "asl-now": {
+    "loss": 1.3320910930633545,
+    "f1": 0.9493356483195018,
+    "top1": 0.9475409836065574,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5952746868133545,
+    "f1": 0.8936887059466593,
+    "top1": 0.8946894689468947,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4277725219726562,
+    "f1": 0.36076538238613826,
+    "top1": 0.4174174174174174,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 54,
+   "train": {
+    "loss": 1.7775177624174132,
+    "f1": 0.7814809281658975
+   },
+   "asl-now": {
+    "loss": 1.3580950498580933,
+    "f1": 0.9367472672271563,
+    "top1": 0.9377049180327869,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5967121124267578,
+    "f1": 0.8886507171579487,
+    "top1": 0.8883888388838884,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4493088722229004,
+    "f1": 0.36367102894969644,
+    "top1": 0.418018018018018,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 55,
+   "train": {
+    "loss": 1.770180352562301,
+    "f1": 0.7888268877198588
+   },
+   "asl-now": {
+    "loss": 1.3792974948883057,
+    "f1": 0.9209062302682653,
+    "top1": 0.9147540983606557,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5762429237365723,
+    "f1": 0.8991059425019023,
+    "top1": 0.8987398739873987,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.4095816612243652,
+    "f1": 0.3563222598456423,
+    "top1": 0.4144144144144144,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 56,
+   "train": {
+    "loss": 1.7625065924324148,
+    "f1": 0.7917597634690959
+   },
+   "asl-now": {
+    "loss": 1.31134033203125,
+    "f1": 0.9449067629040594,
+    "top1": 0.940983606557377,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5897152423858643,
+    "f1": 0.8874807296130736,
+    "top1": 0.8879387938793879,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3867435455322266,
+    "f1": 0.37090692779353895,
+    "top1": 0.4252252252252252,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 57,
+   "train": {
+    "loss": 1.7501332819541553,
+    "f1": 0.7960494121598513
+   },
+   "asl-now": {
+    "loss": 1.3246023654937744,
+    "f1": 0.9511769604135799,
+    "top1": 0.9475409836065574,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6090502738952637,
+    "f1": 0.8833370096926638,
+    "top1": 0.882988298829883,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3898351192474365,
+    "f1": 0.3701320887099234,
+    "top1": 0.42582582582582584,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 58,
+   "train": {
+    "loss": 1.728974400899146,
+    "f1": 0.8061466647768064
+   },
+   "asl-now": {
+    "loss": 1.3634966611862183,
+    "f1": 0.9232766092609274,
+    "top1": 0.9180327868852459,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6446480751037598,
+    "f1": 0.8857617235666783,
+    "top1": 0.8825382538253825,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.350839138031006,
+    "f1": 0.38616576675513253,
+    "top1": 0.43843843843843844,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 59,
+   "train": {
+    "loss": 1.7211556611558314,
+    "f1": 0.8128226348823161
+   },
+   "asl-now": {
+    "loss": 1.3038341999053955,
+    "f1": 0.9431161579905586,
+    "top1": 0.940983606557377,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5724687576293945,
+    "f1": 0.8994792349782893,
+    "top1": 0.8991899189918992,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3648910522460938,
+    "f1": 0.38410359659558885,
+    "top1": 0.4402402402402402,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 60,
+   "train": {
+    "loss": 1.7121106604040257,
+    "f1": 0.8152225121159872
+   },
+   "asl-now": {
+    "loss": 1.4346420764923096,
+    "f1": 0.9155280079007413,
+    "top1": 0.9114754098360656,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6243736743927002,
+    "f1": 0.8732942036805993,
+    "top1": 0.878037803780378,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.378678798675537,
+    "f1": 0.35995546200543,
+    "top1": 0.4168168168168168,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 61,
+   "train": {
+    "loss": 1.6914976133693669,
+    "f1": 0.822084278068887
+   },
+   "asl-now": {
+    "loss": 1.2664217948913574,
+    "f1": 0.964053926012467,
+    "top1": 0.9639344262295082,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.6509346961975098,
+    "f1": 0.8753611824523493,
+    "top1": 0.878037803780378,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.365973711013794,
+    "f1": 0.3922378816997651,
+    "top1": 0.45045045045045046,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 62,
+   "train": {
+    "loss": 1.6907403079998236,
+    "f1": 0.8208682316426922
+   },
+   "asl-now": {
+    "loss": 1.3026156425476074,
+    "f1": 0.948032887951993,
+    "top1": 0.9475409836065574,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.612202525138855,
+    "f1": 0.8891329689615227,
+    "top1": 0.8888388838883888,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.368037700653076,
+    "f1": 0.37533632286995516,
+    "top1": 0.4264264264264264,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 63,
+   "train": {
+    "loss": 1.6589043839538664,
+    "f1": 0.8325679254347926
+   },
+   "asl-now": {
+    "loss": 1.353922724723816,
+    "f1": 0.9282561201394102,
+    "top1": 0.9245901639344263,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5725431442260742,
+    "f1": 0.9020755982889279,
+    "top1": 0.9005400540054005,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3451709747314453,
+    "f1": 0.37475976937860345,
+    "top1": 0.4276276276276276,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 64,
+   "train": {
+    "loss": 1.6622381381786844,
+    "f1": 0.8355903055846746
+   },
+   "asl-now": {
+    "loss": 1.2954596281051636,
+    "f1": 0.9562342716923493,
+    "top1": 0.9540983606557377,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5704997777938843,
+    "f1": 0.8990901924954692,
+    "top1": 0.8973897389738974,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.375267505645752,
+    "f1": 0.3788597053171044,
+    "top1": 0.4348348348348348,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 65,
+   "train": {
+    "loss": 1.6592316540709513,
+    "f1": 0.830765779520084
+   },
+   "asl-now": {
+    "loss": 1.2926273345947266,
+    "f1": 0.9569728594475814,
+    "top1": 0.9540983606557377,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5896568298339844,
+    "f1": 0.8917087425952474,
+    "top1": 0.8901890189018902,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3572983741760254,
+    "f1": 0.3890729385924774,
+    "top1": 0.43663663663663665,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 66,
+   "train": {
+    "loss": 1.6461457438708582,
+    "f1": 0.8381199892113274
+   },
+   "asl-now": {
+    "loss": 1.254107117652893,
+    "f1": 0.9670692104049993,
+    "top1": 0.9639344262295082,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5946540832519531,
+    "f1": 0.8916669122030149,
+    "top1": 0.8910891089108911,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3487541675567627,
+    "f1": 0.38614746346969286,
+    "top1": 0.43963963963963965,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 67,
+   "train": {
+    "loss": 1.6256878651117124,
+    "f1": 0.8453612803768543
+   },
+   "asl-now": {
+    "loss": 1.2799584865570068,
+    "f1": 0.9617319880171589,
+    "top1": 0.9606557377049181,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5594539642333984,
+    "f1": 0.8958906864204065,
+    "top1": 0.896939693969397,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.32963228225708,
+    "f1": 0.3798328299929838,
+    "top1": 0.4336336336336336,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 68,
+   "train": {
+    "loss": 1.6211219407531197,
+    "f1": 0.8492030902251526
+   },
+   "asl-now": {
+    "loss": 1.26360023021698,
+    "f1": 0.9610035895565189,
+    "top1": 0.9606557377049181,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.561474323272705,
+    "f1": 0.892595690097852,
+    "top1": 0.8928892889288929,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.341071844100952,
+    "f1": 0.3895396723711905,
+    "top1": 0.44504504504504505,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 69,
+   "train": {
+    "loss": 1.61395599682002,
+    "f1": 0.8542856444670215
+   },
+   "asl-now": {
+    "loss": 1.2667845487594604,
+    "f1": 0.9692450064381011,
+    "top1": 0.9672131147540983,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.580956220626831,
+    "f1": 0.8855413589129885,
+    "top1": 0.8874887488748875,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.320699691772461,
+    "f1": 0.3804825966260944,
+    "top1": 0.43303303303303303,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 70,
+   "train": {
+    "loss": 1.6003816792126468,
+    "f1": 0.8570999323205628
+   },
+   "asl-now": {
+    "loss": 1.2809360027313232,
+    "f1": 0.9612993373590442,
+    "top1": 0.9606557377049181,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5910488367080688,
+    "f1": 0.8879460212229273,
+    "top1": 0.8906390639063907,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.3081893920898438,
+    "f1": 0.39080870016167896,
+    "top1": 0.44744744744744747,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 71,
+   "train": {
+    "loss": 1.6020205633466704,
+    "f1": 0.862411249857789
+   },
+   "asl-now": {
+    "loss": 1.2532434463500977,
+    "f1": 0.9553536531287954,
+    "top1": 0.9540983606557377,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.561318039894104,
+    "f1": 0.8979022593249808,
+    "top1": 0.8991899189918992,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.330418586730957,
+    "f1": 0.3853116134346115,
+    "top1": 0.43783783783783786,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 72,
+   "train": {
+    "loss": 1.606289017890713,
+    "f1": 0.856809747481809
+   },
+   "asl-now": {
+    "loss": 1.2363433837890625,
+    "f1": 0.9745457879053495,
+    "top1": 0.9737704918032787,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5666790008544922,
+    "f1": 0.8989235726617292,
+    "top1": 0.8955895589558955,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2819631099700928,
+    "f1": 0.3966169427412221,
+    "top1": 0.45225225225225224,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 73,
+   "train": {
+    "loss": 1.5835672955549753,
+    "f1": 0.8683908483976891
+   },
+   "asl-now": {
+    "loss": 1.2542518377304077,
+    "f1": 0.9609730265722892,
+    "top1": 0.9573770491803278,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5811505317687988,
+    "f1": 0.8922173058094117,
+    "top1": 0.8924392439243924,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.297224998474121,
+    "f1": 0.3900064061499039,
+    "top1": 0.44744744744744747,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 74,
+   "train": {
+    "loss": 1.5735076926029277,
+    "f1": 0.863799926938417
+   },
+   "asl-now": {
+    "loss": 1.2502708435058594,
+    "f1": 0.9688731219915627,
+    "top1": 0.9672131147540983,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.627073049545288,
+    "f1": 0.8795926489173532,
+    "top1": 0.8802880288028803,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.296736717224121,
+    "f1": 0.3912083218937799,
+    "top1": 0.4456456456456456,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 75,
+   "train": {
+    "loss": 1.5669302106382013,
+    "f1": 0.8672919892677227
+   },
+   "asl-now": {
+    "loss": 1.247950553894043,
+    "f1": 0.959201341526015,
+    "top1": 0.9606557377049181,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5739895105361938,
+    "f1": 0.8982701589640424,
+    "top1": 0.8973897389738974,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.301464080810547,
+    "f1": 0.3957017784692352,
+    "top1": 0.44744744744744747,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 76,
+   "train": {
+    "loss": 1.5601275845070282,
+    "f1": 0.8718804884821009
+   },
+   "asl-now": {
+    "loss": 1.2341084480285645,
+    "f1": 0.9717610554516714,
+    "top1": 0.9704918032786886,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5731000900268555,
+    "f1": 0.8893215620655003,
+    "top1": 0.8892889288928892,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.277509927749634,
+    "f1": 0.3949238888380464,
+    "top1": 0.44924924924924925,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 77,
+   "train": {
+    "loss": 1.5585926617472876,
+    "f1": 0.8721749592557582
+   },
+   "asl-now": {
+    "loss": 1.2317601442337036,
+    "f1": 0.9628343243269215,
+    "top1": 0.9606557377049181,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5810546875,
+    "f1": 0.8948169689831261,
+    "top1": 0.8951395139513951,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.308382034301758,
+    "f1": 0.39039077514413845,
+    "top1": 0.44384384384384384,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 78,
+   "train": {
+    "loss": 1.5449386445707072,
+    "f1": 0.8723220288531658
+   },
+   "asl-now": {
+    "loss": 1.222559928894043,
+    "f1": 0.9728189666613893,
+    "top1": 0.9704918032786886,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.566938042640686,
+    "f1": 0.8983053149536879,
+    "top1": 0.8978397839783978,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.283750057220459,
+    "f1": 0.39511149751380376,
+    "top1": 0.44744744744744747,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 79,
+   "train": {
+    "loss": 1.5431414257455718,
+    "f1": 0.8727850173360356
+   },
+   "asl-now": {
+    "loss": 1.2172924280166626,
+    "f1": 0.977380583525291,
+    "top1": 0.9770491803278688,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5454895496368408,
+    "f1": 0.9005520548345832,
+    "top1": 0.9014401440144014,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2761778831481934,
+    "f1": 0.4002592965437296,
+    "top1": 0.4540540540540541,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 80,
+   "train": {
+    "loss": 1.5410054241428635,
+    "f1": 0.8759159701596034
+   },
+   "asl-now": {
+    "loss": 1.2046964168548584,
+    "f1": 0.9807727469174545,
+    "top1": 0.980327868852459,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5946931838989258,
+    "f1": 0.8905342476141588,
+    "top1": 0.8910891089108911,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2677395343780518,
+    "f1": 0.40022879106799664,
+    "top1": 0.45525525525525523,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 81,
+   "train": {
+    "loss": 1.522664281416641,
+    "f1": 0.8814514279915278
+   },
+   "asl-now": {
+    "loss": 1.2070844173431396,
+    "f1": 0.9783858324286901,
+    "top1": 0.9770491803278688,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5749714374542236,
+    "f1": 0.8930999780394431,
+    "top1": 0.8933393339333934,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.292585849761963,
+    "f1": 0.38965864372654885,
+    "top1": 0.44384384384384384,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 82,
+   "train": {
+    "loss": 1.5295694455028879,
+    "f1": 0.8789153007646331
+   },
+   "asl-now": {
+    "loss": 1.2255529165267944,
+    "f1": 0.9651291588235934,
+    "top1": 0.9639344262295082,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5641899108886719,
+    "f1": 0.9017312143190732,
+    "top1": 0.9014401440144014,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2740864753723145,
+    "f1": 0.40377047680058575,
+    "top1": 0.45885885885885885,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 83,
+   "train": {
+    "loss": 1.5240904261666626,
+    "f1": 0.8840634001102802
+   },
+   "asl-now": {
+    "loss": 1.2186217308044434,
+    "f1": 0.9700530503107418,
+    "top1": 0.9704918032786886,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.55846107006073,
+    "f1": 0.8997285168775281,
+    "top1": 0.8991899189918992,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2861013412475586,
+    "f1": 0.3963515451023459,
+    "top1": 0.45225225225225224,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 84,
+   "train": {
+    "loss": 1.5259274891420749,
+    "f1": 0.8830351174371529
+   },
+   "asl-now": {
+    "loss": 1.227724313735962,
+    "f1": 0.9796300095358702,
+    "top1": 0.980327868852459,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5882010459899902,
+    "f1": 0.8870426543315983,
+    "top1": 0.8883888388838884,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2589964866638184,
+    "f1": 0.4052682956590708,
+    "top1": 0.4582582582582583,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 85,
+   "train": {
+    "loss": 1.513858571835586,
+    "f1": 0.8807389190032421
+   },
+   "asl-now": {
+    "loss": 1.2092852592468262,
+    "f1": 0.9813570080114608,
+    "top1": 0.980327868852459,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5402617454528809,
+    "f1": 0.9057103289602575,
+    "top1": 0.905940594059406,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2752139568328857,
+    "f1": 0.39760226960739453,
+    "top1": 0.45285285285285287,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 86,
+   "train": {
+    "loss": 1.5113741074012976,
+    "f1": 0.8880549503948747
+   },
+   "asl-now": {
+    "loss": 1.2014896869659424,
+    "f1": 0.9802298352289551,
+    "top1": 0.980327868852459,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5395563840866089,
+    "f1": 0.908650199317074,
+    "top1": 0.9086408640864087,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.283506393432617,
+    "f1": 0.39968274305237794,
+    "top1": 0.45525525525525523,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 87,
+   "train": {
+    "loss": 1.5035723736122297,
+    "f1": 0.8916808735080021
+   },
+   "asl-now": {
+    "loss": 1.1901264190673828,
+    "f1": 0.9928882034145191,
+    "top1": 0.9934426229508196,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5486302375793457,
+    "f1": 0.9013336795455967,
+    "top1": 0.9005400540054005,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2779691219329834,
+    "f1": 0.4082547817333211,
+    "top1": 0.46186186186186184,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 88,
+   "train": {
+    "loss": 1.5081664901591005,
+    "f1": 0.8915451835842642
+   },
+   "asl-now": {
+    "loss": 1.19277822971344,
+    "f1": 0.9800533898013362,
+    "top1": 0.980327868852459,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5488214492797852,
+    "f1": 0.9008891181958244,
+    "top1": 0.9005400540054005,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2662625312805176,
+    "f1": 0.40385589213263784,
+    "top1": 0.45885885885885885,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 89,
+   "train": {
+    "loss": 1.5004169055858048,
+    "f1": 0.8918802763657206
+   },
+   "asl-now": {
+    "loss": 1.1957406997680664,
+    "f1": 0.982148785445119,
+    "top1": 0.9836065573770492,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5510351657867432,
+    "f1": 0.9024080870261983,
+    "top1": 0.9018901890189019,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2745003700256348,
+    "f1": 0.4027454928159605,
+    "top1": 0.45705705705705707,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 90,
+   "train": {
+    "loss": 1.4990657619309506,
+    "f1": 0.8918338304045962
+   },
+   "asl-now": {
+    "loss": 1.1928762197494507,
+    "f1": 0.9828424339148388,
+    "top1": 0.9836065573770492,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5552077293395996,
+    "f1": 0.9011409412714823,
+    "top1": 0.900990099009901,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.265465259552002,
+    "f1": 0.3929440834629815,
+    "top1": 0.4486486486486487,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 91,
+   "train": {
+    "loss": 1.4966479106589983,
+    "f1": 0.894078505315776
+   },
+   "asl-now": {
+    "loss": 1.1949392557144165,
+    "f1": 0.9874777327528752,
+    "top1": 0.9868852459016394,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.539872646331787,
+    "f1": 0.9087471930217926,
+    "top1": 0.9086408640864087,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2713723182678223,
+    "f1": 0.39950276074555385,
+    "top1": 0.45465465465465466,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 92,
+   "train": {
+    "loss": 1.5005336436460532,
+    "f1": 0.8916826450514922
+   },
+   "asl-now": {
+    "loss": 1.1896051168441772,
+    "f1": 0.9926500514735809,
+    "top1": 0.9934426229508196,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5447373390197754,
+    "f1": 0.9064925595743566,
+    "top1": 0.905940594059406,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.266777276992798,
+    "f1": 0.39698300845001677,
+    "top1": 0.45285285285285287,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 93,
+   "train": {
+    "loss": 1.4847460164409647,
+    "f1": 0.8985637347548374
+   },
+   "asl-now": {
+    "loss": 1.189402461051941,
+    "f1": 0.9831495276223318,
+    "top1": 0.9836065573770492,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.542656421661377,
+    "f1": 0.9068664147101,
+    "top1": 0.9054905490549054,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.273108959197998,
+    "f1": 0.3956133125896098,
+    "top1": 0.4498498498498498,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 94,
+   "train": {
+    "loss": 1.4800660712102833,
+    "f1": 0.8991716845839095
+   },
+   "asl-now": {
+    "loss": 1.1918528079986572,
+    "f1": 0.9858357303085344,
+    "top1": 0.9868852459016394,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5574836730957031,
+    "f1": 0.9010047276286265,
+    "top1": 0.9000900090009001,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2686333656311035,
+    "f1": 0.39670540862084736,
+    "top1": 0.45045045045045046,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 95,
+   "train": {
+    "loss": 1.4910514950410554,
+    "f1": 0.8961060919992107
+   },
+   "asl-now": {
+    "loss": 1.1884299516677856,
+    "f1": 0.9831495276223318,
+    "top1": 0.9836065573770492,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5476040840148926,
+    "f1": 0.9056773023200281,
+    "top1": 0.9045904590459046,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2682666778564453,
+    "f1": 0.40022574052042337,
+    "top1": 0.45465465465465466,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 96,
+   "train": {
+    "loss": 1.4831753522167161,
+    "f1": 0.8936583007457859
+   },
+   "asl-now": {
+    "loss": 1.1882517337799072,
+    "f1": 0.9856428885959727,
+    "top1": 0.9868852459016394,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.550420880317688,
+    "f1": 0.9010217690222452,
+    "top1": 0.9005400540054005,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.274475336074829,
+    "f1": 0.3991824532503584,
+    "top1": 0.45225225225225224,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 97,
+   "train": {
+    "loss": 1.4917355287879188,
+    "f1": 0.8932693401118287
+   },
+   "asl-now": {
+    "loss": 1.189071536064148,
+    "f1": 0.9858357303085344,
+    "top1": 0.9868852459016394,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5452450513839722,
+    "f1": 0.9035322476195097,
+    "top1": 0.9027902790279028,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2633471488952637,
+    "f1": 0.3981330648851469,
+    "top1": 0.45285285285285287,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 98,
+   "train": {
+    "loss": 1.4751692973198318,
+    "f1": 0.8973138724171349
+   },
+   "asl-now": {
+    "loss": 1.1894323825836182,
+    "f1": 0.9858357303085344,
+    "top1": 0.9868852459016394,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5438644886016846,
+    "f1": 0.9057470359277923,
+    "top1": 0.9054905490549054,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.276073694229126,
+    "f1": 0.3996095299106189,
+    "top1": 0.45285285285285287,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 99,
+   "train": {
+    "loss": 1.476196034211734,
+    "f1": 0.9004885952926135
+   },
+   "asl-now": {
+    "loss": 1.1886215209960938,
+    "f1": 0.982148785445119,
+    "top1": 0.9836065573770492,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5475249290466309,
+    "f1": 0.9046093746051039,
+    "top1": 0.9041404140414041,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2645938396453857,
+    "f1": 0.39435343644184123,
+    "top1": 0.4486486486486487,
+    "samples": 1665
+   }
+  },
+  {
+   "epoch": 100,
+   "train": {
+    "loss": 1.4883364349635926,
+    "f1": 0.901111130322055
+   },
+   "asl-now": {
+    "loss": 1.1864391565322876,
+    "f1": 0.982148785445119,
+    "top1": 0.9836065573770492,
+    "samples": 305
+   },
+   "casl-w60": {
+    "loss": 1.5466489791870117,
+    "f1": 0.9065186712497494,
+    "top1": 0.9063906390639064,
+    "samples": 2222
+   },
+   "wlasl": {
+    "loss": 3.2648091316223145,
+    "f1": 0.3951892864769226,
+    "top1": 0.4498498498498498,
+    "samples": 1665
+   }
+  }
+ ],
+ "test_samples": 305,
+ "top1": 0.9836065573770492,
+ "casl_top1": 0.9063906390639064,
+ "wlasl_top1": 0.4498498498498498
+}

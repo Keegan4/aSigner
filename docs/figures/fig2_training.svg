@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="470" viewBox="0 0 1140 470" font-family="Helvetica, Arial, FreeSans, sans-serif" font-size="10.5" fill="#222">
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+  <style>
+    .b{fill:#fff;stroke:#333;stroke-width:1.1}
+    .g{fill:#f3f3f3;stroke:#333;stroke-width:1.1}
+    .t{font-weight:bold;font-size:12px}
+    .s{font-size:10px}
+    .c{text-anchor:middle}
+    .ln{stroke:#333;stroke-width:1.1;fill:none}
+    .pl{font-weight:bold;font-size:13px}
+  </style>
+</defs>
+<rect width="1140" height="470" fill="#fff"/>
+
+<text x="20" y="26" class="pl">(a) Training (augmentation and transition windows are redrawn every epoch)</text>
+<g class="c">
+  <rect x="20" y="40" width="195" height="150" rx="4" class="g"/>
+  <text x="117.5" y="64" class="t">Recorded clips</text>
+  <text x="117.5" y="86">signed to the camera in-app,</text>
+  <text x="117.5" y="101">≈ 25 takes per sign</text>
+  <text x="117.5" y="116">landmark frames only (<tspan font-style="italic">T</tspan> × 256),</text>
+  <text x="117.5" y="131">no video stored</text>
+  <text x="117.5" y="146">label + signer id;</text>
+  <text x="117.5" y="161">optional no-sign takes</text>
+
+  <rect x="248" y="40" width="195" height="150" rx="4" class="b"/>
+  <text x="345.5" y="64" class="t">Signer-independent split</text>
+  <text x="345.5" y="86">≥ 2 signers: hold out the</text>
+  <text x="345.5" y="101">whole signer with fewest clips</text>
+  <text x="345.5" y="116">1 signer: hold out 20% per sign</text>
+  <text x="345.5" y="131">(reported as optimistic)</text>
+  <text x="345.5" y="161" class="s" fill="#444">signs with no held-out clip</text>
+  <text x="345.5" y="174" class="s" fill="#444">are listed in the report</text>
+
+  <rect x="476" y="40" width="195" height="150" rx="4" class="b"/>
+  <text x="573.5" y="64" class="t">Augmentation</text>
+  <text x="573.5" y="86">temporal crop 70–100%,</text>
+  <text x="573.5" y="101">then drop ≈ 10% of frames</text>
+  <text x="573.5" y="116">mirror (swap hands), <tspan font-style="italic">p</tspan> = 0.5</text>
+  <text x="573.5" y="131">rotate ±12°, scale 0.85–1.15</text>
+  <text x="573.5" y="146">Gaussian noise, σ = 0.003</text>
+  <text x="573.5" y="161">zero face/head, <tspan font-style="italic">p</tspan> = 0.3</text>
+  <text x="573.5" y="179" class="s" fill="#444">missing landmarks stay missing</text>
+
+  <rect x="704" y="40" width="195" height="150" rx="4" class="b"/>
+  <text x="801.5" y="64" class="t">Transition windows</text>
+  <text x="801.5" y="86">30% of sign clips are joined</text>
+  <text x="801.5" y="101">to the tail of another clip</text>
+  <text x="801.5" y="116">(sign shows 30–100% of it)</text>
+  <text x="801.5" y="131">relabelled <tspan font-style="italic">no-sign</tspan> if the</text>
+  <text x="801.5" y="146">sign fills &lt; 60% of window</text>
+  <text x="801.5" y="174" class="s" fill="#444">mimics sliding-window input</text>
+
+  <rect x="932" y="40" width="188" height="150" rx="4" class="b" stroke-width="1.8"/>
+  <text x="1026" y="64" class="t">Optimisation</text>
+  <text x="1026" y="86">SignNet (Fig. 1)</text>
+  <text x="1026" y="101">AdamW, lr 2·10<tspan font-size="8" dy="-5">−3</tspan><tspan dy="5">, wd 10</tspan><tspan font-size="8" dy="-5">−2</tspan></text>
+  <text x="1026" y="116">cosine schedule, 80 epochs</text>
+  <text x="1026" y="131">cross-entropy,</text>
+  <text x="1026" y="146">label smoothing 0.1</text>
+  <text x="1026" y="161">balanced batches ≤ 64</text>
+  <text x="1026" y="179" class="s" fill="#444">GPU if available, else CPU</text>
+</g>
+<g class="ln" marker-end="url(#ar)">
+  <path d="M215,115 H246"/><path d="M443,115 H474"/><path d="M671,115 H702"/><path d="M899,115 H930"/>
+</g>
+<text x="459" y="108" class="s c" text-anchor="middle" fill="#444">train</text>
+
+<!-- pretraining -->
+<text x="932" y="256" class="pl">(b) Optional pretraining</text>
+<rect x="932" y="266" width="188" height="140" rx="4" class="g" stroke-dasharray="5 3"/>
+<g class="c">
+  <text x="1026" y="288" class="t">Public fingerspelling</text>
+  <text x="1026" y="308">ASLNow! (MIT licence):</text>
+  <text x="1026" y="323">2,122 static hands, A–Z</text>
+  <text x="1026" y="338">same SignNet, 30 epochs,</text>
+  <text x="1026" y="353">AdamW 10<tspan font-size="8" dy="-5">−3</tspan><tspan dy="5">, OneCycle</tspan></text>
+  <text x="1026" y="373" class="s" fill="#444">learns hand shapes only;</text>
+  <text x="1026" y="386" class="s" fill="#444">initialises training, never served</text>
+</g>
+<path d="M1095,266 V192" class="ln" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text x="1089" y="236" class="s" fill="#444" text-anchor="end">init weights</text>
+
+<!-- (c) evaluation and deployment, right to left -->
+<text x="20" y="256" class="pl">(c) Evaluation, export and serving</text>
+<path d="M960,190 V222 H801.5 V264" class="ln" marker-end="url(#ar)"/>
+<text x="880" y="216" class="s c" text-anchor="middle" fill="#444">trained model</text>
+
+<g class="c">
+  <rect x="704" y="266" width="195" height="140" rx="4" class="b"/>
+  <text x="801.5" y="288" class="t">Held-out evaluation</text>
+  <text x="801.5" y="308">top-1 / top-5 accuracy,</text>
+  <text x="801.5" y="323">confusion matrix</text>
+  <text x="801.5" y="338">false-reject / false-accept</text>
+  <text x="801.5" y="353">curve for <tspan font-style="italic">τ</tspan> ∈ [0.30, 0.95]</text>
+  <text x="801.5" y="373" font-weight="bold"><tspan font-style="italic">τ</tspan>* = min <tspan font-style="italic">τ</tspan> ≥ 0.5 with FA ≤ 5%</text>
+  <text x="801.5" y="391" class="s" fill="#444">(needs ≥ 30 held-out sign clips)</text>
+
+  <rect x="476" y="266" width="195" height="140" rx="4" class="b"/>
+  <text x="573.5" y="288" class="t">ONNX export</text>
+  <text x="573.5" y="308">labels, <tspan font-style="italic">τ</tspan>* and training</text>
+  <text x="573.5" y="323">provenance in model metadata</text>
+  <text x="573.5" y="338">parity check against PyTorch</text>
+  <text x="573.5" y="353">(|Δ<tspan font-style="italic">p</tspan>| ≤ 10<tspan font-size="8" dy="-5">−4</tspan><tspan dy="5">), then atomic</tspan></text>
+  <text x="573.5" y="368">file swap; hot-reloaded</text>
+
+  <rect x="20" y="266" width="423" height="140" rx="4" class="b"/>
+  <text x="231.5" y="288" class="t">Serving (CPU, ONNX Runtime)</text>
+  <rect x="32" y="298" width="190" height="98" rx="3" fill="#f3f3f3" stroke="#777" stroke-width="0.9"/>
+  <text x="127" y="316" font-weight="bold">Practice scoring</text>
+  <text x="127" y="334">attempt → 32 frames</text>
+  <text x="127" y="349">pass if <tspan font-style="italic">p</tspan>(target | <tspan font-style="italic">X</tspan>) ≥ <tspan font-style="italic">τ</tspan>*</text>
+  <text x="127" y="364">→ spaced repetition</text>
+  <text x="127" y="379">and progress</text>
+  <rect x="241" y="298" width="190" height="98" rx="3" fill="#f3f3f3" stroke="#777" stroke-width="0.9"/>
+  <text x="336" y="316" font-weight="bold">Live translation</text>
+  <text x="336" y="334">0.5 s window, 0.2 s stride</text>
+  <text x="336" y="349">sign = same label 3× running</text>
+  <text x="336" y="364">2.5 s without a sign ends it</text>
+  <text x="336" y="379">→ LLM sentence (gloss fallback)</text>
+</g>
+<g class="ln" marker-end="url(#ar)">
+  <path d="M704,336 H673"/><path d="M476,336 H445"/>
+</g>
+
+<line x1="20" y1="428" x2="1120" y2="428" stroke="#bbb" stroke-width="0.8"/>
+<text x="20" y="448" class="s" fill="#333">Training and serving import the same normalisation and resampling code (Fig. 1a), so model inputs cannot drift between the two. FA: a clip that would pass as a different sign.</text>
+</svg>

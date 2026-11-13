@@ -1,13 +1,17 @@
-"""Pretrain the sign model on public fingerspelling data.
+"""Pretrain the sign model on public data: ASLNow! fingerspelling, plus CASL-W60 and WLASL when present.
 
-    python pretrain.py --data data/public/asl-now-fingerspelling --out runs/pretrained.pt
+    python pretrain.py --data data/public/asl-now-fingerspelling --casl data/public/casl-w60 \\
+        --wlasl data/public/wlasl-landmarks --out runs/pretrained.pt
     python train.py --init runs/pretrained.pt
 
-The public samples are still hands with no body, so this teaches hand shapes
-only. Training on recorded clips afterwards (train.py --init) is what makes the
+ASLNow! samples are still hands with no body; CASL-W60 and WLASL add movement
+and pose (see public_data.py). Loss and macro-F1 for every
+epoch go into runs/pretrained.json next to the checkpoint (plot_pretrain.py
+draws them). Training on recorded clips afterwards (train.py --init) is what makes the
 model fit the signs as they are made here; the checkpoint is never served.
 """
 import argparse
+import json
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +20,7 @@ from torch import nn
 
 from checkpoint import save_checkpoint
 from data import Clip
-from public_data import SOURCE, load_samples
+from public_data import CASL_SOURCE, SOURCE, WLASL_SOURCE, load_casl, load_samples, load_wlasl
 from train import SignNet, pick_device, probabilities, training_batch
 
 from app.recognition.features import IDLE_LABEL  # path set up by data.py
@@ -37,7 +41,30 @@ def split(clips: list[Clip], rng: np.random.Generator) -> tuple[list[Clip], list
     return train, test
 
 
-def pretrain(data: Path, out: Path, epochs: int, seed: int) -> dict:
+def macro_f1(predicted: np.ndarray, truth: np.ndarray) -> float:
+    """Mean F1 over the classes present in `truth`."""
+    scores = []
+    for k in np.unique(truth):
+        hits = np.sum((predicted == k) & (truth == k))
+        wrong = np.sum((predicted == k) & (truth != k)) + np.sum((predicted != k) & (truth == k))
+        scores.append(2 * hits / (2 * hits + wrong) if hits else 0.0)
+    return float(np.mean(scores)) if scores else 0.0
+
+
+def evaluate(model: nn.Module, clips: list[Clip], labels: list[str], loss_fn: nn.Module) -> dict:
+    truth = np.array([labels.index(c.label) for c in clips])
+    probs = probabilities(model, clips)
+    log_probs = torch.from_numpy(np.log(np.clip(probs, 1e-12, None)))
+    return {
+        "loss": float(loss_fn(log_probs, torch.from_numpy(truth)).item()),
+        "f1": macro_f1(probs.argmax(axis=1), truth),
+        "top1": float((probs.argmax(axis=1) == truth).mean()),
+        "samples": len(clips),
+    }
+
+
+def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = None,
+             wlasl: Path | None = None) -> dict:
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -45,44 +72,79 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int) -> dict:
     if len({c.label for c in clips}) < 2:
         raise SystemExit(f"Found {len(clips)} usable samples under {data}; see public_data.py for where to get them.")
     train_clips, test_clips = split(clips, rng)
+    held_out = {"asl-now": test_clips}
+    sources = [SOURCE]
+    casl_train, casl_test = load_casl(casl) if casl else ([], [])
+    if casl_train:
+        train_clips += casl_train
+        held_out["casl-w60"] = casl_test
+        sources.append(CASL_SOURCE)
+        print(f"CASL-W60: {len(casl_train)} training clips, {len(casl_test)} test clips")
+    elif casl:
+        print(f"no CASL-W60 parquet files under {casl}; leaving it out")
+    wlasl_train, wlasl_test = load_wlasl(wlasl) if wlasl else ([], [])
+    if wlasl_train:
+        train_clips += wlasl_train
+        held_out["wlasl"] = wlasl_test
+        sources.append(WLASL_SOURCE)
+        print(f"WLASL: {len(wlasl_train)} training clips, {len(wlasl_test)} held out")
+    elif wlasl:
+        print(f"no WLASL parquet files under {wlasl}; leaving it out")
+    source = " + ".join(sources)
     # Same label set shape as train.py: straddling windows are labelled idle.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
-    print(f"{len(train_clips)} training samples, {len(test_clips)} held out, {len(labels) - 1} letters ({SOURCE})")
+    held_out = {name: [c for c in group if c.label in labels] for name, group in held_out.items() if group}
+    print(f"{len(train_clips)} training clips, {sum(map(len, held_out.values()))} held out, "
+          f"{len(labels) - 1} labels ({source})")
 
     device = pick_device()
     model = SignNet(len(labels)).to(device)
     print(f"training on {device}")
+    steps = (len(train_clips) + 63) // 64
     optimiser = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
-    schedule = torch.optim.lr_scheduler.OneCycleLR(
-        optimiser, max_lr=1e-3, epochs=epochs, steps_per_epoch=(len(train_clips) + 63) // 64
-    )
+    schedule = torch.optim.lr_scheduler.OneCycleLR(optimiser, max_lr=1e-3, epochs=epochs, steps_per_epoch=steps)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 
+    history = []
     for epoch in range(1, epochs + 1):
         x_all, y_all = training_batch(train_clips, labels, rng)
         x_all, y_all = x_all.to(device), y_all.to(device)
         model.train()
-        total = 0.0
-        batches = torch.from_numpy(rng.permutation(len(train_clips))).tensor_split((len(train_clips) + 63) // 64)
-        for batch in batches:
+        total, predicted = 0.0, np.empty(len(train_clips), dtype=np.int64)
+        for batch in torch.from_numpy(rng.permutation(len(train_clips))).tensor_split(steps):
             batch = batch.to(device)
             optimiser.zero_grad()
-            loss = loss_fn(model(x_all[batch]), y_all[batch])
+            logits = model(x_all[batch])
+            loss = loss_fn(logits, y_all[batch])
             loss.backward()
             optimiser.step()
             schedule.step()
             total += loss.item() * len(batch)
-        if epoch % 5 == 0 or epoch == epochs:
-            print(f"epoch {epoch:3d}  loss {total / len(train_clips):.3f}")
+            predicted[batch.cpu().numpy()] = logits.argmax(dim=1).cpu().numpy()
+        # Training figures are on that epoch's augmented clips, with dropout on.
+        row = {"epoch": epoch, "train": {"loss": total / len(train_clips),
+                                         "f1": macro_f1(predicted, y_all.cpu().numpy())}}
+        row |= {name: evaluate(model, group, labels, loss_fn) for name, group in held_out.items()}
+        history.append(row)
+        print(f"epoch {epoch:3d}  loss {row['train']['loss']:.3f}  "
+              + "  ".join(f"{name} f1 {row[name]['f1']:.3f}" for name in held_out))
 
-    report = {"samples": len(clips), "labels": labels, "epochs": epochs, "seed": seed, "source": SOURCE}
-    if test_clips:
-        truth = np.array([labels.index(c.label) for c in test_clips])
-        top1 = float((probabilities(model, test_clips).argmax(axis=1) == truth).mean())
-        report |= {"test_samples": len(test_clips), "top1": top1}
-        print(f"held-out top-1 {top1:.1%} on {len(test_clips)} samples (same people in both halves: optimistic)")
-    save_checkpoint(model, labels, SOURCE, out)
-    print(f"checkpoint: {out}")
+    report = {"samples": len(clips) + len(casl_train) + len(casl_test) + len(wlasl_train) + len(wlasl_test),
+              "labels": labels, "epochs": epochs,
+              "seed": seed, "source": source, "history": history}
+    if "asl-now" in held_out:
+        report |= {"test_samples": len(held_out["asl-now"]), "top1": history[-1]["asl-now"]["top1"]}
+        print(f"held-out ASLNow! top-1 {report['top1']:.1%} on {report['test_samples']} samples "
+              "(same people in both halves: optimistic)")
+    if "casl-w60" in held_out:
+        report["casl_top1"] = history[-1]["casl-w60"]["top1"]
+        print(f"CASL-W60 test top-1 {report['casl_top1']:.1%} on {len(held_out['casl-w60'])} clips")
+    if "wlasl" in held_out:
+        report["wlasl_top1"] = history[-1]["wlasl"]["top1"]
+        print(f"WLASL held-out top-1 {report['wlasl_top1']:.1%} on {len(held_out['wlasl'])} clips")
+    save_checkpoint(model, labels, source, out)
+    out.with_suffix(".json").write_text(json.dumps(report, indent=1))
+    print(f"checkpoint: {out}\nhistory: {out.with_suffix('.json')}")
     return report
 
 
@@ -91,7 +153,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", type=Path, default=here / "data" / "public" / "asl-now-fingerspelling")
     parser.add_argument("--out", type=Path, default=here / "runs" / "pretrained.pt")
+    parser.add_argument("--casl", type=Path, default=here / "data" / "public" / "casl-w60",
+                        help="CASL-W60 parquet files; used when present")
+    parser.add_argument("--wlasl", type=Path, default=here / "data" / "public" / "wlasl-landmarks",
+                        help="WLASL landmark parquet files (academic, non-commercial); used when present")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
-    pretrain(args.data, args.out, args.epochs, args.seed)
+    pretrain(args.data, args.out, args.epochs, args.seed, args.casl, args.wlasl)

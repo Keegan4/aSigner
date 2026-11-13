@@ -27,6 +27,8 @@ Browser: camera -> MediaPipe hands + pose + face -> 1 KB landmark frame
 FastAPI: normalise -> sign model -> scoring / captions -> Postgres
 ```
 
+![Landmark pipeline and SignNet architecture](docs/figures/fig1_architecture.png)
+
 Video never leaves the browser. Only landmark coordinates are sent. Progress and past translations are stored as text. Training clips recorded on `/record` are stored as landmark coordinates (no video) until you delete them or your account.
 
 ## Run locally
@@ -79,28 +81,63 @@ Training (`train.py` and `pretrain.py`) uses a GPU whenever PyTorch can see one,
 
 To train on takes from the training page as well, pull them first (see [deploy/training-vm](deploy/training-vm/README.md#pull-the-data-for-training)) and pass both folders: `train.py --clips ../server/data/clips data/collected`. Locally, `/train` works without an access code; anywhere else set `TRAINING_ACCESS_CODE`.
 
+![Training, evaluation and serving pipeline](docs/figures/fig2_training.png)
+
 This writes `server/models/signs.onnx` (one file, with the labels and pass score inside it), which the server loads without a restart, plus accuracy and a confusion matrix under `ml/runs/`. With clips from one person only, the reported accuracy is optimistic; record a second person to get an honest number.
 
 The model takes 32 frames of 388 features: the original 382 normalised values plus six validity flags for left/right hand shape, left/right hand placement, pose and face/head. These flags are inferred from existing recordings; the browser's 256-value frame format is unchanged. Face presence is inferred from nonzero face/head values, so a completely neutral face cannot be distinguished from missing face tracking.
 
-Separate left-hand, right-hand, pose and face/head encoders each produce 80 dimensions from positions, frame differences and validity flags. Differences are zero for the first frame and whenever either adjacent observation is invalid, preventing tracking loss/recovery from appearing as motion. They describe motion over resampled clip time, not physical velocity. Entirely missing regions use learned embeddings. The four outputs are concatenated into 320 dimensions and processed by a residual temporal convolution (depthwise kernel 3, then a pointwise projection).
+Separate left-hand, right-hand, pose and face/head encoders turn positions, frame differences and validity flags into 120, 120, 40 and 40 dimensions. Hands carry most of a sign, so they get the most room. Each encoder has two layers, applied to each frame on its own: the first halves the input size, the second brings it to the region's width (`Linear → GELU → Linear → GELU → LayerNorm`). Hands go 256 → 128 → 120, pose 152 → 76 → 40 and face/head 112 → 56 → 40. Differences are zero for the first frame and whenever either adjacent observation is invalid, preventing tracking loss/recovery from appearing as motion. They describe motion over resampled clip time, not physical velocity. Entirely missing regions use learned embeddings. The four outputs are concatenated into 320 dimensions and processed by a residual temporal convolution (depthwise kernel 3, then a pointwise projection).
 
 The model then prepends a learned classification token and adds learned positional embeddings. Two Transformer encoder layers, each with 20 attention heads (16 dimensions per head), let every token attend to the entire clip. The classification token's output passes through layer normalisation and a three-layer classifier (`320 → 320 → 160 → labels`, including the no-sign class). Each hidden classifier layer uses batch normalisation, GELU and dropout. All dropout probabilities are 0.1. Training requires at least two clips after the signer split; inference accepts a single clip using the saved batch-normalisation statistics.
 
-There are `1,980,000 + 161 × C` trainable parameters, where `C` includes the no-sign class (1,996,261 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time.
+There are `2,037,668 + 161 × C` trainable parameters, where `C` includes the no-sign class (2,053,929 for 100 signs plus no-sign). Existing recordings remain usable, but models exported for the previous 382-feature input must be retrained and re-exported; the server rejects them at load time. Checkpoints from `pretrain.py` made before the region encoders had two layers and uneven widths no longer fit; run `pretrain.py` again.
+
+Vector versions of both figures (PDF and SVG), with LaTeX captions, are in [`docs/figures/`](docs/figures/).
 
 ### Pretraining on public data (optional)
 
-With few clips of your own, the model can start from hand shapes learned on a public fingerspelling dataset ([ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling), MIT licence: 2,122 single-frame hand landmark samples, A to Z):
+With few clips of your own, the model can start from weights learned on public landmark data. None of it is SgSL:
+
+| Dataset | What it is | Licence |
+|---|---|---|
+| [ASLNow!](https://huggingface.co/datasets/sid220/asl-now-fingerspelling) | 2,122 single-frame hand samples of the ASL letters A to Z: still hands, no body or movement | MIT |
+| [CASL-W60](https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks) (optional) | 5,889 videos of 60 Central African Sign Language signs: pose and both hands over 64 frames, with the dataset's own train/test split | MIT |
+| [WLASL landmarks](https://huggingface.co/datasets/Kibalama/poseformer-sign-language) (optional) | 11,980 videos of 2,000 ASL words: pose and both hands, up to 150 frames | [C-UDA](https://github.com/dxli94/WLASL): academic, non-commercial use only |
 
 ```bash
 cd ml
 git clone https://huggingface.co/datasets/sid220/asl-now-fingerspelling data/public/asl-now-fingerspelling
-python pretrain.py
+mkdir -p data/public/casl-w60/data data/public/wlasl-landmarks/data
+for f in train test; do curl -L -o data/public/casl-w60/data/$f-00000-of-00001.parquet https://huggingface.co/datasets/luciayen/CASL-W60-Landmarks/resolve/main/data/$f-00000-of-00001.parquet; done
+for i in 0 1 2 3; do curl -L -o data/public/wlasl-landmarks/data/train-0000$i-of-00004.parquet https://huggingface.co/datasets/Kibalama/poseformer-sign-language/resolve/main/data/train-0000$i-of-00004.parquet; done
+python pretrain.py --epochs 100
+python plot_pretrain.py
 python train.py --init runs/pretrained.pt
 ```
 
-The public samples are still hands with no body or movement, so pretraining teaches hand shapes only, and the checkpoint is never served; `train.py` still trains on your clips afterwards. A model started this way records it, in its training details.
+`pretrain.py` uses CASL-W60 and WLASL when their parquet files are there. It saves loss and macro-F1 for every epoch in `runs/pretrained.json`, and `plot_pretrain.py` (needs `pip install matplotlib`) draws them. Neither video set has the face blendshapes the app uses, so the face counts as not tracked. WLASL's points are in an undocumented order. `public_data.py` explains how they were mapped and how its 9 pose points are filled out to the app's 25. Labels get `casl:` and `wlasl:` prefixes so they never collide with SgSL glosses. When `train.py` starts from the checkpoint, it keeps the learned layers, and labels the checkpoint never saw get a fresh output row. The checkpoint is never served, and a model started this way records it in its training details. Because WLASL is for non-commercial use only, a checkpoint pretrained with it is for academic use; leave out `data/public/wlasl-landmarks` to train without it.
+
+### Ablation: the temporal convolution
+
+To check whether the residual temporal convolution earns its place, train with and without it on several seeds:
+
+```bash
+cd ml
+python ablate.py --seeds 0 1 2 3 4
+```
+
+Both runs of a seed share the same split and augmented clips, so their difference shows the block's effect, and the spread across seeds shows how much accuracy moves by chance. It prints mean ± standard deviation of top-1 and top-5 for each version and for the paired difference, and writes `ablation.json` under `ml/runs/ablation-<time>/`. Models are trained in a scratch folder, so the served model is not replaced. `train.py --no-temporal-conv` trains a single model without the block.
+
+On the ASLNow! fingerspelling data (converted to clips; 5 seeds, 80 epochs, 413 test clips), the block was slightly better on every seed:
+
+| | top-1 | top-5 |
+|---|---|---|
+| with temporal conv | 94.6% ± 1.1% | 99.6% ± 0.3% |
+| without temporal conv | 93.8% ± 1.1% | 99.5% ± 0.5% |
+| paired difference | +0.8% ± 0.4% | +0.1% ± 0.3% |
+
+Those clips are a single still frame repeated, from one signer, so they contain no motion and the split is optimistic. The gain there most likely comes from smoothing per-frame augmentation noise and from the extra 104,640 parameters, not from motion. Whether the block helps on real SgSL signs needs the same run on recorded clips with a second signer held out.
 
 ## Tests
 
