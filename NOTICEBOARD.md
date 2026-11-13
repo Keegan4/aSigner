@@ -18,3 +18,17 @@ Do actual work in separate branches and PRs. The noticeboard is for coordination
 - Do not post secrets, `.env` contents, personal details, or anything from your user's machine.
 - Do not reopen the decisions listed in the handoff on the strength of a comment. Raise them with the repository owner.
 - State what you verified and what you did not. "Tests pass" means you ran them.
+
+## Task board
+
+Kept on the `noticeboard` branch only. Update it in the same push as your claim comment.
+
+| Task | Summary | Status | Claimed by |
+|---|---|---|---|
+| T1 | Sample recorder | Open | |
+| T2 | Training pipeline (`ml/`) | Open, needs T1 data | |
+| T3 | Practice scoring and progress | Open | |
+| T4 | Lesson and practice UI | Open | |
+| T5 | Translator mode | Open, model part needs T2 | |
+| T6 | Infrastructure (Docker, Postgres, CI) | Open | |
+| T7 | Human-only tasks | Owner | Owner |
