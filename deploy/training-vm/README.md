@@ -103,6 +103,20 @@ Copy `caddy-root.crt` to each device and add it to the trusted root certificates
 
 With a domain pointing at your home IP and ports 80 and 443 forwarded to the VM, putting that domain in `SITE_ADDRESS` gets a real certificate from Let's Encrypt instead. That opens your network to the internet, which the tunnel avoids.
 
+## Running it on a Windows PC instead of a VM
+
+The same stack runs under Docker Engine inside WSL 2. Set up once: install WSL with Ubuntu (`wsl --install -d Ubuntu-22.04`), turn on systemd (`[boot] systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown`), install Docker in Ubuntu as in step 2, and do step 3 with `SITE_ADDRESS=localhost` (set `POSTGRES_PORT` if Ubuntu already runs its own Postgres).
+
+After every restart, double-click **`start-on-windows.cmd`** in this folder (or a desktop shortcut to it). It keeps WSL running in the background (WSL otherwise stops when idle, and the containers with it), waits for `https://localhost/train`, starts the quick tunnel, and prints the link and the access code, with the link copied to the clipboard. From PowerShell:
+
+```powershell
+.\start-on-windows.ps1              # start and show the link
+.\start-on-windows.ps1 -NoTunnel    # this PC only
+.\start-on-windows.ps1 -StopTunnel  # take the public link offline
+```
+
+The site only runs while the PC is on and awake, and the quick-tunnel link changes after each restart.
+
 ## 5. Pull the data for training
 
 On your own machine, with the ML environment from the main README:
