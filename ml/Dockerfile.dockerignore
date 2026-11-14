@@ -1,0 +1,10 @@
+# The build context is the repository root; send only what ml/Dockerfile copies.
+*
+!ml/
+!server/app/__init__.py
+!server/app/recognition/
+ml/.venv*/
+ml/.cache/
+ml/data/
+ml/runs/
+**/__pycache__/

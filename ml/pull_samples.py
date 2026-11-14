@@ -1,6 +1,6 @@
 """Pull labelled takes from the training page's Postgres database into clip files.
 
-    python pull_samples.py --db postgresql://asigner:PASSWORD@localhost:5432/asigner
+    python pull_samples.py --db postgresql://asigner:PASSWORD@127.0.0.1:5432/asigner
     python train.py --clips ../server/data/clips data/collected
 
 Each take becomes data/collected/<label>/<contributor>_db<id>.npz, the same
@@ -85,7 +85,9 @@ def main():
     import psycopg  # only needed here, so the rest of ml/ does not require it
 
     url = args.db.replace("postgresql+psycopg://", "postgresql://")
-    with psycopg.connect(url) as conn:
+    # A timeout, so an unreachable address fails instead of hanging; on Windows,
+    # "localhost" may try IPv6 first, which a WSL or SSH port forward does not answer.
+    with psycopg.connect(url, connect_timeout=10) as conn:
         ids = [row[0] for row in conn.execute("SELECT id FROM training_samples")]
 
         def fetch(wanted: list[int]):

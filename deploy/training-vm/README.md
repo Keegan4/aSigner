@@ -39,7 +39,7 @@ Leave that running (it forwards your port 5433 to Postgres on the VM), then in a
 
 ```bash
 cd ml
-.venv/Scripts/python pull_samples.py --db postgresql://asigner:<POSTGRES_PASSWORD>@localhost:5433/asigner
+.venv/Scripts/python pull_samples.py --db postgresql://asigner:<POSTGRES_PASSWORD>@127.0.0.1:5433/asigner
 .venv/Scripts/python train.py --clips ../server/data/clips data/collected
 ```
 

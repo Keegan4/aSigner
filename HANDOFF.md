@@ -54,6 +54,7 @@ Never verified:
 | `server/tests/` | pytest; `conftest.py` has the signed-in client fixture |
 | `ml/` | Training: `data.py` (loading, augmentation), `train.py` (model, evaluation, export), `pull_samples.py` (takes from the training page's database into clip files) |
 | `deploy/training-vm/` | Docker Compose and Caddy for running the training page on its own Linux VM |
+| `deploy/trainer/` | Docker Compose for training on the GPU machine: pulls takes from that VM's Postgres and trains (`ml/Dockerfile`) |
 | `web/src/app/` | Routes only; each page renders one component |
 | `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `train` (training page), `translate` (live and history), `ui` (shared page frame and small parts) |
 | `web/src/lib/` | `api.ts` (types and fetch helper), `practice.ts` (practice socket and its mock), `tracking/` (frame packing, MediaPipe setup) |
@@ -108,7 +109,7 @@ Can start now.
 
 ### T8. Training page on a VM: built, not yet deployed
 `/train` (`web/src/components/train/Trainer.tsx`) and `/api/training` (`server/app/routes/training.py`, `server/app/services/training.py`). Takes go into Postgres (`training_samples`: raw frames as bytea, label, frame count, fps, anonymous contributor hash, time); signs added on the page go into `training_signs`. No Google sign-in: a shared `TRAINING_ACCESS_CODE`, required unless `FRONTEND_URL` is localhost. `ml/pull_samples.py` syncs the takes into clip files that `train.py` reads. `deploy/training-vm/` runs Postgres, server, web and Caddy (HTTPS, needed for the camera) on a Linux VM.
-Tested: server endpoints (pytest, SQLite), the pull script against made-up rows, and the page's code, sign list, add and remove flows in a browser against a stubbed API. Not yet: a real take recorded through `/train`, the Docker stack on a VM, or a pull from a real Postgres.
+Tested: server endpoints (pytest, SQLite), the pull script against made-up rows, and the page's code, sign list, add and remove flows in a browser against a stubbed API. The Docker stack was run under Docker Engine in WSL (Ubuntu 22.04): migrations on Postgres 16, takes through Caddy over HTTPS, a pull, and the training container (`ml/Dockerfile`, `deploy/trainer/`) training on the CPU from that database. Not yet: a real take recorded through `/train`, a real VM, or the training container on the GTX 1660 Super (the image has sm_75 kernels, but no NVIDIA GPU was available to run it).
 
 ### T7. Human-only tasks (owner)
 - Create the Google OAuth client and `.env`.

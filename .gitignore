@@ -22,3 +22,7 @@ ml/.cache/
 
 # Trained weights (small, ~8 MB)
 !server/models/signs.onnx
+
+# Training container output (deploy/trainer)
+deploy/trainer/data/
+deploy/trainer/out/

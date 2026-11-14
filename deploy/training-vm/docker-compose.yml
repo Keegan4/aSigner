@@ -16,7 +16,8 @@ services:
     ports:
       # Local to the VM by default: reach it over an SSH tunnel. Set POSTGRES_BIND=0.0.0.0
       # in .env to connect straight from another machine on the network instead.
-      - "${POSTGRES_BIND:-127.0.0.1}:5432:5432"
+      # POSTGRES_PORT changes the port on the VM, if it already runs a Postgres of its own.
+      - "${POSTGRES_BIND:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
