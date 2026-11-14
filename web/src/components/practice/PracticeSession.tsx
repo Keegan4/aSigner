@@ -14,8 +14,8 @@ import {
 } from "@/lib/practice";
 
 const COUNTDOWN = 3;
-// Same countdown and take length as the training recorder (Recorder.tsx), so
-// practice clips look like the clips the model was trained on.
+// Same countdown as the training recorders (Recorder.tsx, Trainer.tsx). Their
+// takes are now one second; a practice attempt is still two.
 const RECORD_MS = 2000;
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
