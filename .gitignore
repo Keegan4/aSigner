@@ -26,3 +26,4 @@ ml/.cache/
 # Training container output (deploy/trainer)
 deploy/trainer/data/
 deploy/trainer/out/
+deploy/training-vm/caddy-root.crt
