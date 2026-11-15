@@ -87,7 +87,7 @@ Each task can be done independently unless it lists a dependency. Claim one on t
 Verified with a live camera by the owner.
 
 ### T2. Training pipeline (`ml/`): done in code, no usable model yet
-`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, time crop, frame drop, face dropout, windows that straddle two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1, top-5, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
+`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, time crop, frame drop, face dropout, and half of them cut to the translator's window length, some straddling two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1, top-5, top-1 on translator-length windows, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
 First real numbers (10 Nov 2026, 47 clips, one signer, about one training clip per letter): 40-45% top-1 on 20 held-out clips over three seeds. That is a pipeline check, not a usable model.
 Still needed: about 25 clips per sign, "No sign" clips, and a second signer so accuracy is measured on someone the model has not seen.
 
@@ -101,7 +101,7 @@ Can start now against the existing lessons API and a mocked practice socket.
 
 ### T5. Translator mode: built, untested with a real model
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
-Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 2 s of frames every 0.2 s; its constants were chosen without a trained model and need tuning against real signing once one exists.
+Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 0.5 s of frames every 0.2 s (`WINDOW_SECONDS` in `recognition/features.py`, which training also cuts its windows to); its constants were chosen without a trained model and need tuning against real signing once one exists.
 
 ### T6. Infrastructure: done, apart from the `ollama` service, which has not been started
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.

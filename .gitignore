@@ -14,7 +14,9 @@ ml/runs/*
 !ml/runs/pretrained.json
 !ml/runs/pretrained.png
 *.onnx
-server/data/
+server/data/*
+# The locally recorded training landmarks (~9 MB of .npz clips) are committed.
+!server/data/clips/
 server/models/*
 ml/.venv/
 ml/.venv-mp/
