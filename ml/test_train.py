@@ -3,11 +3,11 @@ import numpy as np
 import pytest
 import torch
 
-from data import Clip, augment, mirror, to_model_input, transition
-from train import RegionEncoder, SignNet, export, pick_device, probabilities, threshold_curve, train
+from data import Clip, augment, close_pool, mirror, to_model_input, transition
+from train import RegionEncoder, SignNet, export, pick_device, probabilities, threshold_curve, train, training_batch
 
 from app.recognition.features import (
-    CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, LEFT_HAND, NORMALISED_PARTS,
+    CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, IDLE_LABEL, LEFT_HAND, NORMALISED_PARTS,
     NORMALISED_SIZE, POSE, PRESENCE, RIGHT_HAND,
 )
 from app.recognition.onnx_recogniser import load_recogniser
@@ -248,6 +248,22 @@ def test_transition_puts_the_sign_last():
         assert 0.3 <= fraction <= 1.0
         assert np.array_equal(frames[len(frames) - shown :], sign[:shown])
         assert np.array_equal(frames[: len(frames) - shown], before[len(before) - (len(frames) - shown) :])
+
+
+def test_augmenting_on_several_cores_gives_the_same_batch_as_on_one():
+    rng = np.random.default_rng(5)
+    clips = [Clip(fake_clip(rng, i % 3), "ABC"[i % 3], "u1") for i in range(24)]
+    labels = ["A", "B", "C", IDLE_LABEL]
+    try:
+        x_one, y_one = training_batch(clips, labels, np.random.default_rng(9), workers=1)
+        x_many, y_many = training_batch(clips, labels, np.random.default_rng(9), workers=3)
+        again, _ = training_batch(clips, labels, np.random.default_rng(10), workers=3)
+    finally:
+        close_pool()
+    assert x_one.shape == (24, CLIP_FRAMES, NORMALISED_SIZE)
+    assert torch.equal(x_one, x_many) and torch.equal(y_one, y_many)
+    assert not torch.equal(x_many, again)  # a new epoch is augmented afresh
+    assert IDLE_LABEL in [labels[i] for i in y_one]  # some windows straddle two signs
 
 
 def test_threshold_curve_counts_rejects_and_accepts():

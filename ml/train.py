@@ -23,7 +23,7 @@ import torch
 from torch import nn
 
 from checkpoint import load_into
-from data import Clip, augment, load_clips, to_model_input, transition
+from data import Clip, augmented_samples, load_clips, to_model_input
 
 from app.recognition.features import (  # path set up by data.py
     CLIP_FRAMES, COORDINATE_SIZE, IDLE_LABEL, NORMALISED_PARTS,
@@ -31,8 +31,6 @@ from app.recognition.features import (  # path set up by data.py
 )
 from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
 
-TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
-SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
 MIN_CLIPS_FOR_THRESHOLD = 30
 MAX_FALSE_ACCEPT = 0.05
 MIN_PASS_SCORE = 0.5
@@ -174,25 +172,28 @@ def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
     return train, test, "same signer in train and test: accuracy is optimistic"
 
 
-def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generator):
-    """One epoch's inputs: every clip freshly augmented, some as straddling windows."""
-    xs, ys = [], []
-    for clip in clips:
-        frames, label = clip.frames, clip.label
-        if label != IDLE_LABEL and len(clips) > 1 and rng.random() < TRANSITION_SHARE:
-            other = clips[rng.integers(len(clips))]
-            if other.label != label:
-                frames, fraction = transition(frames, other.frames, rng)
-                if fraction < SIGN_FRACTION:
-                    label = IDLE_LABEL
-        xs.append(to_model_input(augment(frames, rng)))
-        ys.append(labels.index(label))
-    return torch.from_numpy(np.stack(xs)), torch.tensor(ys)
+def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generator, workers: int | None = None):
+    """One epoch's inputs: every clip freshly augmented, some as straddling windows.
+
+    Augmenting is the slow part of an epoch and runs on the CPU, so large sets
+    are spread over every core (see data.augmented_samples).
+    """
+    seeds = rng.integers(np.iinfo(np.int64).max, size=len(clips))
+    samples = augmented_samples(clips, seeds, workers)
+    index = {label: i for i, label in enumerate(labels)}
+    xs = np.stack([x for x, _ in samples])
+    return torch.from_numpy(xs), torch.tensor([index[label] for _, label in samples])
 
 
-def probabilities(model: nn.Module, clips: list[Clip]) -> np.ndarray:
+def model_inputs(clips: list[Clip]) -> np.ndarray:
+    """Clips as the model sees them, unaugmented. Worth keeping when the same clips are scored every epoch."""
+    return np.stack([to_model_input(c.frames) for c in clips])
+
+
+def probabilities(model: nn.Module, clips: list[Clip] | np.ndarray) -> np.ndarray:
+    """Class probabilities for clips, or for inputs already made by `model_inputs`."""
     device = next(model.parameters()).device
-    x = torch.from_numpy(np.stack([to_model_input(c.frames) for c in clips])).to(device)
+    x = torch.from_numpy(clips if isinstance(clips, np.ndarray) else model_inputs(clips)).to(device)
     model.eval()
     with torch.no_grad():
         return torch.softmax(model(x), dim=1).cpu().numpy()

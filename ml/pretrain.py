@@ -21,7 +21,7 @@ from torch import nn
 from checkpoint import save_checkpoint
 from data import Clip
 from public_data import CASL_SOURCE, SOURCE, WLASL_SOURCE, load_casl, load_samples, load_wlasl
-from train import SignNet, pick_device, probabilities, training_batch
+from train import SignNet, model_inputs, pick_device, probabilities, training_batch
 
 from app.recognition.features import IDLE_LABEL  # path set up by data.py
 
@@ -51,9 +51,11 @@ def macro_f1(predicted: np.ndarray, truth: np.ndarray) -> float:
     return float(np.mean(scores)) if scores else 0.0
 
 
-def evaluate(model: nn.Module, clips: list[Clip], labels: list[str], loss_fn: nn.Module) -> dict:
+def evaluate(model: nn.Module, clips: list[Clip], labels: list[str], loss_fn: nn.Module,
+             inputs: np.ndarray | None = None) -> dict:
+    """Score held-out clips. `inputs` are their `model_inputs`, when already worked out."""
     truth = np.array([labels.index(c.label) for c in clips])
-    probs = probabilities(model, clips)
+    probs = probabilities(model, clips if inputs is None else inputs)
     log_probs = torch.from_numpy(np.log(np.clip(probs, 1e-12, None)))
     return {
         "loss": float(loss_fn(log_probs, torch.from_numpy(truth)).item()),
@@ -105,6 +107,8 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
     schedule = torch.optim.lr_scheduler.OneCycleLR(optimiser, max_lr=1e-3, epochs=epochs, steps_per_epoch=steps)
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 
+    # Held-out clips are not augmented, so their inputs are the same every epoch.
+    held_out_inputs = {name: model_inputs(group) for name, group in held_out.items()}
     history = []
     for epoch in range(1, epochs + 1):
         x_all, y_all = training_batch(train_clips, labels, rng)
@@ -124,7 +128,8 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
         # Training figures are on that epoch's augmented clips, with dropout on.
         row = {"epoch": epoch, "train": {"loss": total / len(train_clips),
                                          "f1": macro_f1(predicted, y_all.cpu().numpy())}}
-        row |= {name: evaluate(model, group, labels, loss_fn) for name, group in held_out.items()}
+        row |= {name: evaluate(model, group, labels, loss_fn, held_out_inputs[name])
+                for name, group in held_out.items()}
         history.append(row)
         print(f"epoch {epoch:3d}  loss {row['train']['loss']:.3f}  "
               + "  ".join(f"{name} f1 {row[name]['f1']:.3f}" for name in held_out))
