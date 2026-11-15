@@ -1,0 +1,102 @@
+{
+  "clips": 9,
+  "labels": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "_idle"
+  ],
+  "split": "same signer in train and test: accuracy is optimistic",
+  "epochs": 20,
+  "seed": 0,
+  "test_clips": 1,
+  "top1": 0.0,
+  "top5": 0.0,
+  "threshold_curve": [
+    {
+      "pass_score": 0.3,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.35,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.4,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.45,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.5,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.55,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.6,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.65,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.7,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.75,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.8,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.85,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.9,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.95,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    }
+  ],
+  "pass_score": null,
+  "signs_without_test_clips": [
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H"
+  ]
+}

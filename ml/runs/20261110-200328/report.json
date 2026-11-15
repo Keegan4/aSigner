@@ -1,0 +1,126 @@
+{
+  "clips": 49,
+  "labels": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "_idle"
+  ],
+  "split": "same signer in train and test: accuracy is optimistic",
+  "epochs": 80,
+  "seed": 0,
+  "test_clips": 22,
+  "top1": 0.36363636363636365,
+  "top5": 0.6363636363636364,
+  "threshold_curve": [
+    {
+      "pass_score": 0.3,
+      "false_reject": 0.8095238095238095,
+      "false_accept": 0.09090909090909091
+    },
+    {
+      "pass_score": 0.35,
+      "false_reject": 0.8095238095238095,
+      "false_accept": 0.045454545454545456
+    },
+    {
+      "pass_score": 0.4,
+      "false_reject": 0.8095238095238095,
+      "false_accept": 0.045454545454545456
+    },
+    {
+      "pass_score": 0.45,
+      "false_reject": 0.9047619047619048,
+      "false_accept": 0.045454545454545456
+    },
+    {
+      "pass_score": 0.5,
+      "false_reject": 0.9047619047619048,
+      "false_accept": 0.045454545454545456
+    },
+    {
+      "pass_score": 0.55,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.6,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.65,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.7,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.75,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.8,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.85,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.9,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    },
+    {
+      "pass_score": 0.95,
+      "false_reject": 1.0,
+      "false_accept": 0.0
+    }
+  ],
+  "pass_score": null,
+  "signs_without_test_clips": [
+    "D",
+    "E",
+    "F",
+    "H",
+    "K"
+  ],
+  "info": {
+    "clips": 27,
+    "signers": 1,
+    "top1": 0.36363636363636365,
+    "test_clips": 22,
+    "untested_signs": 5,
+    "trained_at": "2026-11-10T12:03:23+00:00"
+  }
+}
