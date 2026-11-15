@@ -173,7 +173,25 @@ Top-1 was lower with the block on two seeds and higher on one, so the difference
 
 No effect again: each variant wins one seed by a single clip. Pretraining matters far more than the block does (95.3% without it above, 98.1% with it).
 
-**Pretraining with the block** (`pretrain.py --graph-conv`, so the graph layers are trained before the recorded clips are seen) is being measured against a matching run without it, both on the current one-second-window training. The run without it is done: held-out top-1 of 99.3% on ASLNow!, 86.1% on CASL-W60, 42.2% on WLASL and 52.3% on asl-signs, and after `train.py --init` on the recorded clips 95.3%, 98.1% and 98.1% over seeds 0 to 2 (mean 97.2%; 96.7% on one-second windows). The run with the block is not finished, so there is nothing to compare yet. The two cannot be pretrained side by side on a 6 GB card: evaluation runs out of memory.
+**Pretraining with the block** (`pretrain.py --graph-conv`, so the graph layers are trained before the recorded clips are seen), against a matching run without it. Both ran for 200 epochs with a 25-epoch warm-up on the four public sets, on the current one-second-window training, one seed each:
+
+| Held-out top-1 after pretraining | with graph conv | without |
+|---|---|---|
+| ASLNow! (305 samples) | 98.4% | 99.3% |
+| CASL-W60 (2,222 clips) | 86.7% | 86.1% |
+| WLASL (1,665 clips) | 41.7% | 42.2% |
+| asl-signs (4,005 clips, unseen signers) | 52.7% | 52.3% |
+
+Then `train.py --init` on the recorded clips from each, 3 seeds:
+
+| Seed | top-1 with graph conv | top-1 without | one-second windows with | one-second windows without |
+|---|---|---|---|---|
+| 0 | 97.2% | 95.3% | 95.3% | 94.9% |
+| 1 | 98.1% | 98.1% | 97.1% | 98.9% |
+| 2 | 97.2% | 98.1% | 94.6% | 96.4% |
+| mean | 97.5% | 97.2% | 95.7% | 96.7% |
+
+Still no clear effect. On the public sets the two are within a point of each other in both directions; on the recorded clips whole-clip top-1 is a third of a point higher with the block and one-second windows a point lower, both inside the spread across seeds. So pretraining the graph layers does not change the answer, and the block stays off. The two runs cannot be pretrained side by side on a 6 GB card: evaluation runs out of memory.
 
 ## Tests
 
