@@ -26,18 +26,44 @@ def _outside_clips(sources) -> int | None:
     return None if None in counts else sum(counts)
 
 
+def _share(value) -> float | None:
+    ok = isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= 1
+    return float(value) if ok else None
+
+
+def _signs(labels, per_sign) -> list[dict]:
+    """Every sign the model can output, with its training clips, held-out clips and
+    held-out accuracy where the model records them (models from before it did list
+    the signs with those left as None)."""
+    if not isinstance(per_sign, dict):
+        per_sign = {}
+    rows = []
+    for label in labels if isinstance(labels, list) else []:
+        if not isinstance(label, str):
+            continue
+        stats = per_sign.get(label)
+        stats = stats if isinstance(stats, dict) else {}
+        rows.append({
+            "label": label,
+            "clips": _count(stats.get("clips")),
+            "test_clips": _count(stats.get("test_clips")),
+            "top1": _share(stats.get("top1")),
+        })
+    return rows
+
+
 def describe(recogniser: Recogniser) -> dict:
     """The model's training details, cleaned up, with `limited` set when it should not be trusted.
 
     `info` is optional on a recogniser and comes from a file, so nothing in it is taken on faith.
     """
     info = getattr(recogniser, "info", None)
+    labels = getattr(recogniser, "labels", None)
     if not isinstance(info, dict):
-        return {"known": False, "limited": True}
+        return {"known": False, "limited": True, "signs": _signs(labels, None)}
     clips, signers = _count(info.get("clips")), _count(info.get("signers"))
     test_clips, untested = _count(info.get("test_clips")), _count(info.get("untested_signs"))
-    top1 = info.get("top1")
-    top1 = float(top1) if isinstance(top1, (int, float)) and not isinstance(top1, bool) and 0 <= top1 <= 1 else None
+    top1 = _share(info.get("top1"))
     trained_at = info.get("trained_at")
     pretrained = info.get("pretrained")
     limited = (
@@ -59,4 +85,5 @@ def describe(recogniser: Recogniser) -> dict:
         "outside_clips": _outside_clips(info.get("sources")),
         "pretrained": pretrained if isinstance(pretrained, str) and len(pretrained) <= 80 else None,
         "limited": limited,
+        "signs": _signs(labels, info.get("signs")),
     }

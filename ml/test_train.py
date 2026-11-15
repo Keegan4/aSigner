@@ -192,6 +192,15 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     assert recogniser.info["clips"] == 36 and recogniser.info["signers"] == 1  # u1 only; u2 was held out
     assert recogniser.info["test_clips"] == 36 and recogniser.info["untested_signs"] == 0
     assert recogniser.info["top1"] == report["top1"]
+    signs = recogniser.info["signs"]
+    assert list(signs) == ["A", "B", "C", "_idle"]
+    assert sum(s["clips"] for s in signs.values()) == 36
+    assert sum(s["test_clips"] for s in signs.values()) == 36
+    tested = [s for s in signs.values() if s["test_clips"]]
+    assert all(0 <= s["top1"] <= 1 for s in tested)
+    assert all(s["top1"] is None for s in signs.values() if not s["test_clips"])
+    # The per-sign accuracies weighted by held-out clips add up to the overall one.
+    assert abs(sum(s["top1"] * s["test_clips"] for s in tested) / 36 - report["top1"]) < 1e-9
     probabilities = recogniser.predict(to_model_input(fake_clip(np.random.default_rng(3), 2)))
     assert recogniser.labels[int(probabilities.argmax())] == "C"
     assert list((tmp_path / "runs").glob("*/confusion.csv"))

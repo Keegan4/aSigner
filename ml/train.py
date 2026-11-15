@@ -383,6 +383,20 @@ def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_
         # from outside footage carries the id it was converted with.
         "sources": dict(sorted(Counter(clip_source(c.signer) for c in train_clips).items())),
     }
+    # Per sign, so the translate page can show which words are well covered and
+    # which the overall accuracy hides: training clips, held-out clips, and the
+    # share of those held-out clips read as the right sign (None when untested).
+    train_counts = Counter(c.label for c in train_clips)
+    test_counts = Counter(c.label for c in test_clips)
+    info["signs"] = {
+        label: {
+            "clips": train_counts[label],
+            "test_clips": test_counts[label],
+            "top1": (float(confusion[i, i] / test_counts[label])
+                     if confusion is not None and test_counts[label] else None),
+        }
+        for i, label in enumerate(labels)
+    }
     if pretrained:
         info["pretrained"] = pretrained
     if not temporal_conv:
