@@ -3,7 +3,9 @@ import numpy as np
 import pytest
 import torch
 
-from data import Clip, augment, close_pool, mirror, to_model_input, transition
+from data import (
+    Clip, augment, close_pool, live_windows, load_clips, mirror, to_model_input, window, window_frames,
+)
 from train import (
     HAND_BONES, HandGraph, RegionEncoder, SignNet, export, hand_adjacency, pick_device, probabilities,
     threshold_curve, train, training_batch,
@@ -177,6 +179,7 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     assert "u2 held out" in report["split"]
     assert report["signs_without_test_clips"] == []
     assert report["top1"] > 0.9  # the made-up signs are easy to tell apart
+    assert report["window_top1"] > 0.9 and report["windows"] == 36 * 7  # and so are half-second windows of them
     assert len(report["threshold_curve"]) == 14
     assert 0.5 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
     chosen = next(row for row in report["threshold_curve"] if row["pass_score"] == report["pass_score"])
@@ -242,15 +245,59 @@ def test_training_explains_when_batchnorm_has_only_one_training_clip(tmp_path):
               test_signer="u2", runs=tmp_path / "runs")
 
 
-def test_transition_puts_the_sign_last():
+def numbered_clip(value: int, label: str, frames: int = 40) -> Clip:
+    """Ten frames a second; every frame holds `value` and then its own index."""
+    raw = np.full((frames, FRAME_SIZE), value, dtype=np.float32)
+    raw[:, 1] = np.arange(frames)
+    return Clip(raw, label, "u1", fps=10.0)
+
+
+def test_a_window_is_a_stretch_from_anywhere_in_the_clip():
     rng = np.random.default_rng(4)
-    sign, before = fake_clip(rng, 0), fake_clip(rng, 1)
-    for _ in range(50):
-        frames, fraction = transition(sign, before, rng)
-        shown = round(fraction * len(frames))
-        assert 0.3 <= fraction <= 1.0
-        assert np.array_equal(frames[len(frames) - shown :], sign[:shown])
-        assert np.array_equal(frames[: len(frames) - shown], before[len(before) - (len(frames) - shown) :])
+    clip = numbered_clip(1, "A")
+    starts = set()
+    for _ in range(200):
+        frames, label = window(clip, None, rng)
+        assert label == "A"
+        assert 3 <= len(frames) <= 11  # a quarter of a second to a whole one
+        start = int(frames[0, 1])
+        assert np.array_equal(frames, clip.frames[start : start + len(frames)])
+        starts.add(start)
+    assert 0 in starts and max(starts) >= 29  # the start of the sign and its end, not only the start
+    short = Clip(clip.frames[:2], "A", "u1", fps=10.0)
+    assert np.array_equal(window(short, None, rng)[0], short.frames)
+
+
+def test_a_straddling_window_is_labelled_by_what_fills_it():
+    rng = np.random.default_rng(4)
+    a, b = numbered_clip(1, "A"), numbered_clip(2, "B")
+    seen = set()
+    for _ in range(300):
+        frames, label = window(a, b, rng)
+        own = frames[:, 0] == 1
+        assert 0 < own.sum() < len(frames) and np.count_nonzero(np.diff(own)) == 1  # both clips, one join
+        share = own.mean()
+        assert label == ("A" if share >= 0.6 else "B" if 1 - share >= 0.6 else IDLE_LABEL)
+        if own[0]:  # A ends, B begins: the end of A meets the start of B
+            assert frames[own][-1, 1] == 39 and frames[~own][0, 1] == 0
+        else:
+            assert frames[~own][-1, 1] == 39 and frames[own][0, 1] == 0
+        seen.add((label, bool(own[0])))
+    assert seen == {(label, first) for label in ("A", "B", IDLE_LABEL) for first in (True, False)}
+    assert window(a, numbered_clip(2, "A"), rng)[1] == "A"  # the same sign twice is still that sign
+
+
+def test_live_windows_follow_the_frame_rate_the_clip_was_tracked_at(tmp_path):
+    write_clips(tmp_path, signers=("u1",), per_sign=1)
+    clip = load_clips(tmp_path)[0]
+    assert clip.fps == 25 and window_frames(clip) == 13  # half a second, both ends included
+    assert window_frames(numbered_clip(1, "A")) == 6  # what the translator holds at ten frames a second
+    assert window_frames(Clip(clip.frames, "A", "u1")) == 13  # no rate given: taken as a two-second take
+    windows = live_windows(clip)
+    assert len(windows) == 7 and all(len(w) == 13 for w in windows)
+    assert np.array_equal(windows[1], clip.frames[6:19])
+    tiny = Clip(clip.frames[:5], "A", "u1", fps=25.0)
+    assert len(live_windows(tiny)) == 1 and len(live_windows(tiny)[0]) == 5
 
 
 def test_augmenting_on_several_cores_gives_the_same_batch_as_on_one():
@@ -266,7 +313,8 @@ def test_augmenting_on_several_cores_gives_the_same_batch_as_on_one():
     assert x_one.shape == (24, CLIP_FRAMES, NORMALISED_SIZE)
     assert torch.equal(x_one, x_many) and torch.equal(y_one, y_many)
     assert not torch.equal(x_many, again)  # a new epoch is augmented afresh
-    assert IDLE_LABEL in [labels[i] for i in y_one]  # some windows straddle two signs
+    # Some windows straddle two signs and take the other sign's label.
+    assert any(labels[i] != clip.label for i, clip in zip(y_one, clips))
 
 
 def test_threshold_curve_counts_rejects_and_accepts():

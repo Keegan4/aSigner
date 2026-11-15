@@ -93,7 +93,7 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
     elif wlasl:
         print(f"no WLASL parquet files under {wlasl}; leaving it out")
     source = " + ".join(sources)
-    # Same label set shape as train.py: straddling windows are labelled idle.
+    # Same label set shape as train.py: windows split evenly between two signs are labelled idle.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
     held_out = {name: [c for c in group if c.label in labels] for name, group in held_out.items() if group}
     print(f"{len(train_clips)} training clips, {sum(map(len, held_out.values()))} held out, "

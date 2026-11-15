@@ -23,7 +23,7 @@ import torch
 from torch import nn
 
 from checkpoint import load_into
-from data import Clip, augmented_samples, load_clips, to_model_input
+from data import Clip, augmented_samples, live_windows, load_clips, to_model_input
 
 from app.recognition.features import (  # path set up by data.py
     CLIP_FRAMES, COORDINATE_SIZE, HAND_POINTS, IDLE_LABEL, NORMALISED_PARTS,
@@ -243,7 +243,7 @@ def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
 
 
 def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generator, workers: int | None = None):
-    """One epoch's inputs: every clip freshly augmented, some as straddling windows.
+    """One epoch's inputs: every clip freshly augmented, half of them as live translator windows.
 
     Augmenting is the slow part of an epoch and runs on the CPU, so large sets
     are spread over every core (see data.augmented_samples).
@@ -267,6 +267,13 @@ def probabilities(model: nn.Module, clips: list[Clip] | np.ndarray) -> np.ndarra
     model.eval()
     with torch.no_grad():
         return torch.softmax(model(x), dim=1).cpu().numpy()
+
+
+def window_accuracy(model: nn.Module, clips: list[Clip], labels: list[str]) -> tuple[float, int]:
+    """Top-1 over every live translator window of the clips, and how many windows that was."""
+    windows = [(window, labels.index(clip.label)) for clip in clips for window in live_windows(clip)]
+    probs = probabilities(model, np.stack([to_model_input(window) for window, _ in windows]))
+    return float((probs.argmax(axis=1) == np.array([truth for _, truth in windows])).mean()), len(windows)
 
 
 def threshold_curve(probs: np.ndarray, truth: np.ndarray, labels: list[str]) -> list[dict]:
@@ -342,8 +349,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     if len(train_clips) < 2:
         raise SystemExit("Need at least two training clips for batch normalisation; "
                          "record more clips or choose a different test signer.")
-    # The idle class always exists: straddling windows are labelled with it even
-    # when nobody has recorded "no sign" takes.
+    # The idle class always exists: windows split evenly between two signs are
+    # labelled with it even when nobody has recorded "no sign" takes.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
     test_clips = [c for c in test_clips if c.label in labels]
     print(f"{len(train_clips)} training clips, {len(test_clips)} test clips, "
@@ -400,6 +407,11 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         curve = threshold_curve(probs, truth, labels)
         report |= {"test_clips": len(test_clips), "top1": top1, "top5": top5, "threshold_curve": curve}
         print(f"test top-1 {top1:.1%}  top-5 {top5:.1%}  on {len(test_clips)} clips ({split_note})")
+        # The translator never shows the model a whole clip, only half-second
+        # windows of one, so those are scored as well.
+        window_top1, windows = window_accuracy(model, test_clips, labels)
+        report |= {"window_top1": window_top1, "windows": windows}
+        print(f"as live translator windows: top-1 {window_top1:.1%} on {windows} windows")
         if sum(c.label != IDLE_LABEL for c in test_clips) >= MIN_CLIPS_FOR_THRESHOLD:
             # Passing a wrong sign teaches the wrong sign; failing a right one only
             # costs a retry. So take the most lenient score that keeps false accepts

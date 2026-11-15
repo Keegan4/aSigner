@@ -25,6 +25,7 @@ from app.recognition.features import (  # noqa: E402
     POSE,
     POSE_POINTS,
     RIGHT_HAND,
+    WINDOW_SECONDS,
     normalise,
     resample,
 )
@@ -33,11 +34,19 @@ from app.recognition.features import (  # noqa: E402
 _POSE_PAIRS = [(1, 4), (2, 5), (3, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16),
                (17, 18), (19, 20), (21, 22), (23, 24)]
 
-TRANSITION_SHARE = 0.3  # of training clips shown as a window straddling two signs
-SIGN_FRACTION = 0.6  # a straddling window counts as the sign only above this much of it
+WINDOW_SHARE = 0.5  # of training clips shown as a live translator window; the rest whole, as practice sends them
+STRADDLE_SHARE = 0.4  # of those windows, how many straddle two clips
+SIGN_FRACTION = 0.6  # a straddling window counts as a sign only when that sign fills this much of it
+# A training window lasts between half and twice the translator's: it starts
+# guessing on half a window, and the range keeps the model from fitting one length.
+WINDOW_SCALE = (0.5, 2.0)
 # Below this many clips an epoch's augmentation takes well under a second, and
 # starting worker processes would cost more than it saves.
 MIN_CLIPS_FOR_WORKERS = 2000
+
+
+# What a clip with no frame rate is taken to last: the length of a /record take.
+NOMINAL_CLIP_SECONDS = 2.0
 
 
 @dataclass
@@ -45,14 +54,40 @@ class Clip:
     frames: np.ndarray  # raw, (time, 256)
     label: str
     signer: str
+    fps: float | None = None  # as tracked; None when the source does not say
 
 
 def load_clips(folder: Path) -> list[Clip]:
     clips = []
     for path in sorted(folder.glob("*/*.npz")):
         with np.load(path) as data:
-            clips.append(Clip(data["frames"].astype(np.float32), str(data["label"]), str(data["signer"])))
+            fps = float(data["fps"]) if "fps" in data else None
+            clips.append(Clip(data["frames"].astype(np.float32), str(data["label"]), str(data["signer"]),
+                              fps if fps and np.isfinite(fps) else None))
     return clips
+
+
+def window_frames(clip: Clip, seconds: float = WINDOW_SECONDS) -> int:
+    """How many of the clip's frames the live translator would hold in a window of `seconds`.
+
+    The translator keeps every frame no older than the window, so a window
+    holds one frame more than the gaps that fit in it. The count follows the
+    rate the clip was tracked at: about 6 frames at 10 a second, 16 at 30.
+    """
+    fps = clip.fps or len(clip.frames) / NOMINAL_CLIP_SECONDS
+    return max(2, int(seconds * fps) + 1)
+
+
+def live_windows(clip: Clip) -> list[np.ndarray]:
+    """The clip as the live translator would see it: every window, half a window apart.
+
+    Used to score held-out clips the way translation uses the model, which a
+    whole-clip score says nothing about.
+    """
+    size = window_frames(clip)
+    if len(clip.frames) <= size:
+        return [clip.frames]
+    return [clip.frames[start:start + size] for start in range(0, len(clip.frames) - size + 1, max(1, size // 2))]
 
 
 def to_model_input(frames: np.ndarray) -> np.ndarray:
@@ -82,12 +117,18 @@ def mirror(frames: np.ndarray) -> np.ndarray:
     return out
 
 
-def augment(frames: np.ndarray, rng: np.random.Generator) -> np.ndarray:
-    """A plausible variation of a raw clip. Missing landmarks (zeros) stay missing."""
+def augment(frames: np.ndarray, rng: np.random.Generator, crop: bool = True) -> np.ndarray:
+    """A plausible variation of a raw clip. Missing landmarks (zeros) stay missing.
+
+    `crop=False` keeps every part of the clip in place, for a window that was
+    already cut to length and labelled by what it holds.
+    """
     # Timing: keep a random 70-100% stretch, then drop about one frame in ten.
-    keep = max(2, int(len(frames) * rng.uniform(0.7, 1.0)))
-    start = rng.integers(0, len(frames) - keep + 1)
-    out = frames[start : start + keep]
+    out = frames
+    if crop:
+        keep = max(2, int(len(frames) * rng.uniform(0.7, 1.0)))
+        start = rng.integers(0, len(frames) - keep + 1)
+        out = frames[start : start + keep]
     if len(out) > 8:
         out = out[rng.random(len(out)) > 0.1]
     out = out.copy()
@@ -115,36 +156,47 @@ def augment(frames: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return out.astype(np.float32)
 
 
-def transition(sign: np.ndarray, before: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, float]:
-    """What a live window often holds: the end of something else, then this sign.
+def window(clip: Clip, other: Clip | None, rng: np.random.Generator) -> tuple[np.ndarray, str]:
+    """What the live translator shows the model, and what it should be read as.
 
-    Returns the joined frames and the fraction of them that show the sign. The
-    translator slides a window over continuous signing, so most windows straddle
-    two signs; training on whole clips alone would never show the model that.
+    The translator slides a short window over continuous signing, so the model
+    mostly sees the start, middle or end of a sign rather than all of it, and
+    often the end of one sign with the start of the next. Without `other` the
+    window is a stretch from anywhere in the clip. With it, the window runs
+    across the join between the two clips, in either order, and takes the label
+    of whichever fills at least SIGN_FRACTION of it; a window split more evenly
+    than that is no sign.
     """
-    fraction = rng.uniform(0.3, 1.0)
-    shown = max(2, int(len(sign) * fraction))
-    lead = min(len(before), int(round(shown * (1 - fraction) / fraction)))
-    frames = np.concatenate([before[len(before) - lead :], sign[:shown]])
-    return frames, shown / len(frames)
+    size = window_frames(clip, WINDOW_SECONDS * rng.uniform(*WINDOW_SCALE))
+    frames = clip.frames
+    if other is None:
+        start = rng.integers(0, max(1, len(frames) - size + 1))
+        return frames[start : start + size], clip.label
+    own = min(int(rng.integers(1, size)), len(frames))
+    rest = min(size - own, len(other.frames))
+    if rng.random() < 0.5:  # the other sign ends and this one begins
+        joined = np.concatenate([other.frames[len(other.frames) - rest :], frames[:own]])
+    else:  # this sign ends and the other begins
+        joined = np.concatenate([frames[len(frames) - own :], other.frames[:rest]])
+    share = own / len(joined)
+    if other.label == clip.label or share >= SIGN_FRACTION:
+        return joined, clip.label
+    return joined, other.label if 1 - share >= SIGN_FRACTION else IDLE_LABEL
 
 
 def augmented_sample(clips: list[Clip], index: int, seed: int) -> tuple[np.ndarray, str]:
-    """Clip `index` as one training input: augmented, sometimes as a straddling window.
+    """Clip `index` as one training input: augmented, whole or as a live translator window.
 
     Everything random comes from `seed`, so the result does not depend on which
     process makes it or in what order.
     """
     rng = np.random.default_rng(seed)
     clip = clips[index]
-    frames, label = clip.frames, clip.label
-    if label != IDLE_LABEL and len(clips) > 1 and rng.random() < TRANSITION_SHARE:
-        other = clips[rng.integers(len(clips))]
-        if other.label != label:
-            frames, fraction = transition(frames, other.frames, rng)
-            if fraction < SIGN_FRACTION:
-                label = IDLE_LABEL
-    return to_model_input(augment(frames, rng)), label
+    if rng.random() >= WINDOW_SHARE:
+        return to_model_input(augment(clip.frames, rng)), clip.label
+    straddles = len(clips) > 1 and rng.random() < STRADDLE_SHARE
+    frames, label = window(clip, clips[rng.integers(len(clips))] if straddles else None, rng)
+    return to_model_input(augment(frames, rng, crop=False)), label
 
 
 def worker_count() -> int:

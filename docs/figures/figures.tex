@@ -22,7 +22,7 @@
   \centering
   \includegraphics[width=\textwidth]{figures/fig2_training.pdf}
   \caption{Training and deployment pipeline. (a) Clips are split by signer, then augmented
-  and mixed into transition windows afresh every epoch before optimisation. (b) Optional
+  and half of them cut to translator-length windows afresh every epoch before optimisation. (b) Optional
   pretraining on public fingerspelling data initialises the weights. (c) The held-out set
   selects the pass threshold $\tau^*$ that keeps false accepts at or below 5\%; the model is
   exported to ONNX with a numerical parity check and served on CPU for practice scoring and
