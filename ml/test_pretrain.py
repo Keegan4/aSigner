@@ -142,6 +142,14 @@ def test_pretrain_with_casl_records_both_sources_and_every_epoch(tmp_path):
     assert json.loads((tmp_path / "pretrained.json").read_text())["history"] == report["history"]
 
 
+def test_warmup_is_a_number_of_epochs_inside_the_run(tmp_path):
+    write_samples(tmp_path / "public")
+    report = pretrain(tmp_path / "public", tmp_path / "pretrained.pt", epochs=4, seed=0, warmup=2)
+    assert report["warmup_epochs"] == 2 and len(report["history"]) == 4
+    with pytest.raises(SystemExit, match="--warmup"):
+        pretrain(tmp_path / "public", tmp_path / "pretrained.pt", epochs=4, seed=0, warmup=4)
+
+
 def test_wlasl_points_map_to_pose_and_hands_and_each_word_keeps_a_fixed_test_clip(tmp_path):
     pa = pytest.importorskip("pyarrow")
     pq = pytest.importorskip("pyarrow.parquet")
