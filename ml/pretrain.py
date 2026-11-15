@@ -70,7 +70,7 @@ def evaluate(model: nn.Module, clips: list[Clip], labels: list[str], loss_fn: nn
 
 def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = None,
              wlasl: Path | None = None, warmup: int | None = None, asl_signs: Path | None = None,
-             per_sign: int | None = 100) -> dict:
+             per_sign: int | None = 100, graph_conv: bool = False) -> dict:
     """`warmup` is how many epochs the learning rate climbs for before it starts
     to fall; left out, it is the first 30% of them. `per_sign` limits how many
     asl-signs clips of each sign are read (None for all, about 380 a sign)."""
@@ -118,7 +118,9 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
           f"{len(labels) - 1} labels ({source})")
 
     device = pick_device()
-    model = SignNet(len(labels)).to(device)
+    model = SignNet(len(labels), graph_conv=graph_conv).to(device)
+    if graph_conv:
+        print("with graph convolution on the hands")
     print(f"training on {device}")
     steps = (len(train_clips) + 63) // 64
     optimiser = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
@@ -194,6 +196,8 @@ if __name__ == "__main__":
     parser.add_argument("--warmup", type=int,
                         help="epochs the learning rate rises for before it falls (default: 30%% of --epochs)")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--graph-conv", action="store_true",
+                        help="add graph convolution over each hand's skeleton (then train.py --graph-conv --init)")
     args = parser.parse_args()
     pretrain(args.data, args.out, args.epochs, args.seed, args.casl, args.wlasl, args.warmup,
-             args.asl_signs, args.per_sign or None)
+             args.asl_signs, args.per_sign or None, args.graph_conv)
