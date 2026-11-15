@@ -8,7 +8,11 @@ node_modules/
 .next/
 *.db
 ml/data/
-# ml/runs/ (per-run reports, confusion matrices, pretraining checkpoint) is committed.
+ml/runs/*
+# The shared pretraining checkpoint, its per-epoch history and chart are committed.
+!ml/runs/pretrained.pt
+!ml/runs/pretrained.json
+!ml/runs/pretrained.png
 *.onnx
 server/data/
 server/models/*
