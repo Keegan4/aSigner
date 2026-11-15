@@ -1,8 +1,9 @@
 """Turns a live stream of landmark frames into a run of sign glosses.
 
 The model is shown the last WINDOW_SECONDS of frames every STRIDE_SECONDS. The
-window is shorter than the two-second clips the model is trained on, so that a
-new sign fills it sooner. A sign is taken as made when
+window is shorter than a two-second recorded clip, so that a new sign fills it
+sooner; training cuts windows of the same length out of the clips (ml/data.py),
+so the model has seen what this sends it. A sign is taken as made when
 the model names it with enough confidence several times running. A stretch of
 "no sign" (the idle class, low confidence, or no hands in view) separates one
 sign from the next, and a longer one ends the sentence.
@@ -12,11 +13,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from app.recognition.features import IDLE_LABEL, POSE, normalise
+from app.recognition.features import IDLE_LABEL, POSE, WINDOW_SECONDS, normalise
 from app.recognition.recogniser import Recogniser
 from app.services.practice import pass_score
 
-WINDOW_SECONDS = 0.5
 STRIDE_SECONDS = 0.2
 MIN_WINDOW_SECONDS = 0.25  # no guesses until this much has been seen
 MIN_WINDOW_FRAMES = 5
