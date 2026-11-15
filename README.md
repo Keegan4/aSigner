@@ -148,15 +148,15 @@ cd ml
 python ablate.py --block graph-conv --seeds 0 1 2 3 4
 ```
 
-On the clips recorded in the app (565 clips of 34 signs plus no-sign; 3 seeds, 80 epochs, 107 test clips), the block made top-1 worse on every seed:
+On the clips recorded in the app (565 clips of 34 signs plus no-sign; 3 seeds, 80 epochs, 107 test clips), the block showed no clear effect:
 
 | | top-1 | top-5 |
 |---|---|---|
-| with graph conv | 91.3% ± 1.9% | 99.7% ± 0.5% |
-| without graph conv | 94.7% ± 1.1% | 99.4% ± 0.5% |
-| paired difference | −3.4% ± 1.9% | +0.3% ± 0.5% |
+| with graph conv | 94.4% ± 2.5% | 99.1% ± 0.9% |
+| without graph conv | 95.3% ± 1.6% | 99.1% ± 0.9% |
+| paired difference | −0.9% ± 3.7% | +0.0% ± 0.9% |
 
-So it stays off. Those clips come from one signer, who is in both the training and the test split, and there are about 13 training clips per sign: the extra parameters most likely overfit. The graph path is also added after the encoder's LayerNorm at full strength from the first step; starting it at zero, or pretraining with it, has not been tried. The comparison is worth repeating once a second signer can be held out.
+Top-1 was lower with the block on two seeds and higher on one, so the difference is within the spread across seeds, and the block stays off. Those clips come from one signer, who is in both the training and the test split, with about 13 training clips per sign, which is little for the extra parameters to learn from. The graph path is also added after the encoder's LayerNorm at full strength from the first step; starting it at zero, or pretraining with it, has not been tried. The comparison is worth repeating once a second signer can be held out.
 
 ## Tests
 
