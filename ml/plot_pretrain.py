@@ -16,6 +16,7 @@ SERIES = (
     ("asl-now", "ASLNow! held-out", "#eb6834"),
     ("casl-w60", "CASL-W60 test", "#1baf7a"),
     ("wlasl", "WLASL held-out", "#6250d6"),
+    ("asl-signs", "asl-signs held-out", "#c2410c"),
 )
 INK, MUTED, GRID, AXIS, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#bdbcb6", "#fcfcfb"
 
@@ -68,9 +69,13 @@ def plot(history_path: Path, out: Path) -> None:
     note = "ASLNow! held-out shares signers with training (optimistic). "
     if "casl-w60" in history[0]:
         note += "CASL-W60 uses the dataset's own test split. "
+    two_lines = "asl-signs" in history[0]  # four datasets' notes do not fit on one line
     if "wlasl" in history[0]:
-        note += "WLASL holds out 15% of each word. "
-    fig.text(0.125, 0.947, note + "Training is on augmented clips with dropout on.", fontsize=8, color=MUTED)
+        note += ("\n" if two_lines else "") + "WLASL holds out 15% of each word. "
+    if "asl-signs" in history[0]:
+        note += "asl-signs holds out whole signers. "
+    fig.text(0.125, 0.972 if two_lines else 0.947, note + "Training is on augmented clips with dropout on.",
+             fontsize=8, color=MUTED, va="top" if two_lines else "baseline")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=200, bbox_inches="tight", facecolor=SURFACE)
     print(out)
