@@ -35,9 +35,11 @@ IDLE_LABEL = "_idle"
 # Every clip is resampled to this many frames before it reaches the model.
 CLIP_FRAMES = 32
 
-# How much signing the live translator shows the model at a time. It lives here
-# so that training (ml/data.py) cuts its windows to the length the server uses.
-WINDOW_SECONDS = 0.5
+# How much signing the model is shown at a time, everywhere: the translator's
+# window, the length training cuts every clip to (ml/data.py), and the length of
+# a recorded take and a practice attempt (CLIP_SECONDS in
+# web/src/lib/tracking/features.ts, which must match).
+WINDOW_SECONDS = 1.0
 
 _L_SHOULDER, _R_SHOULDER = 11, 12
 _WRIST, _MIDDLE_KNUCKLE = 0, 9

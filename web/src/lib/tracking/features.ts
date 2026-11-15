@@ -16,6 +16,13 @@ export const FACE = POSE + POSE_POINTS * 3; // 201
 export const HEAD = FACE + BLENDSHAPES; // 253: yaw, pitch, roll in radians
 export const FRAME_SIZE = HEAD + 3; // 256 floats = 1024 bytes
 
+/**
+ * How long a recorded take and a practice attempt last. Must match
+ * WINDOW_SECONDS in server/app/recognition/features.py: the model is trained on,
+ * and the translator shows it, exactly this much signing.
+ */
+export const CLIP_SECONDS = 1;
+
 export type Point = { x: number; y: number; z: number };
 
 export type FrameParts = {

@@ -11,6 +11,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 - **Landmarks, not video.** The browser runs MediaPipe (hands, pose, face) and sends one 256-float frame per video frame over a WebSocket. Video never leaves the browser and is never stored.
 - **Inference on the server.** FastAPI serves an ONNX model on CPU. GPU execution providers were tried (PR #17, reverted): for this small model at one clip per prediction, the CPU was faster.
 - **One normaliser.** `server/app/recognition/features.py` is imported by both serving and training. Do not write a second one.
+- **One second everywhere.** The model is trained on, recorded for, practised with and shown by the translator exactly one second of signing (`WINDOW_SECONDS` there, `CLIP_SECONDS` in `web/src/lib/tracking/features.ts`). Change both together and retrain.
 - **Local LLM only.** The translator's sentence layer uses Ollama (`SENTENCE_MODEL`), with no external LLM API. It must fall back to plain glosses when Ollama is down.
 - **Google sign-in, Postgres.** Only text is stored: progress, attempts, past translations.
 - **Sign Bank media is not in the repo.** It is copyright SADeaf, all rights reserved. Link to it; do not copy from it unless written permission arrives.
@@ -85,7 +86,7 @@ Each task can be done independently unless it lists a dependency. Claim one on t
 Verified with a live camera by the owner.
 
 ### T2. Training pipeline (`ml/`): done in code, no usable model yet
-`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, time crop, frame drop, face dropout, and half of them cut to the translator's window length, some straddling two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1, top-5, top-1 on translator-length windows, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
+`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, frame drop, face dropout; every clip is cut to a one-second window, some straddling two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1 and top-5 on the middle second of each held-out clip, top-1 on every one-second window, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
 First real numbers (10 Nov 2026, 47 clips, one signer, about one training clip per letter): 40-45% top-1 on 20 held-out clips over three seeds. That is a pipeline check, not a usable model.
 Still needed: about 25 clips per sign, "No sign" clips, and a second signer so accuracy is measured on someone the model has not seen.
 
@@ -99,7 +100,7 @@ Can start now against the existing lessons API and a mocked practice socket.
 
 ### T5. Translator mode: built, untested with a real model
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
-Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 0.5 s of frames every 0.2 s (`WINDOW_SECONDS` in `recognition/features.py`, which training also cuts its windows to); its constants were chosen without a trained model and need tuning against real signing once one exists.
+Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last second of frames every 0.2 s (`WINDOW_SECONDS` in `recognition/features.py`; takes on `/record`, practice attempts and training windows are all that long); its constants were chosen without a trained model and need tuning against real signing once one exists.
 
 ### T6. Infrastructure: done, apart from the `ollama` service, which has not been started
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.

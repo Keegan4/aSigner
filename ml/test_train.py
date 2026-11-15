@@ -4,7 +4,8 @@ import pytest
 import torch
 
 from data import (
-    Clip, augment, close_pool, live_windows, load_clips, mirror, to_model_input, window, window_frames,
+    Clip, augment, close_pool, live_windows, load_clips, middle_window, mirror, to_model_input, window,
+    window_frames,
 )
 from train import RegionEncoder, SignNet, export, pick_device, probabilities, threshold_curve, train, training_batch
 
@@ -176,7 +177,7 @@ def test_train_exports_a_model_the_server_can_load(tmp_path):
     assert "u2 held out" in report["split"]
     assert report["signs_without_test_clips"] == []
     assert report["top1"] > 0.9  # the made-up signs are easy to tell apart
-    assert report["window_top1"] > 0.9 and report["windows"] == 36 * 7  # and so are half-second windows of them
+    assert report["window_top1"] > 0.9 and report["windows"] == 36 * 2  # and so is every one-second window of them
     assert len(report["threshold_curve"]) == 14
     assert 0.5 <= report["pass_score"] <= 0.95  # 36 held-out clips is enough to choose one
     chosen = next(row for row in report["threshold_curve"] if row["pass_score"] == report["pass_score"])
@@ -256,7 +257,7 @@ def test_a_window_is_a_stretch_from_anywhere_in_the_clip():
     for _ in range(200):
         frames, label = window(clip, None, rng)
         assert label == "A"
-        assert 3 <= len(frames) <= 11  # a quarter of a second to a whole one
+        assert len(frames) == 11  # one second at ten frames a second, both ends included
         start = int(frames[0, 1])
         assert np.array_equal(frames, clip.frames[start : start + len(frames)])
         starts.add(start)
@@ -284,17 +285,21 @@ def test_a_straddling_window_is_labelled_by_what_fills_it():
     assert window(a, numbered_clip(2, "A"), rng)[1] == "A"  # the same sign twice is still that sign
 
 
-def test_live_windows_follow_the_frame_rate_the_clip_was_tracked_at(tmp_path):
+def test_every_window_is_one_second_at_the_rate_the_clip_was_tracked_at(tmp_path):
     write_clips(tmp_path, signers=("u1",), per_sign=1)
-    clip = load_clips(tmp_path)[0]
-    assert clip.fps == 25 and window_frames(clip) == 13  # half a second, both ends included
-    assert window_frames(numbered_clip(1, "A")) == 6  # what the translator holds at ten frames a second
-    assert window_frames(Clip(clip.frames, "A", "u1")) == 13  # no rate given: taken as a two-second take
+    clip = load_clips(tmp_path)[0]  # 50 frames at 25 a second
+    assert clip.fps == 25 and window_frames(clip) == 26  # one second, both ends included
+    assert window_frames(numbered_clip(1, "A")) == 11  # what the translator holds at ten frames a second
+    assert window_frames(Clip(clip.frames, "A", "u1")) == 26  # no rate given: taken to last two seconds
     windows = live_windows(clip)
-    assert len(windows) == 7 and all(len(w) == 13 for w in windows)
-    assert np.array_equal(windows[1], clip.frames[6:19])
-    tiny = Clip(clip.frames[:5], "A", "u1", fps=25.0)
-    assert len(live_windows(tiny)) == 1 and len(live_windows(tiny)[0]) == 5
+    assert len(windows) == 2 and all(len(w) == 26 for w in windows)
+    assert np.array_equal(windows[1], clip.frames[13:39])
+    assert np.array_equal(middle_window(clip), clip.frames[12:38])  # what a held-out clip is scored on
+    # A one-second take is used as it is.
+    take = Clip(clip.frames[:25], "A", "u1", fps=25.0)
+    assert len(live_windows(take)) == 1 and len(live_windows(take)[0]) == 25
+    assert np.array_equal(middle_window(take), take.frames)
+    assert np.array_equal(window(take, None, np.random.default_rng(0))[0], take.frames)
 
 
 def test_augmenting_on_several_cores_gives_the_same_batch_as_on_one():
