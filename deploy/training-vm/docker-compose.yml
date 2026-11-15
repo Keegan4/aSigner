@@ -1,0 +1,95 @@
+# The training-data collector for a Linux VM: Postgres, the API server, the web app
+# and Caddy for HTTPS (browsers only give camera access over HTTPS). See README.md here.
+#
+#   cp .env.example .env   # then fill it in
+#   docker compose up -d --build
+#
+# Optional, to reach it from anywhere through Cloudflare (README.md, "Cloudflare tunnel"):
+#   docker compose --profile tunnel up -d         # your Cloudflare account and hostname
+#   docker compose --profile quick-tunnel up -d   # no account; a random trycloudflare.com link
+name: asigner-training
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: asigner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: asigner
+    ports:
+      # Local to the VM by default: reach it over an SSH tunnel. Set POSTGRES_BIND=0.0.0.0
+      # in .env to connect straight from another machine on the network instead.
+      # POSTGRES_PORT changes the port on the VM, if it already runs a Postgres of its own.
+      - "${POSTGRES_BIND:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asigner"]
+      interval: 5s
+      retries: 10
+
+  server:
+    build: ../../server
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://asigner:${POSTGRES_PASSWORD}@postgres:5432/asigner
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      FRONTEND_URL: https://${SITE_ADDRESS:?Set SITE_ADDRESS in .env}
+      TRAINING_ACCESS_CODE: ${TRAINING_ACCESS_CODE:?Set TRAINING_ACCESS_CODE in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../../web
+      args:
+        API_URL: http://server:8000
+    restart: unless-stopped
+    depends_on:
+      - server
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - server
+
+  # A tunnel made in your (free) Cloudflare account, with a fixed hostname on your
+  # domain. In the tunnel's settings, point the public hostname at http://caddy:8080.
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [tunnel]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      # Optional here (Compose checks every profile); cloudflared stops if it is empty.
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - caddy
+
+  # No account needed: prints a random https://<words>.trycloudflare.com link to its
+  # log, which changes whenever this container restarts. For trying things out.
+  quick-tunnel:
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [quick-tunnel]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://caddy:8080
+    depends_on:
+      - caddy
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

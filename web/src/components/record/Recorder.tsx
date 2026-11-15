@@ -12,7 +12,10 @@ type Phase = "idle" | "countdown" | "recording" | "saving";
 type Saved = { id: string; label: string };
 
 const COUNTDOWN_SECONDS = 3;
-const CLIP_SECONDS = 2;
+const CLIP_SECONDS = 1;
+// A sign's take is kept when a hand was tracked in at least this share of its
+// frames. Low, because tracking drops out while a hand moves fast.
+const MIN_HAND_SHARE = 0.25;
 const TARGET_PER_SIGN = 25;
 // Must match IDLE_LABEL in server/app/recognition/features.py.
 const IDLE: SignRow = { id: -1, gloss: "_idle" };
@@ -78,8 +81,8 @@ export function Recorder() {
       return;
     }
     // A resting take may have no hands in view at all, so the check is for signs only.
-    if (label !== IDLE.gloss && frames.filter(hasHand).length < frames.length / 2) {
-      setMessage("No hand was visible for most of that take, so it was not saved.");
+    if (label !== IDLE.gloss && frames.filter(hasHand).length < frames.length * MIN_HAND_SHARE) {
+      setMessage("Hardly any of that take showed a hand, so it was not saved.");
       return;
     }
     const body = new Float32Array(frames.length * FRAME_SIZE);
@@ -238,7 +241,7 @@ export function Recorder() {
       </ul>
 
       <p className="text-sm opacity-70">
-        Each take is {CLIP_SECONDS} seconds. Between takes, change your distance, position and hand
+        Each take is {CLIP_SECONDS} second. Between takes, change your distance, position and hand
         angle a little. Only landmark coordinates are saved; no video leaves this tab.
       </p>
     </Shell>
