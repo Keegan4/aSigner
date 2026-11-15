@@ -114,6 +114,15 @@ python plot_pretrain.py
 python train.py --init runs/pretrained.pt
 ```
 
+An optional first stage learns from the same clips without their labels (`pretrain_masked.py`): stretches of a hand, the body or the face are hidden and the model fills in where they were from what it can still see. That suits WLASL, which has about five clips for each of its 2,000 words. `pretrain.py --init` then starts from it:
+
+```bash
+python pretrain_masked.py --epochs 60          # writes runs/masked.pt and runs/masked.json
+python pretrain.py --epochs 100 --init runs/masked.pt
+```
+
+`runs/masked.json` has the error on held-out clips for every epoch, beside the error of guessing each hidden part's average visible position in that clip.
+
 `pretrain.py` uses CASL-W60 and WLASL when their parquet files are there. It saves loss and macro-F1 for every epoch in `runs/pretrained.json`, and `plot_pretrain.py` (needs `pip install matplotlib`) draws them. Neither video set has the face blendshapes the app uses, so the face counts as not tracked. WLASL's points are in an undocumented order. `public_data.py` explains how they were mapped and how its 9 pose points are filled out to the app's 25. Labels get `casl:` and `wlasl:` prefixes so they never collide with SgSL glosses. When `train.py` starts from the checkpoint, it keeps the learned layers, and labels the checkpoint never saw get a fresh output row. The checkpoint is never served, and a model started this way records it in its training details. Because WLASL is for non-commercial use only, a checkpoint pretrained with it is for academic use; leave out `data/public/wlasl-landmarks` to train without it.
 
 ### Ablation: the temporal convolution
