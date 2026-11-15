@@ -12,6 +12,7 @@ import {
   type Prediction,
   PredictionsPanel,
 } from "@/components/translate/DebugPanels";
+import { type LiveSeen, TrainedSignsPanel } from "@/components/translate/TrainedSignsPanel";
 import { Shell } from "@/components/ui/Shell";
 import { ModelNote } from "@/components/ui/ModelNote";
 import { type ModelInfo, type Translation, WS_URL } from "@/lib/api";
@@ -37,6 +38,7 @@ export function Translator() {
   const [speak, setSpeak] = useState(false);
   const [model, setModel] = useState<ModelInfo | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [live, setLive] = useState<LiveSeen>({});
   const [debug, setDebug] = useState(true);
   const feed = useRef<FrameFeed>(emptyFeed());
 
@@ -57,6 +59,10 @@ export function Translator() {
           break;
         case "window":
           setPrediction({ label: message.label, top: message.top });
+          if (message.top.length) {
+            const [gloss, score] = message.top[0];
+            setLive((seen) => ({ ...seen, [gloss]: { score, count: (seen[gloss]?.count ?? 0) + 1 } }));
+          }
           break;
         case "gloss":
           setGlosses(message.glosses);
@@ -106,23 +112,20 @@ export function Translator() {
   };
 
   return (
-    <Shell back="/" title="Translate" wide={debug}>
+    <Shell back="/" title="Translate" wide>
       <label className="flex items-center gap-2 self-start text-sm">
         <input type="checkbox" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
         Show debug panels (model predictions and landmarks)
       </label>
       <div
-        className={
-          debug
-            ? "grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_18rem] lg:items-start"
-            : "flex flex-col gap-6"
-        }
+        className={`grid gap-6 lg:items-start ${
+          debug ? "lg:grid-cols-[18rem_minmax(0,1fr)_18rem]" : "lg:grid-cols-[18rem_minmax(0,1fr)]"
+        }`}
       >
-        {debug && (
-          <aside className="order-2 lg:order-1 lg:sticky lg:top-4">
-            <PredictionsPanel prediction={prediction} />
-          </aside>
-        )}
+        <aside className="order-2 flex flex-col gap-6 lg:order-1 lg:sticky lg:top-4">
+          {debug && <PredictionsPanel prediction={prediction} />}
+          <TrainedSignsPanel model={model} live={live} current={prediction?.top[0]?.[0] ?? null} />
+        </aside>
         <div className="order-1 flex min-w-0 flex-col gap-6 lg:order-2">
           <CameraTracker onFrame={onFrame} onVideoFrame={onVideoFrame} onCamera={onCamera} />
 

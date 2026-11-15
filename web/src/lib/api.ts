@@ -49,4 +49,17 @@ export type ModelInfo = {
   /** The public dataset the model was pretrained on, if any. */
   pretrained?: string | null;
   trained_at?: string | null;
+  /** Every sign the model can output; the counts are null for models trained before they were recorded. */
+  signs?: SignStat[];
+};
+
+/** One sign the model was trained on (server/app/services/model_info.py). */
+export type SignStat = {
+  label: string;
+  /** Training clips of this sign. */
+  clips: number | null;
+  /** Held-out clips of this sign the accuracy was measured on. */
+  test_clips: number | null;
+  /** Share of those held-out clips read as this sign; null when it had none. */
+  top1: number | null;
 };

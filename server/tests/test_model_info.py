@@ -28,7 +28,31 @@ class Model:
 def test_a_well_covered_model_is_described_without_a_caution():
     assert describe(Model(GOOD)) == {
         "known": True, **GOOD, "outside_clips": None, "pretrained": None, "limited": False,
+        "signs": [{"label": "A", "clips": None, "test_clips": None, "top1": None}],
     }
+
+
+def test_each_sign_is_listed_with_its_own_counts_and_accuracy():
+    class TwoSigns(Model):
+        labels = ["A", "B", "_idle"]
+
+    per_sign = {
+        "A": {"clips": 20, "test_clips": 5, "top1": 0.8},
+        "B": {"clips": 3, "test_clips": 0, "top1": None},
+        "Z": {"clips": 9, "test_clips": 9, "top1": 1.0},  # not one of the model's outputs
+    }
+    assert describe(TwoSigns({**GOOD, "signs": per_sign}))["signs"] == [
+        {"label": "A", "clips": 20, "test_clips": 5, "top1": 0.8},
+        {"label": "B", "clips": 3, "test_clips": 0, "top1": None},
+        {"label": "_idle", "clips": None, "test_clips": None, "top1": None},
+    ]
+    odd = {"A": {"clips": "20", "test_clips": -1, "top1": 1.5}, "B": "lots"}
+    assert describe(TwoSigns({**GOOD, "signs": odd}))["signs"][:2] == [
+        {"label": "A", "clips": None, "test_clips": None, "top1": None},
+        {"label": "B", "clips": None, "test_clips": None, "top1": None},
+    ]
+    # A model with no training details still lists the words it can output.
+    assert [s["label"] for s in describe(TwoSigns())["signs"]] == ["A", "B", "_idle"]
 
 
 def test_outside_clips_and_pretraining_are_reported():
@@ -47,8 +71,10 @@ def test_thin_training_is_flagged():
 
 
 def test_missing_or_malformed_details_are_flagged_not_trusted():
-    assert describe(Model()) == {"known": False, "limited": True}
-    assert describe(Model("lots of clips")) == {"known": False, "limited": True}
+    unknown = {"known": False, "limited": True,
+               "signs": [{"label": "A", "clips": None, "test_clips": None, "top1": None}]}
+    assert describe(Model()) == unknown
+    assert describe(Model("lots of clips")) == unknown
     odd = describe(Model({"clips": "400", "signers": True, "top1": 7, "trained_at": "x" * 41}))
     assert odd == {
         "known": True,
@@ -61,6 +87,7 @@ def test_missing_or_malformed_details_are_flagged_not_trusted():
         "outside_clips": None,
         "pretrained": None,
         "limited": True,
+        "signs": [{"label": "A", "clips": None, "test_clips": None, "top1": None}],
     }
 
 
