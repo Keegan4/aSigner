@@ -135,6 +135,27 @@ On the ASLNow! fingerspelling data (converted to clips; 5 seeds, 80 epochs, 413 
 
 Those clips are a single still frame repeated, from one signer, so they contain no motion and the split is optimistic. The gain there most likely comes from smoothing per-frame augmentation noise and from the extra 104,640 parameters, not from motion. Whether the block helps on real SgSL signs needs the same run on recorded clips with a second signer held out.
 
+### Ablation: graph convolution on the hands
+
+The hand encoders see each hand's 21 landmarks as one flat list, so they have to learn which landmarks are joined. `train.py --graph-conv` adds a second path for each hand that has the skeleton built in. Every landmark carries 12 values (its shape and placement coordinates and the motion of each). Two graph convolution layers (12 → 32 → 32 per landmark) each mix a landmark with the landmarks it shares a bone with, using the normalised adjacency `D^-½ (A + I) D^-½` of MediaPipe's 21 hand bones, so after two layers a fingertip knows about the two joints below it. The 21 results are flattened, projected to the hand's 120 dimensions and added to the flat encoder's output. Pose and face/head are unchanged.
+
+The block is off by default and adds 164,464 parameters (82,232 per hand). A checkpoint from `pretrain.py` made without it still loads: the graph layers start fresh. To measure what it adds:
+
+```bash
+cd ml
+python ablate.py --block graph-conv --seeds 0 1 2 3 4
+```
+
+On the clips recorded in the app (565 clips of 34 signs plus no-sign; 3 seeds, 80 epochs, 107 test clips), the block made top-1 worse on every seed:
+
+| | top-1 | top-5 |
+|---|---|---|
+| with graph conv | 91.3% ± 1.9% | 99.7% ± 0.5% |
+| without graph conv | 94.7% ± 1.1% | 99.4% ± 0.5% |
+| paired difference | −3.4% ± 1.9% | +0.3% ± 0.5% |
+
+So it stays off. Those clips come from one signer, who is in both the training and the test split, and there are about 13 training clips per sign: the extra parameters most likely overfit. The graph path is also added after the encoder's LayerNorm at full strength from the first step; starting it at zero, or pretraining with it, has not been tried. The comparison is worth repeating once a second signer can be held out.
+
 ## Tests
 
 ```bash
