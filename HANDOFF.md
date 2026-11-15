@@ -11,6 +11,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 - **Landmarks, not video.** The browser runs MediaPipe (hands, pose, face) and sends one 256-float frame per video frame over a WebSocket. Video never leaves the browser and is never stored.
 - **Inference on the server.** FastAPI serves an ONNX model on CPU. GPU execution providers were tried (PR #17, reverted): for this small model at one clip per prediction, the CPU was faster.
 - **One normaliser.** `server/app/recognition/features.py` is imported by both serving and training. Do not write a second one.
+- **One second everywhere.** The model is trained on, recorded for, practised with and shown by the translator exactly one second of signing (`WINDOW_SECONDS` there, `CLIP_SECONDS` in `web/src/lib/tracking/features.ts`). The practice socket scores only the last `WINDOW_SECONDS` of an attempt, whatever the client sends. Change both together and retrain.
 - **Local LLM only.** The translator's sentence layer uses Ollama (`SENTENCE_MODEL`), with no external LLM API. It must fall back to plain glosses when Ollama is down.
 - **Google sign-in, Postgres.** Only text is stored: progress, attempts, past translations.
 - **Sign Bank media is not in the repo.** It is copyright SADeaf, all rights reserved. Link to it; do not copy from it unless written permission arrives.
@@ -52,9 +53,11 @@ Never verified:
 | `server/app/ws/` | WebSocket endpoints, one module per socket (message formats in their docstrings); `session.py` has `authorise` |
 | `server/seed/lessons.yaml` | Lesson content |
 | `server/tests/` | pytest; `conftest.py` has the signed-in client fixture |
-| `ml/` | Training: `data.py` (loading, augmentation), `train.py` (model, evaluation, export) |
+| `ml/` | Training: `data.py` (loading, augmentation), `train.py` (model, evaluation, export), `pull_samples.py` (takes from the training page's database into clip files) |
+| `deploy/training-vm/` | Docker Compose and Caddy for running the training page on its own Linux VM |
+| `deploy/trainer/` | Docker Compose for training on the GPU machine: pulls takes from that VM's Postgres and trains (`ml/Dockerfile`) |
 | `web/src/app/` | Routes only; each page renders one component |
-| `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `translate` (live and history), `ui` (shared page frame and small parts) |
+| `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `train` (training page), `translate` (live and history), `ui` (shared page frame and small parts) |
 | `web/src/lib/` | `api.ts` (types and fetch helper), `practice.ts` (practice socket and its mock), `tracking/` (frame packing, MediaPipe setup) |
 | `web/src/hooks/` | Shared data hooks |
 
@@ -85,7 +88,7 @@ Each task can be done independently unless it lists a dependency. Claim one on t
 Verified with a live camera by the owner.
 
 ### T2. Training pipeline (`ml/`): done in code, no usable model yet
-`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, time crop, frame drop, face dropout, and half of them cut to the translator's window length, some straddling two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1, top-5, top-1 on translator-length windows, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
+`ml/train.py` loads clips, augments them (mirror, roll, scale, jitter, frame drop, face dropout; every clip is cut to a one-second window, some straddling two signs), trains, holds out a whole signer when there is more than one, and writes `report.json` (top-1 and top-5 on the middle second of each held-out clip, top-1 on every one-second window, pass-score curve, signs with no held-out clip) and `confusion.csv` under `ml/runs/`. It exports one file, `server/models/signs.onnx`, with labels, pass score and training info in its metadata, moved into place atomically; the server picks it up on the next connection.
 First real numbers (10 Nov 2026, 47 clips, one signer, about one training clip per letter): 40-45% top-1 on 20 held-out clips over three seeds. That is a pipeline check, not a usable model.
 Still needed: about 25 clips per sign, "No sign" clips, and a second signer so accuracy is measured on someone the model has not seen.
 
@@ -99,11 +102,15 @@ Can start now against the existing lessons API and a mocked practice socket.
 
 ### T5. Translator mode: built, untested with a real model
 Sign segmentation (idle and transition detection, confidence threshold), gloss buffer, Ollama client with fallback, saving to `translations`, a history page with delete, browser speech output.
-Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last 0.5 s of frames every 0.2 s (`WINDOW_SECONDS` in `recognition/features.py`, which training also cuts its windows to); its constants were chosen without a trained model and need tuning against real signing once one exists.
+Done in code: Ollama client with fallback, storage, history page with delete, speech output, segmentation (`server/app/services/segmentation.py`), `/ws/translate` and the `/translate` screen. Segmentation shows the model the last second of frames every 0.2 s (`WINDOW_SECONDS` in `recognition/features.py`; takes on `/record` and `/train`, practice attempts and training windows are all that long); its constants were chosen without a trained model and need tuning against real signing once one exists.
 
 ### T6. Infrastructure: done, apart from the `ollama` service, which has not been started
 Run `docker compose up --build` and fix what breaks, run the migration on Postgres, add GitHub Actions for pytest, type-check and lint.
 Can start now.
+
+### T8. Training page on a VM: built, not yet deployed
+`/train` (`web/src/components/train/Trainer.tsx`) and `/api/training` (`server/app/routes/training.py`, `server/app/services/training.py`). Takes go into Postgres (`training_samples`: raw frames as bytea, label, frame count, fps, anonymous contributor hash, time); signs added on the page go into `training_signs`. No Google sign-in: a shared `TRAINING_ACCESS_CODE`, required unless `FRONTEND_URL` is localhost. `ml/pull_samples.py` syncs the takes into clip files that `train.py` reads. `deploy/training-vm/` runs Postgres, server, web and Caddy (HTTPS, needed for the camera) on a Linux VM. Optional Cloudflare tunnel profiles (`tunnel` with the owner's free account and a fixed hostname, `quick-tunnel` with none) let people outside the network reach it without opening router ports.
+Tested: server endpoints (pytest, SQLite), the pull script against made-up rows, and the page's code, sign list, add and remove flows in a browser against a stubbed API. The Docker stack was run under Docker Engine in WSL (Ubuntu 22.04): migrations on Postgres 16, takes through Caddy over HTTPS, a pull, and the training container (`ml/Dockerfile`, `deploy/trainer/`) training on the CPU from that database. The tunnel route (Caddy's internal port 8080) was checked inside Docker; no tunnel was connected to Cloudflare. Not yet: a real take recorded through `/train`, a real VM, a live Cloudflare tunnel, or the training container on the GTX 1660 Super (the image has sm_75 kernels, but no NVIDIA GPU was available to run it).
 
 ### T7. Human-only tasks (owner)
 - Create the Google OAuth client and `.env`.

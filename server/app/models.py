@@ -6,6 +6,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -107,3 +108,35 @@ class Translation(Base):
     glosses: Mapped[list] = mapped_column(Json, default=list)
     sentence: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class TrainingSign(Base):
+    """A sign added on the training page that is not in any lesson.
+
+    Lesson glosses and the "No sign" label are collectable without a row here."""
+
+    __tablename__ = "training_signs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    label: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class TrainingSample(Base):
+    """One labelled take from the training page: landmarks only, never video.
+
+    `frames` is frame_count x 256 little-endian float32 values back to back, the
+    browser's frame layout (app/recognition/features.py). `contributor` is a
+    one-way hash of a random token the browser made up, so takes from one
+    person can be grouped (and undone) without knowing who they are."""
+
+    __tablename__ = "training_samples"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    label: Mapped[str] = mapped_column(String(40), index=True)
+    frames: Mapped[bytes] = mapped_column(LargeBinary)
+    frame_count: Mapped[int] = mapped_column(Integer)
+    fps: Mapped[float] = mapped_column(Float)
+    contributor: Mapped[str] = mapped_column(String(32), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)

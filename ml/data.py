@@ -3,6 +3,11 @@
 Clips are the .npz files written by the server's /api/clips route: raw frames
 of shape (time, 256). Normalisation and resampling come from the server's
 features module so training sees exactly what live inference sees.
+
+The model is only ever shown WINDOW_SECONDS of signing: that is the
+translator's window and the length of a practice attempt and of a take on
+/record. So every training input and every held-out input is cut to that
+length too, whatever the length of the clip it comes from.
 """
 import multiprocessing
 import os
@@ -34,18 +39,15 @@ from app.recognition.features import (  # noqa: E402
 _POSE_PAIRS = [(1, 4), (2, 5), (3, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16),
                (17, 18), (19, 20), (21, 22), (23, 24)]
 
-WINDOW_SHARE = 0.5  # of training clips shown as a live translator window; the rest whole, as practice sends them
-STRADDLE_SHARE = 0.4  # of those windows, how many straddle two clips
+STRADDLE_SHARE = 0.3  # of training windows that straddle two clips, as the translator's often do
 SIGN_FRACTION = 0.6  # a straddling window counts as a sign only when that sign fills this much of it
-# A training window lasts between half and twice the translator's: it starts
-# guessing on half a window, and the range keeps the model from fitting one length.
-WINDOW_SCALE = (0.5, 2.0)
 # Below this many clips an epoch's augmentation takes well under a second, and
 # starting worker processes would cost more than it saves.
 MIN_CLIPS_FOR_WORKERS = 2000
 
 
-# What a clip with no frame rate is taken to last: the length of a /record take.
+# What a clip with no frame rate is taken to last. Only public clips lack one;
+# each shows a single sign, start to finish.
 NOMINAL_CLIP_SECONDS = 2.0
 
 
@@ -72,17 +74,28 @@ def window_frames(clip: Clip, seconds: float = WINDOW_SECONDS) -> int:
 
     The translator keeps every frame no older than the window, so a window
     holds one frame more than the gaps that fit in it. The count follows the
-    rate the clip was tracked at: about 6 frames at 10 a second, 16 at 30.
+    rate the clip was tracked at: 11 frames at 10 a second, 31 at 30.
     """
     fps = clip.fps or len(clip.frames) / NOMINAL_CLIP_SECONDS
     return max(2, int(seconds * fps) + 1)
 
 
+def middle_window(clip: Clip) -> np.ndarray:
+    """The middle WINDOW_SECONDS of the clip (all of it, if it is no longer than that).
+
+    One input per held-out clip, as practice would send it: a take that starts
+    once the sign is up and lasts one window.
+    """
+    size = window_frames(clip)
+    start = max(0, (len(clip.frames) - size) // 2)
+    return clip.frames[start : start + size]
+
+
 def live_windows(clip: Clip) -> list[np.ndarray]:
     """The clip as the live translator would see it: every window, half a window apart.
 
-    Used to score held-out clips the way translation uses the model, which a
-    whole-clip score says nothing about.
+    Used to score held-out clips the way translation uses the model: on the
+    start and the end of a sign as well as its middle.
     """
     size = window_frames(clip)
     if len(clip.frames) <= size:
@@ -117,18 +130,10 @@ def mirror(frames: np.ndarray) -> np.ndarray:
     return out
 
 
-def augment(frames: np.ndarray, rng: np.random.Generator, crop: bool = True) -> np.ndarray:
-    """A plausible variation of a raw clip. Missing landmarks (zeros) stay missing.
-
-    `crop=False` keeps every part of the clip in place, for a window that was
-    already cut to length and labelled by what it holds.
-    """
-    # Timing: keep a random 70-100% stretch, then drop about one frame in ten.
+def augment(frames: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """A plausible variation of a window of raw frames. Missing landmarks (zeros) stay missing."""
+    # Timing: drop about one frame in ten, as a tracker that falls behind does.
     out = frames
-    if crop:
-        keep = max(2, int(len(frames) * rng.uniform(0.7, 1.0)))
-        start = rng.integers(0, len(frames) - keep + 1)
-        out = frames[start : start + keep]
     if len(out) > 8:
         out = out[rng.random(len(out)) > 0.1]
     out = out.copy()
@@ -157,17 +162,17 @@ def augment(frames: np.ndarray, rng: np.random.Generator, crop: bool = True) -> 
 
 
 def window(clip: Clip, other: Clip | None, rng: np.random.Generator) -> tuple[np.ndarray, str]:
-    """What the live translator shows the model, and what it should be read as.
+    """WINDOW_SECONDS of signing as the model will be shown it, and what it should be read as.
 
-    The translator slides a short window over continuous signing, so the model
-    mostly sees the start, middle or end of a sign rather than all of it, and
-    often the end of one sign with the start of the next. Without `other` the
-    window is a stretch from anywhere in the clip. With it, the window runs
-    across the join between the two clips, in either order, and takes the label
-    of whichever fills at least SIGN_FRACTION of it; a window split more evenly
-    than that is no sign.
+    The translator slides its window over continuous signing, so the model
+    sees the start, middle or end of a sign, and often the end of one sign with
+    the start of the next. Without `other` the window is a stretch from anywhere
+    in the clip (all of it, when the clip is no longer than a window). With it,
+    the window runs across the join between the two clips, in either order, and
+    takes the label of whichever fills at least SIGN_FRACTION of it; a window
+    split more evenly than that is no sign.
     """
-    size = window_frames(clip, WINDOW_SECONDS * rng.uniform(*WINDOW_SCALE))
+    size = window_frames(clip)
     frames = clip.frames
     if other is None:
         start = rng.integers(0, max(1, len(frames) - size + 1))
@@ -185,18 +190,16 @@ def window(clip: Clip, other: Clip | None, rng: np.random.Generator) -> tuple[np
 
 
 def augmented_sample(clips: list[Clip], index: int, seed: int) -> tuple[np.ndarray, str]:
-    """Clip `index` as one training input: augmented, whole or as a live translator window.
+    """Clip `index` as one training input: a window of it, augmented.
 
     Everything random comes from `seed`, so the result does not depend on which
     process makes it or in what order.
     """
     rng = np.random.default_rng(seed)
     clip = clips[index]
-    if rng.random() >= WINDOW_SHARE:
-        return to_model_input(augment(clip.frames, rng)), clip.label
     straddles = len(clips) > 1 and rng.random() < STRADDLE_SHARE
     frames, label = window(clip, clips[rng.integers(len(clips))] if straddles else None, rng)
-    return to_model_input(augment(frames, rng, crop=False)), label
+    return to_model_input(augment(frames, rng)), label
 
 
 def worker_count() -> int:

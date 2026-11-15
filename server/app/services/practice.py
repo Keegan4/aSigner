@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Attempt, Progress, now
-from app.recognition.features import IDLE_LABEL, normalise
+from app.recognition.features import IDLE_LABEL, WINDOW_SECONDS, normalise
 from app.recognition.recogniser import Recogniser
 
 # Used unless the recogniser carries its own `pass_score` (chosen from the
@@ -33,6 +33,19 @@ class Score:
 
 def pass_score(recogniser: Recogniser) -> float:
     return getattr(recogniser, "pass_score", None) or PASS_SCORE
+
+
+def last_window(frames: list[tuple[float, np.ndarray]]) -> list[np.ndarray]:
+    """The frames of an attempt that arrived in its last WINDOW_SECONDS, given (arrival time, frame) pairs.
+
+    The practice screen records exactly that much, so this normally keeps
+    every frame. It is here so the model is never scored on more signing than
+    it was trained on, whatever a client sends.
+    """
+    if not frames:
+        return []
+    newest = frames[-1][0]
+    return [frame for at, frame in frames if newest - at <= WINDOW_SECONDS]
 
 
 def score_clip(recogniser: Recogniser, frames: list[np.ndarray], target: str) -> Score:

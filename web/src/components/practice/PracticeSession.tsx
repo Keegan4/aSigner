@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CameraTracker } from "@/components/camera/CameraTracker";
 import { ModelNote } from "@/components/ui/ModelNote";
 import type { ModelInfo, Sign } from "@/lib/api";
+import { CLIP_SECONDS } from "@/lib/tracking/features";
 import {
   MOCK_PRACTICE,
   openPractice,
@@ -14,9 +15,9 @@ import {
 } from "@/lib/practice";
 
 const COUNTDOWN = 3;
-// Same countdown and take length as the training recorder (Recorder.tsx), so
-// practice clips look like the clips the model was trained on.
-const RECORD_MS = 2000;
+// Same countdown and take length as the training recorders (Recorder.tsx,
+// Trainer.tsx), so practice clips look like the clips the model was trained on.
+const RECORD_MS = CLIP_SECONDS * 1000;
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
 type Phase =

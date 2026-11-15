@@ -1,6 +1,9 @@
 """Train the sign classifier and export it for the server.
 
     python train.py --clips ../server/data/clips --out ../server/models/signs.onnx
+    python train.py --clips ../server/data/clips data/collected   # several folders
+
+data/collected is where pull_samples.py puts takes from the training page.
 
 Writes signs.onnx (labels and pass score inside it), plus report.json and
 confusion.csv under runs/<time>/.
@@ -23,7 +26,7 @@ import torch
 from torch import nn
 
 from checkpoint import load_into
-from data import Clip, augmented_samples, live_windows, load_clips, to_model_input
+from data import Clip, augmented_samples, live_windows, load_clips, middle_window, to_model_input
 
 from app.recognition.features import (  # path set up by data.py
     CLIP_FRAMES, COORDINATE_SIZE, HAND_POINTS, IDLE_LABEL, NORMALISED_PARTS,
@@ -220,8 +223,9 @@ class SignNet(nn.Module):
 
 
 def clip_source(signer: str) -> str:
-    """"recorded" for clips made on /record, otherwise the outside source's id."""
-    return "recorded" if re.fullmatch(r"u\d+", signer) else signer
+    """"recorded" for clips made in the app (/record, or /train via pull_samples.py),
+    otherwise the outside source's id."""
+    return "recorded" if re.fullmatch(r"u\d+|t[0-9a-f]{16}", signer) else signer
 
 
 def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
@@ -243,7 +247,7 @@ def split(clips: list[Clip], test_signer: str | None, rng: np.random.Generator):
 
 
 def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generator, workers: int | None = None):
-    """One epoch's inputs: every clip freshly augmented, half of them as live translator windows.
+    """One epoch's inputs: a fresh window of every clip, augmented, some straddling two clips.
 
     Augmenting is the slow part of an epoch and runs on the CPU, so large sets
     are spread over every core (see data.augmented_samples).
@@ -256,8 +260,11 @@ def training_batch(clips: list[Clip], labels: list[str], rng: np.random.Generato
 
 
 def model_inputs(clips: list[Clip]) -> np.ndarray:
-    """Clips as the model sees them, unaugmented. Worth keeping when the same clips are scored every epoch."""
-    return np.stack([to_model_input(c.frames) for c in clips])
+    """The middle window of each clip, unaugmented: one input per clip, at the length the model is always shown.
+
+    Worth keeping when the same clips are scored every epoch.
+    """
+    return np.stack([to_model_input(middle_window(c)) for c in clips])
 
 
 def probabilities(model: nn.Module, clips: list[Clip] | np.ndarray) -> np.ndarray:
@@ -337,12 +344,13 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
     os.replace(pending, out)
 
 
-def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
+def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
           init: Path | None = None, temporal_conv: bool = True, graph_conv: bool = False):
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
-    clips = load_clips(clips_dir)
+    folders = clips_dir if isinstance(clips_dir, list) else [clips_dir]
+    clips = [clip for folder in folders for clip in load_clips(folder)]
     if len({c.label for c in clips} - {IDLE_LABEL}) < 2:
         raise SystemExit(f"Need clips for at least two signs; found {len(clips)} clips.")
     train_clips, test_clips, split_note = split(clips, test_signer, rng)
@@ -407,8 +415,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
         curve = threshold_curve(probs, truth, labels)
         report |= {"test_clips": len(test_clips), "top1": top1, "top5": top5, "threshold_curve": curve}
         print(f"test top-1 {top1:.1%}  top-5 {top5:.1%}  on {len(test_clips)} clips ({split_note})")
-        # The translator never shows the model a whole clip, only half-second
-        # windows of one, so those are scored as well.
+        # The figures above are on the middle window of each clip, as practice sends
+        # it. The translator's window also lands on the start and end of a sign.
         window_top1, windows = window_accuracy(model, test_clips, labels)
         report |= {"window_top1": window_top1, "windows": windows}
         print(f"as live translator windows: top-1 {window_top1:.1%} on {windows} windows")
@@ -454,7 +462,7 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
     if graph_conv:
         info["graph_conv"] = True
     report["info"] = info
-    export(model, out, labels, pass_score, to_model_input(clips[0].frames), info)
+    export(model, out, labels, pass_score, to_model_input(middle_window(clips[0])), info)
 
     run = runs / time.strftime("%Y%m%d-%H%M%S")
     run.mkdir(parents=True, exist_ok=True)
@@ -471,7 +479,8 @@ def train(clips_dir: Path, out: Path, epochs: int, seed: int, test_signer: str |
 if __name__ == "__main__":
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--clips", type=Path, default=here.parent / "server" / "data" / "clips")
+    parser.add_argument("--clips", type=Path, nargs="+", default=[here.parent / "server" / "data" / "clips"],
+                        help="one or more clip folders (default: the /record clips)")
     parser.add_argument("--out", type=Path, default=here.parent / "server" / "models" / "signs.onnx")
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--seed", type=int, default=0)
