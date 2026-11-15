@@ -16,6 +16,7 @@ from app.recognition.features import (
 )
 from app.recognition.recogniser import get_recogniser
 from app.services.practice import MAX_MASTERY, REVIEW_DAYS, record_attempt, score_clip
+from app.ws import practice as ws_module
 
 ORIGIN = {"origin": "http://localhost:3000"}
 LABELS = list("ABC")
@@ -71,6 +72,27 @@ def attempt(ws, target_id: int, label_index: int, frames: int = 10) -> dict:
         ws.send_bytes(recorded_frame(label_index))
     ws.send_json({"type": "score"})
     return ws.receive_json()
+
+
+def test_only_the_last_second_of_an_attempt_is_scored(signed_in, user, db_factory, recogniser, monkeypatch):
+    """A client that sends more than the model is trained on is scored on its last second."""
+    now = [0.0]
+
+    def tick():  # eight frames a second
+        now[0] += 0.125
+        return now[0]
+
+    monkeypatch.setattr(ws_module, "clock", tick)
+    b = sign_id(db_factory, "B")
+    with signed_in.websocket_connect("/ws/practice", headers=ORIGIN) as ws:
+        ws.send_json({"type": "start", "sign_id": b})
+        assert ws.receive_json()["type"] == "ready"
+        for label in ["A"] * 21 + ["B"] * 9:  # nearly four seconds; B fills only the last one
+            ws.send_bytes(recorded_frame(LABELS.index(label)))
+        ws.send_json({"type": "score"})
+        result = ws.receive_json()
+    assert result["type"] == "result" and result["passed"]
+    assert len(recogniser.clips[-1]) == 9  # one second at eight frames a second, both ends included
 
 
 def test_replayed_frames_are_scored_and_stored(signed_in, user, db_factory, recogniser):

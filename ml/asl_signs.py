@@ -36,8 +36,9 @@ from app.recognition.features import (  # path set up by data.py
 SOURCE = "asl-signs (Kaggle, Google Isolated Sign Language Recognition)"
 LABEL_PREFIX = "asl:"
 SIGNER_PREFIX = "asl-signs-"
-# Longer clips are thinned to this many frames. The model sees 32 per clip, so
-# this keeps room for time cropping while bounding memory.
+# Longer clips are thinned to this many frames. The model sees 32 per window
+# and a window is half of one of these clips (data.window_frames), so this is
+# enough for a full window while bounding memory.
 MAX_FRAMES = 64
 
 # Holistic's part names, where each goes in a raw frame, and how many points the app keeps.

@@ -1,4 +1,5 @@
 import json
+import time
 
 import numpy as np
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
@@ -10,12 +11,15 @@ from app.models import Sign
 from app.recognition.features import decode
 from app.recognition.recogniser import Recogniser, UnusableModel, get_recogniser
 from app.services.model_info import describe
-from app.services.practice import MAX_FRAMES, MIN_FRAMES, record_attempt, score_clip
+from app.services.practice import MAX_FRAMES, MIN_FRAMES, last_window, record_attempt, score_clip
 from app.ws.session import authorise
 
 router = APIRouter()
 
 BAD_MODEL = "The installed sign model cannot be used. It needs retraining with ml/train.py."
+
+# When a frame arrived. A name of its own so tests can replace it.
+clock = time.monotonic
 
 
 @router.websocket("/ws/practice")
@@ -31,6 +35,9 @@ async def practice(
     with "ready" (which says what the model was trained on), "result" or
     "error". A result stores the attempt and updates progress; the client may
     then start again on the same socket.
+
+    An attempt is the last WINDOW_SECONDS of frames before "score": the length
+    the model is trained on. The practice screen sends exactly that much.
     """
     user_id = await authorise(ws)
     if user_id is None:
@@ -40,7 +47,7 @@ async def practice(
         await ws.send_json({"type": "error", "code": code, "message": message})
 
     sign: Sign | None = None
-    frames: list[np.ndarray] = []
+    frames: list[tuple[float, np.ndarray]] = []  # (arrival time, raw frame)
     try:
         while True:
             message = await ws.receive()
@@ -51,7 +58,7 @@ async def practice(
                 if sign is None:
                     continue  # frames outside an attempt are ignored
                 try:
-                    frames.append(decode(payload))
+                    frames.append((clock(), decode(payload)))
                 except ValueError as exc:
                     await error("bad_frame", str(exc))
                     continue
@@ -89,10 +96,10 @@ async def practice(
             elif kind == "score":
                 if sign is None or recogniser is None or isinstance(recogniser, UnusableModel):
                     await error("not_started", "Send start before score.")
-                elif len(frames) < MIN_FRAMES:
+                elif len(attempt := last_window(frames)) < MIN_FRAMES:
                     await error("too_short", "Not enough frames were received to score.")
                 else:
-                    result = await run_in_threadpool(score_clip, recogniser, frames, sign.gloss)
+                    result = await run_in_threadpool(score_clip, recogniser, attempt, sign.gloss)
                     progress = record_attempt(db, user_id, sign.id, result.score, result.passed)
                     await ws.send_json(
                         {

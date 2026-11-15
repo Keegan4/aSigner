@@ -11,7 +11,7 @@ A portfolio project (not commercial) that teaches Singapore Sign Language (SgSL)
 - **Landmarks, not video.** The browser runs MediaPipe (hands, pose, face) and sends one 256-float frame per video frame over a WebSocket. Video never leaves the browser and is never stored.
 - **Inference on the server.** FastAPI serves an ONNX model on CPU. GPU execution providers were tried (PR #17, reverted): for this small model at one clip per prediction, the CPU was faster.
 - **One normaliser.** `server/app/recognition/features.py` is imported by both serving and training. Do not write a second one.
-- **One second everywhere.** The model is trained on, recorded for, practised with and shown by the translator exactly one second of signing (`WINDOW_SECONDS` there, `CLIP_SECONDS` in `web/src/lib/tracking/features.ts`). Change both together and retrain.
+- **One second everywhere.** The model is trained on, recorded for, practised with and shown by the translator exactly one second of signing (`WINDOW_SECONDS` there, `CLIP_SECONDS` in `web/src/lib/tracking/features.ts`). The practice socket scores only the last `WINDOW_SECONDS` of an attempt, whatever the client sends. Change both together and retrain.
 - **Local LLM only.** The translator's sentence layer uses Ollama (`SENTENCE_MODEL`), with no external LLM API. It must fall back to plain glosses when Ollama is down.
 - **Google sign-in, Postgres.** Only text is stored: progress, attempts, past translations.
 - **Sign Bank media is not in the repo.** It is copyright SADeaf, all rights reserved. Link to it; do not copy from it unless written permission arrives.
