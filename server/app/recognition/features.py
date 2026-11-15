@@ -37,7 +37,7 @@ CLIP_FRAMES = 32
 
 # How much signing the model is shown at a time, everywhere: the translator's
 # window, the length training cuts every clip to (ml/data.py), and the length of
-# a recorded take and a practice attempt (CLIP_SECONDS in
+# a take on /record or /train and a practice attempt (CLIP_SECONDS in
 # web/src/lib/tracking/features.ts, which must match).
 WINDOW_SECONDS = 1.0
 

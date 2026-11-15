@@ -1,0 +1,31 @@
+# Training on the GPU machine (GTX 1660 Super): pull takes from the training
+# page's Postgres, train, and write signs.onnx to ./out. See README.md here.
+#
+#   cp .env.example .env   # then fill it in
+#   docker compose run --rm trainer
+name: asigner-trainer
+
+services:
+  trainer:
+    build:
+      context: ../..
+      dockerfile: ml/Dockerfile
+      args:
+        TORCH_CUDA: ${TORCH_CUDA:-cu128}
+    image: asigner-trainer
+    # The host's network, so the database URL means what it does on this machine:
+    # localhost through an SSH tunnel, or the VM's address.
+    network_mode: host
+    environment:
+      TRAINING_DATABASE_URL: ${TRAINING_DATABASE_URL:?Set TRAINING_DATABASE_URL in .env}
+      REQUIRE_GPU: ${REQUIRE_GPU:-1}
+    volumes:
+      - ./data:/data          # pulled takes, kept so later pulls only fetch new ones
+      - ./out:/out            # signs.onnx and runs/<time>/report.json
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

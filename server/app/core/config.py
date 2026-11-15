@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     model_path: str = "models/signs.onnx"
     # Local development only: enables /api/auth/dev-login. Refused unless FRONTEND_URL is localhost.
     dev_login: bool = False
+    # The training page (/train) takes takes from anyone with this code. It may be
+    # empty only when FRONTEND_URL is localhost; elsewhere the page is closed until set.
+    training_access_code: str = ""
 
 
 @lru_cache

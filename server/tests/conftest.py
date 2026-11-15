@@ -80,3 +80,4 @@ def default_settings(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "frontend_url", "http://localhost:3000")
     monkeypatch.setattr(settings, "model_path", str(tmp_path / "no-model" / "signs.onnx"))
     monkeypatch.setattr(settings, "clips_dir", str(tmp_path / "clips"))
+    monkeypatch.setattr(settings, "training_access_code", "")

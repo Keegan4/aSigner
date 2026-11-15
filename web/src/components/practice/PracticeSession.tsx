@@ -15,8 +15,8 @@ import {
 } from "@/lib/practice";
 
 const COUNTDOWN = 3;
-// Same countdown and take length as the training recorder (Recorder.tsx), so
-// practice clips look like the clips the model was trained on.
+// Same countdown and take length as the training recorders (Recorder.tsx,
+// Trainer.tsx), so practice clips look like the clips the model was trained on.
 const RECORD_MS = CLIP_SECONDS * 1000;
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
