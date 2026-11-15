@@ -162,6 +162,19 @@ On the clips recorded in the app (565 clips of 34 signs plus no-sign; 3 seeds, 8
 
 Top-1 was lower with the block on two seeds and higher on one, so the difference is within the spread across seeds, and the block stays off. Those clips come from one signer, who is in both the training and the test split, with about 13 training clips per sign, which is little for the extra parameters to learn from. The graph path is also added after the encoder's LayerNorm at full strength from the first step; starting it at zero, or pretraining with it, has not been tried. The comparison is worth repeating once a second signer can be held out.
 
+**Starting from a pretrained checkpoint.** The same comparison with `train.py --init`, 3 seeds, 80 epochs, on a GTX 1660 Super. The checkpoint was pretrained for 200 epochs on ASLNow!, CASL-W60, WLASL and asl-signs without the block, so here the graph layers still start fresh:
+
+| Seed | top-1 with graph conv | top-1 without | one-second windows with | one-second windows without |
+|---|---|---|---|---|
+| 0 | 97.2% | 97.2% | 94.2% | 94.5% |
+| 1 | 99.1% | 98.1% | 98.2% | 97.4% |
+| 2 | 98.1% | 99.1% | 95.7% | 96.4% |
+| mean | 98.1% | 98.1% | 96.0% | 96.1% |
+
+No effect again: each variant wins one seed by a single clip. Pretraining matters far more than the block does (95.3% without it above, 98.1% with it).
+
+**Pretraining with the block** (`pretrain.py --graph-conv`, so the graph layers are trained before the recorded clips are seen) is being measured against a matching run without it, both on the current one-second-window training. The run without it is done: held-out top-1 of 99.3% on ASLNow!, 86.1% on CASL-W60, 42.2% on WLASL and 52.3% on asl-signs, and after `train.py --init` on the recorded clips 95.3%, 98.1% and 98.1% over seeds 0 to 2 (mean 97.2%; 96.7% on one-second windows). The run with the block is not finished, so there is nothing to compare yet. The two cannot be pretrained side by side on a 6 GB card: evaluation runs out of memory.
+
 ## Tests
 
 ```bash
