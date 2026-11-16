@@ -8,7 +8,8 @@
  *
  * Contrast (WCAG 2.2 AA): foreground, muted and every *-fg text colour are at
  * least 4.5:1 on background, surface, sunken and their own *-soft tint;
- * line-strong (form control borders) and the status solids are at least 3:1.
+ * line-strong (form control borders), accent and the status solids (bars,
+ * dots) are at least 3:1 on background, surface and sunken.
  */
 :root {
   /* Surfaces */
@@ -26,7 +27,7 @@
 
   /* Lines */
   --line: #e2e2e8;
-  --line-strong: #8c8c9b;
+  --line-strong: #80808f;
   --ring: #4f46e5;
 
   /* Accent: primary actions, links, focus */
@@ -42,7 +43,7 @@
   --success-line: #a7f3d0;
   --success-fg: #047857;
 
-  --warning: #d97706;
+  --warning: #c2620a;
   --warning-soft: #fffbeb;
   --warning-line: #fcd34d;
   --warning-fg: #92400e;
@@ -60,8 +61,8 @@
   --info-fg: #075985;
 
   /* Elevation */
-  --shadow-card: 0 1px 2px rgb(16 16 24 / 0.05);
-  --shadow-raised: 0 1px 2px rgb(16 16 24 / 0.06), 0 8px 24px -6px rgb(16 16 24 / 0.12);
+  --elevation-card: 0 1px 2px rgb(16 16 24 / 0.05);
+  --elevation-raised: 0 1px 2px rgb(16 16 24 / 0.06), 0 8px 24px -6px rgb(16 16 24 / 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -108,8 +109,8 @@
     --info-line: #1d4d66;
     --info-fg: #7dd3fc;
 
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -6px rgb(0 0 0 / 0.6);
+    --elevation-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --elevation-raised: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -6px rgb(0 0 0 / 0.6);
   }
 }
 
@@ -157,8 +158,8 @@
   --radius-control: 0.625rem;
   --radius-card: 1rem;
 
-  --shadow-card: var(--shadow-card);
-  --shadow-raised: var(--shadow-raised);
+  --shadow-card: var(--elevation-card);
+  --shadow-raised: var(--elevation-raised);
 
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
