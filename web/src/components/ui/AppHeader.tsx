@@ -30,7 +30,7 @@ export function AppHeader() {
       >
         Skip to content
       </a>
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link
           href="/"
           className="-ml-1 flex min-h-11 shrink-0 items-center gap-2.5 rounded-control px-1 text-foreground"

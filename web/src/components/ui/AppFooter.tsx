@@ -12,7 +12,7 @@ const LINKS = [
 export function AppFooter() {
   return (
     <footer className="mt-auto border-t border-line bg-surface">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto]">
         <div className="flex max-w-2xl flex-col gap-3 text-sm text-muted">
           <p>
             <span className="font-semibold text-foreground">aSigner is a student project.</span> It is not a
@@ -28,7 +28,7 @@ export function AppFooter() {
           </p>
         </div>
         <nav aria-label="Footer">
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col text-sm">
             {LINKS.map((link) => (
               <li key={link.href}>
                 <Link
