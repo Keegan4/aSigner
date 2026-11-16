@@ -44,7 +44,11 @@ export function PracticeView() {
       title={`Practise: ${sign.gloss}`}
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
-        <Card as="section" aria-label="Target sign" className="flex flex-col gap-4">
+        <Card
+          as="section"
+          aria-label="Target sign"
+          className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:flex"
+        >
           <Field label="Sign">
             <Select value={sign.id} onChange={(e) => setPicked(Number(e.target.value))}>
               {lesson.signs.map((s) => (
@@ -57,7 +61,10 @@ export function PracticeView() {
           <p className="hidden font-mono text-5xl font-semibold tracking-tight break-all text-foreground lg:block" aria-hidden>
             {sign.gloss}
           </p>
-          <Demo path={sign.demo_path} gloss={sign.gloss} />
+          {/* Beside the details on tablets, under them elsewhere. */}
+          <div className="md:col-start-2 md:row-span-4 md:row-start-1">
+            <Demo path={sign.demo_path} gloss={sign.gloss} />
+          </div>
           <p className="text-sm text-muted">
             {sign.description ?? "Description awaiting review by an SgSL signer."}
           </p>

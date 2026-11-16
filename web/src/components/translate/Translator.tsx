@@ -146,7 +146,11 @@ export function Translator() {
           debug ? "lg:grid-cols-[18rem_minmax(0,1fr)_18rem]" : "lg:grid-cols-[18rem_minmax(0,1fr)]"
         }`}
       >
-        <aside aria-label="Model predictions and trained words" className="order-2 flex flex-col gap-6 lg:order-1 lg:sticky lg:top-4">
+        <aside
+          aria-label="Model predictions and trained words"
+          className={`order-2 flex flex-col gap-6 lg:order-1 lg:sticky lg:top-4 ${
+            debug ? "md:grid md:grid-cols-2 md:items-start lg:flex" : ""
+          }`}>
           {debug && <PredictionsPanel prediction={prediction} />}
           <TrainedSignsPanel model={model} live={live} current={prediction?.top[0]?.[0] ?? null} />
         </aside>
