@@ -32,8 +32,8 @@ export function SectionHeading({
           id={id}
           className={
             variant === "eyebrow"
-              ? "text-xs font-semibold tracking-wider text-muted uppercase"
-              : "text-lg font-semibold tracking-tight text-foreground"
+              ? "scroll-mt-6 text-xs font-semibold tracking-wider text-muted uppercase"
+              : "scroll-mt-6 text-lg font-semibold tracking-tight text-foreground"
           }
         >
           {children}

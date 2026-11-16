@@ -38,6 +38,7 @@ export function Home() {
       .catch(() => {});
   }, [me]);
 
+  const first = lessons?.[0];
   const tools = NAV_ITEMS.filter((item) => item.href !== "/" && (!item.signedIn || me));
 
   return (
@@ -47,9 +48,20 @@ export function Home() {
       title="Learn Singapore Sign Language"
       description="Sign to your camera and get feedback as you go."
       actions={
-        <ButtonLink href="#lessons" variant="primary" size="lg" iconAfter={<IconArrowRight size={18} />}>
-          Browse lessons
-        </ButtonLink>
+        first ? (
+          <ButtonLink
+            href={`/lessons/${encodeURIComponent(first.slug)}`}
+            variant="primary"
+            size="lg"
+            iconAfter={<IconArrowRight size={18} />}
+          >
+            Start with {first.title}
+          </ButtonLink>
+        ) : (
+          <ButtonLink href="#lessons" variant="primary" size="lg" iconAfter={<IconArrowRight size={18} />}>
+            Browse lessons
+          </ButtonLink>
+        )
       }
     >
       <Callout tone="warning" title="A student project">
@@ -57,7 +69,7 @@ export function Home() {
         lesson content has not yet been reviewed by an SgSL signer.
       </Callout>
 
-      <section aria-labelledby="lessons" className="flex scroll-mt-6 flex-col gap-4">
+      <section aria-labelledby="lessons" className="flex flex-col gap-4">
         <SectionHeading id="lessons">Lessons</SectionHeading>
         {error ? (
           <ServerUnreachable />
