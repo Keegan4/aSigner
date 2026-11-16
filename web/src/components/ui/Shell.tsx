@@ -1,45 +1,114 @@
+import { IconArrowLeft, IconFilm } from "@/components/ui/Icons";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ButtonLink } from "@/components/ui/Button";
+import { LoadingBlock, ServerUnreachable } from "@/components/ui/States";
+import { cn } from "@/lib/cn";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-/** Page frame shared by the lesson, practice, quiz and progress screens. */
+export type ShellWidth = "narrow" | "default" | "wide";
+
+const WIDTH: Record<ShellWidth, string> = {
+  narrow: "max-w-3xl",
+  default: "max-w-6xl",
+  wide: "max-w-7xl",
+};
+
+/**
+ * The page frame every screen renders in: the page's one <main>, a back link,
+ * the h1 with an optional description and actions, then the page itself.
+ */
 export function Shell({
   back,
   backLabel = "Back",
   title,
+  description,
+  actions,
+  eyebrow,
   wide = false,
+  width,
+  hero = false,
   children,
 }: {
-  back: string;
+  /** Where the back link goes; leave out on top-level pages. */
+  back?: string;
   backLabel?: string;
   title: string;
-  /** Room for side panels next to the main column on large screens. */
+  /** A sentence under the title. */
+  description?: ReactNode;
+  /** Buttons beside the title (under it on small screens). */
+  actions?: ReactNode;
+  /** A short label above the title. */
+  eyebrow?: ReactNode;
+  /** Room for side panels next to the main column on large screens. Same as width="wide". */
   wide?: boolean;
+  width?: ShellWidth;
+  /** A larger title, for the home page. */
+  hero?: boolean;
   children: ReactNode;
 }) {
   return (
     <main
-      className={`mx-auto flex w-full ${wide ? "max-w-7xl" : "max-w-3xl"} flex-1 flex-col gap-6 px-4 py-10`}
+      id="main"
+      tabIndex={-1}
+      className={cn(
+        "mx-auto flex w-full flex-1 flex-col gap-6 px-4 pt-6 pb-16 outline-none sm:gap-8 sm:px-6 sm:pt-8",
+        WIDTH[width ?? (wide ? "wide" : "narrow")],
+      )}
     >
-      <Link href={back} className="text-sm underline underline-offset-4">
-        {backLabel}
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <div className="flex flex-col gap-3">
+        {back && (
+          <Link
+            href={back}
+            className="-ml-1 inline-flex min-h-9 items-center gap-1.5 self-start rounded-control px-1 text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            <IconArrowLeft size={16} />
+            {backLabel}
+          </Link>
+        )}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-2">
+            {eyebrow && <p className="text-sm font-medium text-accent-fg">{eyebrow}</p>}
+            <h1
+              className={cn(
+                "font-semibold tracking-tight text-balance text-foreground",
+                hero ? "text-3xl sm:text-4xl lg:text-5xl" : "text-2xl sm:text-3xl",
+              )}
+            >
+              {title}
+            </h1>
+            {description && (
+              <div className={cn("max-w-2xl text-pretty text-muted", hero ? "text-lg" : "text-base")}>
+                {description}
+              </div>
+            )}
+          </div>
+          {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
+        </div>
+      </div>
       {children}
     </main>
   );
 }
 
 export function LessonFallback({ status }: { status: "loading" | "missing" | "error" }) {
-  const text = {
-    loading: "Loading…",
-    missing: "This lesson does not exist.",
-    error: "The aSigner server is not reachable. Start it and reload.",
-  }[status];
   return (
-    <Shell back="/" title="Lesson">
-      <p role={status === "loading" ? "status" : "alert"} className="text-sm opacity-70">
-        {text}
-      </p>
+    <Shell back="/" backLabel="Lessons" title="Lesson">
+      {status === "loading" ? (
+        <LoadingBlock lines={4} />
+      ) : status === "missing" ? (
+        <EmptyState
+          role="alert"
+          title="This lesson does not exist."
+          actions={
+            <ButtonLink href="/" variant="primary">
+              See all lessons
+            </ButtonLink>
+          }
+        />
+      ) : (
+        <ServerUnreachable />
+      )}
     </Shell>
   );
 }
@@ -49,12 +118,15 @@ export function Mastery({ level, max }: { level: number; max: number }) {
     <span
       role="img"
       aria-label={`Mastery ${level} of ${max}`}
-      className="inline-flex gap-0.5 align-middle"
+      className="inline-flex shrink-0 items-center gap-1 align-middle"
     >
       {Array.from({ length: max }, (_, i) => (
         <span
           key={i}
-          className={`h-2 w-2 rounded-full ${i < level ? "bg-emerald-500" : "bg-foreground/15"}`}
+          className={cn(
+            "size-2.5 rounded-full",
+            i < level ? "bg-success" : "border border-line-strong/70 bg-transparent",
+          )}
         />
       ))}
     </span>
@@ -65,7 +137,8 @@ export function Mastery({ level, max }: { level: number; max: number }) {
 export function Demo({ path, gloss }: { path: string | null; gloss: string }) {
   if (!path) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-dashed text-sm opacity-60">
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-control border border-dashed border-line-strong/50 bg-sunken text-sm text-muted">
+        <IconFilm size={24} />
         No demonstration yet
       </div>
     );
@@ -78,7 +151,7 @@ export function Demo({ path, gloss }: { path: string | null; gloss: string }) {
       loop
       muted
       playsInline
-      className="aspect-video w-full rounded-lg bg-neutral-900"
+      className="aspect-video w-full rounded-control bg-stage"
     />
   );
 }

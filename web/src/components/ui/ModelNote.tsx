@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import type { ModelInfo } from "@/lib/api";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -27,11 +28,17 @@ export function ModelNote({ model }: { model: ModelInfo | null }) {
     ? `Sign model: ${facts.join("; ")}.`
     : "This sign model does not say what it was trained on.";
 
-  if (!model.limited) return <p className="text-sm opacity-70">{summary}</p>;
+  if (!model.limited) {
+    return (
+      <Callout tone="neutral">
+        {summary}
+      </Callout>
+    );
+  }
   return (
-    <p role="note" className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+    <Callout tone="warning" role="note" title="Limited sign model">
       {summary} That is too little to rely on: treat its results as a rough guide, not as a
       judgement of your signing.
-    </p>
+    </Callout>
   );
 }
