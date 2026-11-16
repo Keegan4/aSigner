@@ -1,26 +1,267 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens. Components use these through the Tailwind names in the
+ * @theme block below (bg-surface, text-muted, border-line, bg-accent,
+ * text-danger-fg ...), never through palette classes such as red-600, so
+ * light and dark stay in step. See /styleguide for every token and part.
+ *
+ * Contrast (WCAG 2.2 AA): foreground, muted and every *-fg text colour are at
+ * least 4.5:1 on background, surface, sunken and their own *-soft tint;
+ * line-strong (form control borders) and the status solids are at least 3:1.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --background: #f6f6f8;
+  --surface: #ffffff;
+  --sunken: #efeff3;
+  /* The camera frame: dark in both themes so the video and overlay read the same. */
+  --stage: #0b0b0f;
+  --on-stage: #f4f4f6;
+  --on-stage-muted: #c4c4cc;
+
+  /* Text */
+  --foreground: #17171c;
+  --muted: #5c5c6b;
+
+  /* Lines */
+  --line: #e2e2e8;
+  --line-strong: #8c8c9b;
+  --ring: #4f46e5;
+
+  /* Accent: primary actions, links, focus */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --on-accent: #ffffff;
+  --accent-soft: #eef0ff;
+  --accent-fg: #4338ca;
+
+  /* Status */
+  --success: #059669;
+  --success-soft: #ecfdf5;
+  --success-line: #a7f3d0;
+  --success-fg: #047857;
+
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --warning-line: #fcd34d;
+  --warning-fg: #92400e;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --on-danger: #ffffff;
+  --danger-soft: #fef2f2;
+  --danger-line: #fecaca;
+  --danger-fg: #b91c1c;
+
+  --info: #0284c7;
+  --info-soft: #f0f9ff;
+  --info-line: #bae6fd;
+  --info-fg: #075985;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(16 16 24 / 0.05);
+  --shadow-raised: 0 1px 2px rgb(16 16 24 / 0.06), 0 8px 24px -6px rgb(16 16 24 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d0d11;
+    --surface: #16161c;
+    --sunken: #1f1f27;
+    --stage: #050507;
+    --on-stage: #f4f4f6;
+    --on-stage-muted: #c4c4cc;
+
+    --foreground: #ececf1;
+    --muted: #a3a3b3;
+
+    --line: #2b2b35;
+    --line-strong: #6e6e80;
+    --ring: #a5b4fc;
+
+    --accent: #818cf8;
+    --accent-hover: #a5b4fc;
+    --on-accent: #0b0b1f;
+    --accent-soft: #1f2140;
+    --accent-fg: #a5b4fc;
+
+    --success: #34d399;
+    --success-soft: #0d2a21;
+    --success-line: #1d5c46;
+    --success-fg: #6ee7b7;
+
+    --warning: #fbbf24;
+    --warning-soft: #2b2111;
+    --warning-line: #6b5018;
+    --warning-fg: #fcd34d;
+
+    --danger: #f87171;
+    --danger-hover: #fca5a5;
+    --on-danger: #1c0606;
+    --danger-soft: #2e1517;
+    --danger-line: #7a2626;
+    --danger-fg: #fca5a5;
+
+    --info: #38bdf8;
+    --info-soft: #0c2432;
+    --info-line: #1d4d66;
+    --info-fg: #7dd3fc;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -6px rgb(0 0 0 / 0.6);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-stage: var(--stage);
+  --color-on-stage: var(--on-stage);
+  --color-on-stage-muted: var(--on-stage-muted);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ring: var(--ring);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-line: var(--warning-line);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-on-danger: var(--on-danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+  --color-info-fg: var(--info-fg);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-record-bar: record-bar linear both;
+  --animate-pop: pop 0.25s var(--ease-standard) both;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Defined once here; the animate-* utilities above refer to them. */
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Fills over one take; the duration is set where it is used (CLIP_SECONDS). */
+@keyframes record-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="file"]:not(:disabled)::file-selector-button {
+    cursor: pointer;
+  }
+
+  ::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--foreground);
+  }
+
+  kbd {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+  }
+}
+
+@layer components {
+  /* A small ring spinner for places that cannot import a component (CameraTracker). */
+  .spinner {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    animation: spinner 0.8s linear infinite;
+    flex: none;
+  }
+}
+
+/* Reduced motion: nothing animates. Animated parts must look right at rest. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
