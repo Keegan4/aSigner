@@ -1,9 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { CameraStage, type StageOverlay } from "@/components/camera/CameraStage";
 import { CameraTracker } from "@/components/camera/CameraTracker";
+import { CaptureControls, CaptureSign, SignChips } from "@/components/camera/CapturePanel";
+import { Button } from "@/components/ui/Button";
+import { Callout } from "@/components/ui/Callout";
+import { Card } from "@/components/ui/Card";
+import { Field, Input, SearchInput, Textarea } from "@/components/ui/Field";
+import { IconClose, IconPlus, IconTrash } from "@/components/ui/Icons";
+import { Shell } from "@/components/ui/Shell";
+import { LoadingBlock, ServerUnreachable } from "@/components/ui/States";
 import { CLIP_SECONDS, FRAME_SIZE, LEFT_HAND, POSE } from "@/lib/tracking/features";
 import {
   addSign,
@@ -200,23 +208,37 @@ export function Trainer() {
     return q ? signs.filter((s) => name(s).toUpperCase().includes(q)) : signs;
   }, [signs, filter]);
 
-  if (access === "loading") return <Frame>Loading…</Frame>;
+  if (access === "loading") {
+    return (
+      <Frame>
+        <LoadingBlock lines={4} />
+      </Frame>
+    );
+  }
   if (access === "offline") {
-    return <Frame>The aSigner server is not reachable. Check that it is running and reload.</Frame>;
+    return (
+      <Frame>
+        <ServerUnreachable message="The aSigner server is not reachable. Check that it is running and reload." />
+      </Frame>
+    );
   }
   if (access === "outdated") {
     return (
       <Frame>
-        The aSigner server does not have the training API. Update it, run the database migration
-        and restart it.
+        <Callout tone="warning" title="The server needs updating">
+          The aSigner server does not have the training API. Update it, run the database migration
+          and restart it.
+        </Callout>
       </Frame>
     );
   }
   if (access === "closed") {
     return (
       <Frame>
-        Training collection is not set up on this server yet. The owner needs to set
-        TRAINING_ACCESS_CODE.
+        <Callout tone="info" title="Not open yet">
+          Training collection is not set up on this server yet. The owner needs to set
+          TRAINING_ACCESS_CODE.
+        </Callout>
       </Frame>
     );
   }
@@ -237,138 +259,146 @@ export function Trainer() {
     recording: "Recording: keep signing.",
     saving: "Saving…",
   }[phase];
+  const overlay: StageOverlay =
+    phase === "countdown"
+      ? { kind: "countdown", left: seconds }
+      : phase === "recording"
+        ? { kind: "recording", seconds: CLIP_SECONDS }
+        : phase === "saving"
+          ? { kind: "busy", label: "Saving…" }
+          : { kind: "none" };
 
   return (
     <Frame>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm opacity-60">Sign to record</p>
-          <p className="text-6xl font-semibold leading-none break-all">{sign ? name(sign) : "–"}</p>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-rows-[auto_1fr]">
+        <div className="lg:col-start-2 lg:row-start-1">
+          <CaptureSign
+            label={sign ? name(sign) : "–"}
+            count={mine}
+            target={TARGET_PER_SIGN}
+            countText={`${mine} of ${TARGET_PER_SIGN} from you`}
+            details={
+              <>
+                {sign?.total ?? 0} from everyone · {yours} {yours === 1 ? "take" : "takes"} by you in total
+              </>
+            }
+          >
+            {sign?.description && (
+              <Callout tone="neutral" icon={false}>
+                <span className="text-muted">How it is made: </span>
+                {sign.description}
+              </Callout>
+            )}
+          </CaptureSign>
         </div>
-        <p className="text-sm opacity-70">
-          {mine} of {TARGET_PER_SIGN} from you · {sign?.total ?? 0} from everyone · {yours}{" "}
-          {yours === 1 ? "take" : "takes"} by you in total
-        </p>
-      </div>
-      {sign?.description && (
-        <p className="rounded-md border px-3 py-2 text-sm">
-          <span className="opacity-60">How it is made: </span>
-          {sign.description}
-        </p>
-      )}
 
-      <div className={phase === "recording" ? "rounded-xl ring-4 ring-red-500" : ""}>
-        <CameraTracker onFrame={onFrame} />
-      </div>
+        <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+          <CameraStage overlay={overlay}>
+            <CameraTracker onFrame={onFrame} />
+          </CameraStage>
 
-      <p role="status" className="text-lg font-medium">
-        {prompt}
-      </p>
-      {message && (
-        <p role="alert" className="text-sm text-red-600">
-          {message}
-        </p>
-      )}
+          <p role="status" className="text-lg font-medium text-foreground">
+            {prompt}
+          </p>
+          {message && (
+            <Callout tone="danger" role="alert">
+              {message}
+            </Callout>
+          )}
 
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => step(-1)} className="rounded-md border px-4 py-2 text-sm">
-          Previous
-        </button>
-        <button
-          onClick={record}
-          disabled={phase !== "idle" || !sign}
-          className="rounded-md bg-foreground px-6 py-2 text-sm font-medium text-background disabled:opacity-40"
+          <CaptureControls
+            onPrevious={() => step(-1)}
+            onRecord={record}
+            onNext={() => step(1)}
+            onUndo={undo}
+            canRecord={phase === "idle" && Boolean(sign)}
+            canUndo={Boolean(last) && phase === "idle"}
+          />
+
+          <p className="text-sm text-muted">
+            Each take is {CLIP_SECONDS === 1 ? "one second" : `${CLIP_SECONDS} seconds`}. Between takes, change your distance, position and hand
+            angle a little. Only landmark coordinates and the sign&apos;s name are saved, with a random
+            id for this browser so your own takes can be counted and undone. No video leaves this tab,
+            and no name or account is attached.
+          </p>
+        </div>
+
+        <Card
+          as="section"
+          aria-labelledby="train-signs"
+          className="flex flex-col gap-4 lg:col-start-2 lg:row-start-2 lg:self-start"
         >
-          Record
-        </button>
-        <button onClick={() => step(1)} className="rounded-md border px-4 py-2 text-sm">
-          Next
-        </button>
-        <button
-          onClick={undo}
-          disabled={!last || phase !== "idle"}
-          className="rounded-md border px-4 py-2 text-sm disabled:opacity-40"
-        >
-          Delete last take
-        </button>
-      </div>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="mr-auto text-lg font-semibold">Signs</h2>
-          <input
-            type="search"
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 id="train-signs" className="mr-auto text-lg font-semibold tracking-tight">
+              Signs
+            </h2>
+            <Button
+              size="sm"
+              onClick={() => setAdding((a) => !a)}
+              aria-expanded={adding}
+              icon={adding ? <IconClose size={16} /> : <IconPlus size={16} />}
+            >
+              {adding ? "Close" : "Add a sign"}
+            </Button>
+          </div>
+          <SearchInput
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Find a sign"
             aria-label="Find a sign"
-            className="rounded-md border bg-transparent px-3 py-1.5 text-sm"
           />
-          <button
-            onClick={() => setAdding((a) => !a)}
-            aria-expanded={adding}
-            className="rounded-md border px-3 py-1.5 text-sm"
-          >
-            {adding ? "Close" : "Add a sign"}
-          </button>
-        </div>
 
-        {adding && (
-          <AddSignForm
-            onAdd={async (label, description) => {
-              const made = await addSign(code, label, description);
-              await refresh();
-              setSelected(made.label);
-              setFilter("");
-              setAdding(false);
-            }}
-          />
-        )}
-
-        <ul className="flex flex-wrap gap-1.5 text-xs">
-          {shown.map((s) => (
-            <li key={s.label}>
-              <button
-                onClick={() => setSelected(s.label)}
-                aria-current={s.label === sign?.label}
-                title={s.description || undefined}
-                className={`rounded border px-2 py-1 ${s.label === sign?.label ? "bg-foreground text-background" : ""} ${s.mine >= TARGET_PER_SIGN ? "border-green-600" : ""} ${s.source === "custom" ? "border-dashed" : ""}`}
-              >
-                {name(s)} {s.mine}
-                {s.total > s.mine && <span className="opacity-60"> / {s.total}</span>}
-              </button>
-            </li>
-          ))}
-          {!shown.length && <li className="opacity-60">No sign matches “{filter}”.</li>}
-        </ul>
-        <p className="text-xs opacity-60">
-          Each button shows your takes, then everyone&apos;s. Dashed signs were added on this page.
-        </p>
-
-        {sign?.source === "custom" && sign.total === 0 && (
-          <button
-            onClick={async () => {
-              try {
-                await removeSign(code, sign.label);
-                setSelected(null);
+          {adding && (
+            <AddSignForm
+              onAdd={async (label, description) => {
+                const made = await addSign(code, label, description);
                 await refresh();
-              } catch (err) {
-                setMessage(err instanceof Error ? err.message : "The sign was not removed.");
-              }
-            }}
-            className="self-start text-sm underline underline-offset-4"
-          >
-            Remove {sign.label} (no takes yet)
-          </button>
-        )}
-      </section>
+                setSelected(made.label);
+                setFilter("");
+                setAdding(false);
+              }}
+            />
+          )}
 
-      <p className="text-sm opacity-70">
-        Each take is {CLIP_SECONDS === 1 ? "one second" : `${CLIP_SECONDS} seconds`}. Between takes, change your distance, position and hand
-        angle a little. Only landmark coordinates and the sign&apos;s name are saved, with a random
-        id for this browser so your own takes can be counted and undone. No video leaves this tab,
-        and no name or account is attached.
-      </p>
+          <SignChips
+            items={shown.map((s) => ({
+              key: s.label,
+              label: name(s),
+              count: s.mine,
+              extra: s.total > s.mine ? ` / ${s.total}` : undefined,
+              current: s.label === sign?.label,
+              done: s.mine >= TARGET_PER_SIGN,
+              dashed: s.source === "custom",
+              title: s.description || undefined,
+            }))}
+            onSelect={setSelected}
+            empty={<>No sign matches “{filter}”.</>}
+          />
+          <p className="text-xs text-muted">
+            Each button shows your takes, then everyone&apos;s. Dashed signs were added on this page.
+          </p>
+
+          {sign?.source === "custom" && sign.total === 0 && (
+            <Button
+              size="sm"
+              variant="danger-ghost"
+              icon={<IconTrash size={16} />}
+              className="self-start"
+              onClick={async () => {
+                try {
+                  await removeSign(code, sign.label);
+                  setSelected(null);
+                  await refresh();
+                } catch (err) {
+                  setMessage(err instanceof Error ? err.message : "The sign was not removed.");
+                }
+              }}
+            >
+              Remove {sign.label} (no takes yet)
+            </Button>
+          )}
+        </Card>
+      </div>
     </Frame>
   );
 }
@@ -380,8 +410,11 @@ function AddSignForm({ onAdd }: { onAdd: (label: string, description: string) =>
   const [busy, setBusy] = useState(false);
 
   return (
-    <form
-      className="flex flex-col gap-2 rounded-lg border p-3"
+    <Card
+      as="form"
+      tone="sunken"
+      padding="sm"
+      className="flex flex-col gap-3 sm:p-4"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
@@ -395,42 +428,27 @@ function AddSignForm({ onAdd }: { onAdd: (label: string, description: string) =>
         }
       }}
     >
-      <label className="flex flex-col gap-1 text-sm">
-        Name
-        <input
+      <Field label="Name" hint="Names are saved in capitals with hyphens for spaces, so “thank you” becomes THANK-YOU.">
+        <Input
           required
           maxLength={40}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="For example: thank you"
-          className="rounded-md border bg-transparent px-3 py-1.5"
         />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        How it is made (optional, helps others record it the same way)
-        <textarea
-          maxLength={300}
-          rows={2}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="rounded-md border bg-transparent px-3 py-1.5"
-        />
-      </label>
-      <p className="text-xs opacity-60">
-        Names are saved in capitals with hyphens for spaces, so “thank you” becomes THANK-YOU.
-      </p>
+      </Field>
+      <Field label="How it is made" optional hint="Helps others record it the same way.">
+        <Textarea maxLength={300} rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </Field>
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <Callout tone="danger" role="alert">
           {error}
-        </p>
+        </Callout>
       )}
-      <button
-        disabled={busy || !label.trim()}
-        className="self-start rounded-md bg-foreground px-4 py-1.5 text-sm font-medium text-background disabled:opacity-40"
-      >
+      <Button type="submit" variant="primary" loading={busy} disabled={!label.trim()} className="self-start">
         Add sign
-      </button>
-    </form>
+      </Button>
+    </Card>
   );
 }
 
@@ -440,44 +458,31 @@ function CodeForm({ onSubmit }: { onSubmit: (code: string) => Promise<boolean> }
 
   return (
     <Frame>
-      <form
-        className="flex flex-col gap-3"
+      <Card
+        as="form"
+        padding="lg"
+        className="flex max-w-md flex-col gap-4"
         onSubmit={async (e) => {
           e.preventDefault();
           setWrong(!(await onSubmit(value.trim())));
         }}
       >
-        <label className="flex flex-col gap-1 text-sm">
-          Access code
-          <input
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="rounded-md border bg-transparent px-3 py-2"
-          />
-        </label>
-        {wrong && (
-          <p role="alert" className="text-sm text-red-600">
-            That code was not accepted.
-          </p>
-        )}
-        <button className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
+        <Field label="Access code" error={wrong ? "That code was not accepted." : undefined}>
+          <Input autoFocus value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off" />
+        </Field>
+        <Button type="submit" variant="primary" className="self-start">
           Continue
-        </button>
-        <p className="text-sm opacity-70">Ask the person who sent you this page for the code.</p>
-      </form>
+        </Button>
+        <p className="text-sm text-muted">Ask the person who sent you this page for the code.</p>
+      </Card>
     </Frame>
   );
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 py-10">
-      <Link href="/" className="text-sm underline underline-offset-4">
-        Back
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">Help train the sign model</h1>
+    <Shell back="/" backLabel="Lessons" title="Help train the sign model" width="default">
       {children}
-    </main>
+    </Shell>
   );
 }

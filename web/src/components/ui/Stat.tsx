@@ -37,6 +37,7 @@ export function Stat({
   hint,
   tone = "neutral",
   size = "md",
+  className,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -44,9 +45,16 @@ export function Stat({
   hint?: ReactNode;
   tone?: keyof typeof TONE;
   size?: "sm" | "md";
+  /** For example col-span-2 to give a long value the whole row. */
+  className?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-card border border-line bg-surface p-3 shadow-card sm:p-4">
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-1 rounded-card border border-line bg-surface p-3 shadow-card sm:p-4",
+        className,
+      )}
+    >
       <dt className="flex items-center gap-1.5 text-xs font-medium text-muted sm:text-sm">
         {icon}
         {label}

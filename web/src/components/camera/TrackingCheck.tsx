@@ -1,9 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CameraStage, StagePill } from "@/components/camera/CameraStage";
 import { CameraTracker } from "@/components/camera/CameraTracker";
+import { StatusDot } from "@/components/ui/Badge";
+import { IconEye, IconEyeOff, IconShield } from "@/components/ui/Icons";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Shell } from "@/components/ui/Shell";
+import { Stat, StatGrid } from "@/components/ui/Stat";
 import { WS_URL } from "@/lib/api";
 import { FACE, FRAME_SIZE, LEFT_HAND, POSE, RIGHT_HAND } from "@/lib/tracking/features";
 
@@ -58,34 +63,78 @@ export function TrackingCheck() {
     "signed-out": "Sign in to send frames to the server",
     closed: "Not connected",
   }[link];
+  const linkTone = { connecting: "warning", open: "success", "signed-out": "danger", closed: "danger" } as const;
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10">
-      <Link href="/" className="text-sm underline underline-offset-4">
-        Back
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">Camera check</h1>
-      <CameraTracker onFrame={onFrame} />
-      <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <Stat label="Tracking rate" value={`${fps} fps`} />
-        <Stat label="Frame size" value={`${FRAME_SIZE * 4} bytes`} />
-        <Stat label="Server" value={linkText} />
-        <Stat label="Left hand" value={seen.left ? "Seen" : "Not seen"} />
-        <Stat label="Right hand" value={seen.right ? "Seen" : "Not seen"} />
-        <Stat label="Body / face" value={`${seen.body ? "Seen" : "Not seen"} / ${seen.face ? "Seen" : "Not seen"}`} />
-      </dl>
-      <p className="text-sm opacity-70">
-        Only landmark coordinates are sent. Your video stays in this browser tab.
-      </p>
-    </main>
+    <Shell
+      back="/"
+      backLabel="Lessons"
+      title="Camera check"
+      width="default"
+      description="Check that the camera starts and that your hands, body and face are tracked."
+    >
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+        <CameraStage
+          corner={
+            <StagePill>
+              <StatusDot tone={linkTone[link]} />
+              {link === "open" ? "Connected" : linkText}
+            </StagePill>
+          }
+        >
+          <CameraTracker onFrame={onFrame} />
+        </CameraStage>
+        <div className="flex flex-col gap-4">
+          <section aria-labelledby="check-seen" className="flex flex-col gap-3">
+            <SectionHeading id="check-seen" variant="eyebrow">
+              What the camera sees
+            </SectionHeading>
+            <StatGrid columns={2}>
+              <Seen label="Left hand" seen={seen.left} />
+              <Seen label="Right hand" seen={seen.right} />
+              <Seen label="Body" seen={seen.body} />
+              <Seen label="Face" seen={seen.face} />
+            </StatGrid>
+          </section>
+          <section aria-labelledby="check-link" className="flex flex-col gap-3">
+            <SectionHeading id="check-link" variant="eyebrow">
+              Tracking and server
+            </SectionHeading>
+            <StatGrid columns={2}>
+              <Stat label="Tracking rate" value={`${fps} fps`} size="sm" />
+              <Stat label="Frame size" value={`${FRAME_SIZE * 4} bytes`} size="sm" />
+              <Stat
+                className="col-span-2"
+                label="Server"
+                size="sm"
+                icon={<StatusDot tone={linkTone[link]} />}
+                tone={link === "open" ? "success" : link === "connecting" ? "neutral" : "danger"}
+                value={linkText}
+              />
+            </StatGrid>
+          </section>
+          <p className="flex gap-2 text-sm text-muted">
+            <IconShield size={18} className="mt-0.5" />
+            Only landmark coordinates are sent. Your video stays in this browser tab.
+          </p>
+        </div>
+      </div>
+    </Shell>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Seen({ label, seen }: { label: string; seen: boolean }) {
   return (
-    <div className="rounded-lg border p-3">
-      <dt className="opacity-60">{label}</dt>
-      <dd className="mt-1 font-medium">{value}</dd>
-    </div>
+    <Stat
+      label={label}
+      size="sm"
+      tone={seen ? "success" : "neutral"}
+      value={
+        <span className="inline-flex items-center gap-1.5">
+          {seen ? <IconEye size={18} /> : <IconEyeOff size={18} className="text-muted" />}
+          {seen ? "Seen" : "Not seen"}
+        </span>
+      }
+    />
   );
 }

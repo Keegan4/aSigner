@@ -1,9 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CameraStage, type StageOverlay } from "@/components/camera/CameraStage";
 import { CameraTracker } from "@/components/camera/CameraTracker";
+import { CaptureControls, CaptureSign, SignChips } from "@/components/camera/CapturePanel";
+import { Callout } from "@/components/ui/Callout";
+import { Card } from "@/components/ui/Card";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Shell } from "@/components/ui/Shell";
+import { LoadingBlock, ServerUnreachable, SignInPrompt } from "@/components/ui/States";
 import { getJson, type LessonSummary, type Me } from "@/lib/api";
 import { CLIP_SECONDS, FRAME_SIZE, LEFT_HAND, POSE } from "@/lib/tracking/features";
 
@@ -143,6 +149,9 @@ export function Recorder() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Keys aimed at a control (the header's menu, a button, a field) are left to it.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("input, textarea, button, select")) return;
       if (e.code === "Space") {
         e.preventDefault();
         record();
@@ -153,9 +162,19 @@ export function Recorder() {
     return () => window.removeEventListener("keydown", onKey);
   }, [record, step]);
 
-  if (me === undefined) return <Shell>Loading…</Shell>;
+  if (me === undefined) {
+    return (
+      <Frame>
+        <LoadingBlock lines={4} />
+      </Frame>
+    );
+  }
   if (me === null) {
-    return <Shell>{message ?? "Sign in on the home page to record training clips."}</Shell>;
+    return (
+      <Frame>
+        {message ? <ServerUnreachable message={message} /> : <SignInPrompt to="record training clips" />}
+      </Frame>
+    );
   }
 
   const done = sign ? (counts[sign.gloss] ?? 0) : 0;
@@ -173,88 +192,84 @@ export function Recorder() {
     recording: "Recording: keep signing.",
     saving: "Saving…",
   }[phase];
+  const overlay: StageOverlay =
+    phase === "countdown"
+      ? { kind: "countdown", left: seconds }
+      : phase === "recording"
+        ? { kind: "recording", seconds: CLIP_SECONDS }
+        : phase === "saving"
+          ? { kind: "busy", label: "Saving…" }
+          : { kind: "none" };
 
   return (
-    <Shell>
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="text-sm opacity-60">Sign to record</p>
-          <p className="text-6xl font-semibold leading-none">{sign ? name(sign) : "–"}</p>
+    <Frame>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-rows-[auto_1fr]">
+        <div className="lg:col-start-2 lg:row-start-1">
+          <CaptureSign
+            label={sign ? name(sign) : "–"}
+            count={done}
+            target={TARGET_PER_SIGN}
+            countText={`${done} of ${TARGET_PER_SIGN} for this sign`}
+            details={`${total} clips in total`}
+          />
         </div>
-        <p className="text-sm opacity-70">
-          {done} of {TARGET_PER_SIGN} for this sign · {total} clips in total
-        </p>
+
+        <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+          <CameraStage overlay={overlay}>
+            <CameraTracker onFrame={onFrame} />
+          </CameraStage>
+
+          <p role="status" className="text-lg font-medium text-foreground">
+            {prompt}
+          </p>
+          {message && (
+            <Callout tone="danger" role="alert">
+              {message}
+            </Callout>
+          )}
+
+          <CaptureControls
+            onPrevious={() => step(-1)}
+            onRecord={record}
+            onNext={() => step(1)}
+            onUndo={undo}
+            canRecord={phase === "idle" && Boolean(sign)}
+            canUndo={Boolean(last) && phase === "idle"}
+          />
+
+          <p className="text-sm text-muted">
+            Each take is {CLIP_SECONDS === 1 ? "one second" : `${CLIP_SECONDS} seconds`}. Between takes, change your distance, position and hand
+            angle a little. Only landmark coordinates are saved; no video leaves this tab.
+          </p>
+        </div>
+
+        <Card as="section" aria-labelledby="record-signs" className="flex flex-col gap-3 lg:col-start-2 lg:row-start-2 lg:self-start">
+          <SectionHeading id="record-signs" variant="eyebrow">
+            Signs
+          </SectionHeading>
+          <SignChips
+            items={signs.map((s, i) => {
+              const n = counts[s.gloss] ?? 0;
+              return {
+                key: String(i),
+                label: name(s),
+                count: n,
+                current: i === index,
+                done: n >= TARGET_PER_SIGN,
+              };
+            })}
+            onSelect={(key) => setIndex(Number(key))}
+          />
+        </Card>
       </div>
-
-      <div className={phase === "recording" ? "rounded-xl ring-4 ring-red-500" : ""}>
-        <CameraTracker onFrame={onFrame} />
-      </div>
-
-      <p role="status" className="text-lg font-medium">
-        {prompt}
-      </p>
-      {message && (
-        <p role="alert" className="text-sm text-red-600">
-          {message}
-        </p>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => step(-1)} className="rounded-md border px-4 py-2 text-sm">
-          Previous
-        </button>
-        <button
-          onClick={record}
-          disabled={phase !== "idle" || !sign}
-          className="rounded-md bg-foreground px-6 py-2 text-sm font-medium text-background disabled:opacity-40"
-        >
-          Record
-        </button>
-        <button onClick={() => step(1)} className="rounded-md border px-4 py-2 text-sm">
-          Next
-        </button>
-        <button
-          onClick={undo}
-          disabled={!last || phase !== "idle"}
-          className="rounded-md border px-4 py-2 text-sm disabled:opacity-40"
-        >
-          Delete last take
-        </button>
-      </div>
-
-      <ul className="flex flex-wrap gap-1.5 text-xs">
-        {signs.map((s, i) => {
-          const n = counts[s.gloss] ?? 0;
-          return (
-            <li key={s.id}>
-              <button
-                onClick={() => setIndex(i)}
-                aria-current={i === index}
-                className={`rounded border px-2 py-1 ${i === index ? "bg-foreground text-background" : ""} ${n >= TARGET_PER_SIGN ? "border-green-600" : ""}`}
-              >
-                {name(s)} {n}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="text-sm opacity-70">
-        Each take is {CLIP_SECONDS === 1 ? "one second" : `${CLIP_SECONDS} seconds`}. Between takes, change your distance, position and hand
-        angle a little. Only landmark coordinates are saved; no video leaves this tab.
-      </p>
-    </Shell>
+    </Frame>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 py-10">
-      <Link href="/" className="text-sm underline underline-offset-4">
-        Back
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">Record training clips</h1>
+    <Shell back="/" backLabel="Lessons" title="Record training clips" width="default">
       {children}
-    </main>
+    </Shell>
   );
 }
