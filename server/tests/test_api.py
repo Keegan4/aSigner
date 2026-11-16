@@ -43,7 +43,10 @@ def test_basic_words_link_to_the_sign_bank_and_describe_nothing(client):
     assert {"YES", "NO"} <= {s["gloss"] for s in signs}  # not read as YAML booleans
     for sign in signs:
         assert sign["sign_bank_url"].startswith("https://blogs.ntu.edu.sg/sgslsignbank/word/")
-        assert sign["description"] is None and sign["demo_path"] is None
+        assert sign["description"] is None
+    with_demo = {s["gloss"] for s in signs if s["demo_path"]}
+    assert with_demo == {"GOOD", "BAD", "YES", "NO", "PLEASE", "HELP", "NAME", "FRIEND"}
+    assert all(s["demo_path"] == f"/demos/{s['gloss']}.json" for s in signs if s["demo_path"])
 
 
 def test_upsert_user_updates_instead_of_duplicating(db_factory):

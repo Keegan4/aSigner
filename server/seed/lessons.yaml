@@ -1,25 +1,54 @@
 # Lesson content. Each sign is either a bare gloss or a mapping with
 # gloss / description / demo_path / sign_bank_url.
 #
+# demo_path points at a landmark clip under web/public/demos, written by
+# ml/export_demos.py from the recorded takes. Signs with no takes have none.
+#
 # Descriptions are deliberately left empty: they must be written against the
 # SgSL Sign Bank and checked by an SgSL signer before the app presents them.
 lessons:
   - slug: alphabet
     title: Fingerspelling A-Z
     summary: The one-handed manual alphabet used in SgSL.
-    signs: [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, "Y", Z]
+    signs:
+      - {gloss: "A", demo_path: /demos/A.json}
+      - {gloss: "B", demo_path: /demos/B.json}
+      - {gloss: "C", demo_path: /demos/C.json}
+      - {gloss: "D", demo_path: /demos/D.json}
+      - {gloss: "E", demo_path: /demos/E.json}
+      - {gloss: "F", demo_path: /demos/F.json}
+      - {gloss: "G", demo_path: /demos/G.json}
+      - {gloss: "H", demo_path: /demos/H.json}
+      - {gloss: "I", demo_path: /demos/I.json}
+      - {gloss: "J", demo_path: /demos/J.json}
+      - {gloss: "K", demo_path: /demos/K.json}
+      - {gloss: "L", demo_path: /demos/L.json}
+      - {gloss: "M", demo_path: /demos/M.json}
+      - {gloss: "N", demo_path: /demos/N.json}
+      - {gloss: "O", demo_path: /demos/O.json}
+      - {gloss: "P", demo_path: /demos/P.json}
+      - {gloss: "Q", demo_path: /demos/Q.json}
+      - {gloss: "R", demo_path: /demos/R.json}
+      - {gloss: "S", demo_path: /demos/S.json}
+      - {gloss: "T", demo_path: /demos/T.json}
+      - {gloss: "U", demo_path: /demos/U.json}
+      - {gloss: "V", demo_path: /demos/V.json}
+      - {gloss: "W", demo_path: /demos/W.json}
+      - {gloss: "X", demo_path: /demos/X.json}
+      - {gloss: "Y", demo_path: /demos/Y.json}
+      - {gloss: "Z", demo_path: /demos/Z.json}
   - slug: basic-words
     title: Basic words
     summary: Everyday words to start signing with.
     signs:
-      - {gloss: GOOD, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Good"}
-      - {gloss: BAD, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Bad"}
-      - {gloss: "YES", sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Yes"}
-      - {gloss: "NO", sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=No"}
-      - {gloss: PLEASE, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Please"}
-      - {gloss: HELP, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Help"}
-      - {gloss: NAME, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Name"}
-      - {gloss: FRIEND, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Friend"}
+      - {gloss: GOOD, demo_path: /demos/GOOD.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Good"}
+      - {gloss: BAD, demo_path: /demos/BAD.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Bad"}
+      - {gloss: "YES", demo_path: /demos/YES.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Yes"}
+      - {gloss: "NO", demo_path: /demos/NO.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=No"}
+      - {gloss: PLEASE, demo_path: /demos/PLEASE.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Please"}
+      - {gloss: HELP, demo_path: /demos/HELP.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Help"}
+      - {gloss: NAME, demo_path: /demos/NAME.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Name"}
+      - {gloss: FRIEND, demo_path: /demos/FRIEND.json, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Friend"}
       - {gloss: FAMILY, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Family"}
       - {gloss: MOTHER, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Mother"}
       - {gloss: FATHER, sign_bank_url: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Father"}

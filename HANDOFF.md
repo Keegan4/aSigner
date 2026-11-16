@@ -38,7 +38,7 @@ Never verified:
 - Whether MediaPipe's "Left"/"Right" labels match the signer's hands (`web/src/lib/tracking/landmarkers.ts` has a TODO).
 - A real Google sign-in round trip.
 - The sentence layer against a real Ollama model, and how good its sentences are.
-- The "Name the sign" quiz with real demo media (no sign has a `demo_path`; it is disabled until one does).
+- The "Name the sign" quiz on a real audience. It now runs for the 34 signs with a mannequin demo (`ml/export_demos.py` writes one recorded take per sign to `web/public/demos`); whether learners can read a sign from the drawn figure is untested.
 
 ## Where things are
 
@@ -118,7 +118,7 @@ Tested: server endpoints (pytest, SQLite), the pull script against made-up rows,
 - Email `sgsl_linguistics@sadeaf.org.sg` to ask permission to use Sign Bank material for a portfolio project.
 - Choose the ~50-sign vocabulary and get descriptions reviewed by an SgSL signer.
 - Record training clips on `/record`: about 25 per sign plus "No sign" takes, and get a second person to record a set.
-- Record reference (demo) clips for each sign.
+- Record clips for the 16 basic words that have none (FAMILY onwards), then re-run `python ml/export_demos.py` and add their `demo_path` to `server/seed/lessons.yaml`. HELP and NAME lose track of a hand for part of their demo; a cleaner take would help.
 - Say how doubled letters are fingerspelled in SgSL (the translator only repeats a letter after a pause).
 - Decide whether a failed attempt resets a sign's mastery to 0 or steps it down one level.
 
