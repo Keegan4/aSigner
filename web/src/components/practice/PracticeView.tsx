@@ -54,7 +54,7 @@ export function PracticeView() {
               ))}
             </Select>
           </Field>
-          <p className="font-mono text-5xl font-semibold tracking-tight break-all text-foreground" aria-hidden>
+          <p className="hidden font-mono text-5xl font-semibold tracking-tight break-all text-foreground lg:block" aria-hidden>
             {sign.gloss}
           </p>
           <Demo path={sign.demo_path} gloss={sign.gloss} />
