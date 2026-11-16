@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ComponentProps, ReactNode } from "react";
 
-import { IconExternal } from "@/components/ui/Icons";
+import { IconCircleCheck, IconCircleX, IconExternal } from "@/components/ui/Icons";
 import { cn } from "@/lib/cn";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -180,5 +180,51 @@ export function ExternalMark() {
       <IconExternal size={14} />
       <span className="sr-only">(opens in a new tab)</span>
     </>
+  );
+}
+
+export type OptionState = "idle" | "correct" | "wrong" | "dimmed";
+
+const OPTION: Record<OptionState, string> = {
+  idle: "border-line-strong/60 bg-surface text-foreground shadow-card hover:border-accent hover:bg-accent-soft",
+  correct: "border-success bg-success-soft text-success-fg",
+  wrong: "border-danger bg-danger-soft text-danger-fg",
+  dimmed: "border-line bg-surface text-muted",
+};
+
+/**
+ * A large answer button for a quiz. After answering, the right answer and a
+ * wrong pick are marked with an icon and words as well as colour.
+ */
+export function OptionButton({
+  state = "idle",
+  className,
+  children,
+  ...rest
+}: { state?: OptionState } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "flex min-h-16 w-full items-center justify-between gap-3 rounded-card border-2 px-4 py-3 text-left font-mono text-xl font-semibold transition-colors duration-150 ease-standard disabled:cursor-default",
+        OPTION[state],
+        className,
+      )}
+      {...rest}
+    >
+      <span className="min-w-0 break-all">{children}</span>
+      {state === "correct" && (
+        <span className="flex shrink-0 items-center gap-1 font-sans text-sm">
+          <IconCircleCheck size={22} />
+          Right answer
+        </span>
+      )}
+      {state === "wrong" && (
+        <span className="flex shrink-0 items-center gap-1 font-sans text-sm">
+          <IconCircleX size={22} />
+          Your answer
+        </span>
+      )}
+    </button>
   );
 }

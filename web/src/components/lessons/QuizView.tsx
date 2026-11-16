@@ -4,6 +4,10 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { PracticeSession } from "@/components/practice/PracticeSession";
+import { Button, ButtonLink, OptionButton } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { IconArrowRight, IconFilm, IconHand, IconInfo, IconQuiz } from "@/components/ui/Icons";
+import { Meter } from "@/components/ui/Meter";
 import { Demo, LessonFallback, Shell } from "@/components/ui/Shell";
 import type { Lesson, Sign } from "@/lib/api";
 import { useLesson } from "@/hooks/useLesson";
@@ -48,8 +52,13 @@ export function QuizView() {
   const { lesson } = state;
   const back = `/lessons/${encodeURIComponent(lesson.slug)}`;
   const withDemo = lesson.signs.filter((s) => s.demo_path).length;
-  const shell = (children: React.ReactNode) => (
-    <Shell back={back} backLabel="Back to lesson" title={`Quiz: ${lesson.title}`}>
+  const shell = (children: React.ReactNode, wide = false) => (
+    <Shell
+      back={back}
+      backLabel="Back to lesson"
+      title={`Quiz: ${lesson.title}`}
+      width={wide ? "default" : "narrow"}
+    >
       {children}
     </Shell>
   );
@@ -58,12 +67,14 @@ export function QuizView() {
     return shell(
       <div className="grid gap-4 sm:grid-cols-2">
         <Choice
+          icon={<IconHand size={22} />}
           title="Make the sign"
           text="You are shown a letter or word and sign it to the camera."
           disabled={lesson.signs.length === 0}
           onStart={() => setQuiz(makeQuiz(lesson, "produce"))}
         />
         <Choice
+          icon={<IconFilm size={22} />}
           title="Name the sign"
           text="You are shown a demonstration and choose what it means."
           disabled={withDemo === 0}
@@ -75,15 +86,39 @@ export function QuizView() {
   }
 
   if (quiz.at >= quiz.questions.length) {
+    const total = quiz.questions.length;
     return shell(
-      <div className="flex flex-col items-start gap-4">
-        <p role="status" className="text-lg">
-          You got {quiz.correct} of {quiz.questions.length}.
+      <Card padding="lg" className="flex flex-col items-center gap-5 text-center">
+        <span className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-fg">
+          <IconQuiz size={28} />
+        </span>
+        <p role="status" className="flex flex-col gap-1">
+          <span aria-hidden className="text-sm font-medium text-muted">
+            Your score
+          </span>
+          <span aria-hidden className="text-4xl font-semibold tracking-tight tabular-nums">
+            {quiz.correct} of {total}
+          </span>
+          <span className="sr-only">
+            You got {quiz.correct} of {total}.
+          </span>
         </p>
-        <button onClick={() => setQuiz(null)} className="rounded-md border px-4 py-2 text-sm hover:bg-foreground/5">
-          Another quiz
-        </button>
-      </div>,
+        <Meter
+          kind="progress"
+          tone="success"
+          value={quiz.correct}
+          max={Math.max(1, total)}
+          label="Questions right"
+          valueText={`${quiz.correct} of ${total}`}
+          className="max-w-xs"
+        />
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button variant="primary" onClick={() => setQuiz(null)}>
+            Another quiz
+          </Button>
+          <ButtonLink href={back}>Back to lesson</ButtonLink>
+        </div>
+      </Card>,
     );
   }
 
@@ -95,78 +130,100 @@ export function QuizView() {
     setQuiz((q) => q && { ...q, at: q.at + 1, answered: false });
   };
   const nextButton = (
-    <button onClick={advance} className="self-start rounded-md border px-3 py-1.5 text-sm hover:bg-foreground/5">
+    <Button variant="primary" onClick={advance} iconAfter={<IconArrowRight size={18} />}>
       {quiz.at + 1 === quiz.questions.length ? "See your score" : "Next question"}
-    </button>
+    </Button>
+  );
+  const progress = (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3 text-sm">
+        <p className="font-medium text-foreground">
+          Question {quiz.at + 1} of {quiz.questions.length}
+        </p>
+        <p className="text-muted tabular-nums">{quiz.correct} right so far</p>
+      </div>
+      <Meter
+        kind="progress"
+        size="sm"
+        value={quiz.at + (quiz.answered ? 1 : 0)}
+        max={quiz.questions.length}
+        label="Quiz progress"
+        valueText={`${quiz.at + (quiz.answered ? 1 : 0)} of ${quiz.questions.length} answered`}
+      />
+    </div>
   );
 
   return shell(
     <>
-      <p className="text-sm opacity-70">
-        Question {quiz.at + 1} of {quiz.questions.length}
-      </p>
+      {progress}
       {quiz.direction === "produce" ? (
-        <>
-          <p className="text-lg">
-            Sign: <span className="text-3xl font-semibold">{question.sign.gloss}</span>
-          </p>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+          <Card className="flex flex-col gap-2">
+            <p className="text-sm font-medium text-muted">Sign</p>
+            <p className="font-mono text-6xl font-semibold tracking-tight break-all">{question.sign.gloss}</p>
+            {!quiz.answered && (
+              <Button variant="ghost" size="sm" onClick={advance} className="mt-2 self-start">
+                Skip
+              </Button>
+            )}
+          </Card>
           {/* Only the first attempt at each question counts. */}
           <PracticeSession sign={question.sign} onResult={(r) => answer(r.passed)}>
             {nextButton}
           </PracticeSession>
-          {!quiz.answered && (
-            <button onClick={advance} className="self-start text-sm underline underline-offset-4">
-              Skip
-            </button>
-          )}
-        </>
+        </div>
       ) : (
         <>
           <Demo path={question.sign.demo_path} gloss="this sign" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {question.choices.map((choice) => {
               const right = choice.id === question.sign.id;
-              const mark = !quiz.answered
-                ? ""
+              const state = !quiz.answered
+                ? "idle"
                 : right
-                  ? "border-emerald-500 bg-emerald-500/10"
+                  ? "correct"
                   : choice.id === chosen
-                    ? "border-red-500 bg-red-500/10"
-                    : "opacity-60";
+                    ? "wrong"
+                    : "dimmed";
               return (
-                <button
+                <OptionButton
                   key={choice.id}
+                  state={state}
                   disabled={quiz.answered}
                   onClick={() => {
                     setChosen(choice.id);
                     answer(right);
                   }}
-                  className={`rounded-lg border p-4 text-lg font-medium ${mark}`}
                 >
                   {choice.gloss}
-                </button>
+                </OptionButton>
               );
             })}
           </div>
           {quiz.answered && (
-            <div role="status" className="flex flex-col gap-3">
-              <p>{chosen === question.sign.id ? "Correct." : `It was ${question.sign.gloss}.`}</p>
+            <div role="status" className="flex flex-col items-start gap-3">
+              <p className="text-base font-medium">
+                {chosen === question.sign.id ? "Correct." : `It was ${question.sign.gloss}.`}
+              </p>
               {nextButton}
             </div>
           )}
         </>
       )}
     </>,
+    quiz.direction === "produce",
   );
 }
 
 function Choice({
+  icon,
   title,
   text,
   note,
   disabled,
   onStart,
 }: {
+  icon: React.ReactNode;
   title: string;
   text: string;
   note?: string;
@@ -174,17 +231,21 @@ function Choice({
   onStart: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
-      <h2 className="font-medium">{title}</h2>
-      <p className="text-sm opacity-80">{text}</p>
-      {note && <p className="text-sm opacity-60">{note}</p>}
-      <button
-        onClick={onStart}
-        disabled={disabled}
-        className="mt-auto self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-      >
+    <Card className="flex flex-col gap-3">
+      <span className="flex size-11 items-center justify-center rounded-control bg-accent-soft text-accent-fg">
+        {icon}
+      </span>
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      <p className="text-sm text-muted">{text}</p>
+      {note && (
+        <p className="flex items-start gap-2 text-sm text-muted">
+          <IconInfo size={16} className="mt-0.5" />
+          {note}
+        </p>
+      )}
+      <Button variant="primary" onClick={onStart} disabled={disabled} className="mt-auto self-start">
         Start
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }

@@ -2,47 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/ui/Button";
-import {
-  IconBook,
-  IconCamera,
-  IconChart,
-  IconChat,
-  IconChevronDown,
-  IconClock,
-  IconClose,
-  IconFilm,
-  IconMenu,
-  IconRecord,
-  IconSignOut,
-  IconUsers,
-} from "@/components/ui/Icons";
+import { IconChevronDown, IconClose, IconMenu, IconSignOut } from "@/components/ui/Icons";
+import { NAV_ITEMS, type NavItem } from "@/components/ui/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useSession } from "@/hooks/useSession";
 import { cn } from "@/lib/cn";
 
-type Item = {
-  href: string;
-  label: string;
-  icon: (p: { size?: number }) => ReactNode;
-  /** Shown only when signed in, as on the home page before the redesign. */
-  signedIn?: boolean;
-  /** Kept in the bar on large screens; the rest go under "More". */
-  primary?: boolean;
-};
-
-export const NAV_ITEMS: Item[] = [
-  { href: "/", label: "Lessons", icon: IconBook, primary: true },
-  { href: "/progress", label: "Progress", icon: IconChart, signedIn: true, primary: true },
-  { href: "/translate", label: "Translate", icon: IconChat, signedIn: true, primary: true },
-  { href: "/check", label: "Camera check", icon: IconCamera, primary: true },
-  { href: "/translations", label: "Past translations", icon: IconClock, signedIn: true },
-  { href: "/translate/video", label: "Translate a video", icon: IconFilm, signedIn: true },
-  { href: "/record", label: "Record training clips", icon: IconRecord, signedIn: true },
-  { href: "/train", label: "Help train the sign model", icon: IconUsers },
-];
+type Item = NavItem;
 
 /** "page" when the item is this page; "section" when this page sits under it (a lesson under Lessons). */
 function match(href: string, pathname: string | null): "page" | "section" | null {

@@ -2,8 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CameraStage, type StageOverlay } from "@/components/camera/CameraStage";
 import { CameraTracker } from "@/components/camera/CameraTracker";
+import { Button } from "@/components/ui/Button";
+import { Callout } from "@/components/ui/Callout";
+import { IconAlert, IconCircleCheck, IconRecord } from "@/components/ui/Icons";
+import { Meter } from "@/components/ui/Meter";
 import { ModelNote } from "@/components/ui/ModelNote";
+import { ServerUnreachable, SignInPrompt } from "@/components/ui/States";
 import type { ModelInfo, Sign } from "@/lib/api";
 import { CLIP_SECONDS } from "@/lib/tracking/features";
 import {
@@ -13,6 +19,7 @@ import {
   type PracticeLink,
   type PracticeResult,
 } from "@/lib/practice";
+import { cn } from "@/lib/cn";
 
 const COUNTDOWN = 3;
 // Same countdown and take length as the training recorders (Recorder.tsx,
@@ -148,75 +155,117 @@ export function PracticeSession({
     result: "",
   }[phase.name];
 
+  const overlay: StageOverlay =
+    phase.name === "countdown"
+      ? { kind: "countdown", left: phase.left }
+      : phase.name === "recording"
+        ? { kind: "recording", seconds: CLIP_SECONDS }
+        : phase.name === "starting"
+          ? { kind: "busy", label: "Starting…" }
+          : phase.name === "scoring"
+            ? { kind: "busy", label: "Checking…" }
+            : { kind: "none" };
+
   return (
     <div className="flex flex-col gap-4">
       {MOCK_PRACTICE && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+        <Callout tone="warning" title="Demo mode">
           Demo mode: results are made up and nothing is saved.
-        </p>
+        </Callout>
       )}
-      <CameraTracker onFrame={onFrame} />
+      <CameraStage overlay={overlay}>
+        <CameraTracker onFrame={onFrame} />
+      </CameraStage>
 
       {status === "signed-out" ? (
-        <p role="alert" className="text-sm">
-          <a href="/api/auth/login" className="underline underline-offset-4">
-            Sign in with Google
-          </a>{" "}
-          to practise and keep your progress.
-        </p>
+        <SignInPrompt role="alert" to="practise and keep your progress" />
       ) : status === "closed" ? (
-        <p role="alert" className="text-sm text-red-600">
-          The connection to the aSigner server was lost. Reload to try again.
-        </p>
+        <ServerUnreachable reason="lost" />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-4">
-            <button
+          <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-3 shadow-card sm:flex-row sm:items-center sm:gap-4">
+            <Button
+              variant="primary"
+              size="lg"
+              icon={<IconRecord size={20} />}
               onClick={record}
               disabled={busy || status !== "open"}
-              className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+              className="sm:min-w-40"
             >
               {phase.name === "result" ? "Try again" : "Record"}
-            </button>
-            <p role="status" aria-live="polite" className="text-sm">
+            </Button>
+            <p role="status" aria-live="polite" className="text-sm font-medium text-foreground">
               {status === "connecting" ? "Connecting…" : prompt}
             </p>
           </div>
           {unavailable && (
-            <p role="alert" className="rounded-md border p-3 text-sm">
+            <Callout tone="warning" role="alert">
               {unavailable}
-            </p>
+            </Callout>
           )}
           {phase.name === "idle" && phase.error && (
-            <p role="alert" className="text-sm text-red-600">
+            <Callout tone="danger" role="alert">
               {phase.error}
-            </p>
+            </Callout>
           )}
         </>
       )}
 
-      <ModelNote model={model} />
-
       {phase.name === "result" && (
-        <div
-          role="status"
-          className={`flex flex-col gap-2 rounded-lg border p-4 ${
-            phase.result.passed ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"
-          }`}
-        >
-          <p className="font-medium">
-            {phase.result.passed ? "Recognised" : "Not recognised yet"} ·{" "}
-            {Math.round(phase.result.score * 100)}% match for {sign.gloss}
-          </p>
-          {phase.result.closest && (
-            <p className="text-sm">It looked more like {phase.result.closest}.</p>
-          )}
-          {phase.result.no_sign && (
-            <p className="text-sm">No clear sign was seen. Check that your hand is in view.</p>
-          )}
+        <ResultBanner result={phase.result} gloss={sign.gloss}>
           {children}
-        </div>
+        </ResultBanner>
       )}
+
+      <ModelNote model={model} />
+    </div>
+  );
+}
+
+/** The outcome of one attempt: an icon and words as well as colour, and the score as a bar. */
+function ResultBanner({
+  result,
+  gloss,
+  children,
+}: {
+  result: PracticeResult;
+  gloss: string;
+  children?: React.ReactNode;
+}) {
+  const percent = Math.round(result.score * 100);
+  return (
+    <div
+      role="status"
+      className={cn(
+        "flex flex-col gap-3 rounded-card border p-4 sm:p-5",
+        result.passed ? "border-success-line bg-success-soft" : "border-warning-line bg-warning-soft",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className={result.passed ? "text-success-fg" : "text-warning-fg"}>
+          {result.passed ? <IconCircleCheck size={28} /> : <IconAlert size={28} />}
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <p className="text-lg font-semibold text-foreground">
+            {result.passed ? "Recognised" : "Not recognised yet"}
+            <span className="sr-only"> · </span>
+            <span className="block text-sm font-medium text-foreground">
+              {percent}% match for {gloss}
+            </span>
+          </p>
+          <Meter
+            value={result.score}
+            label={`Match for ${gloss}`}
+            valueText={`${percent}%`}
+            tone={result.passed ? "success" : "warning"}
+          />
+          {result.closest && <p className="text-sm text-foreground">It looked more like {result.closest}.</p>}
+          {result.no_sign && (
+            <p className="text-sm text-foreground">No clear sign was seen. Check that your hand is in view.</p>
+          )}
+        </div>
+      </div>
+      {children && <div className="flex flex-wrap gap-2 sm:pl-10">{children}</div>}
     </div>
   );
 }
