@@ -176,7 +176,9 @@ function Row({
           {new Date(row.created_at).toLocaleString()}
         </time>
         {confirming ? (
+          // Keyed so React mounts new buttons instead of restyling the old ones, which would fade the colours in.
           <div
+            key="confirm"
             role="group"
             aria-label="Confirm delete"
             className="flex flex-wrap items-center gap-2 rounded-control bg-danger-soft py-1 pr-1 pl-3"
@@ -202,7 +204,7 @@ function Row({
             </Button>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-1">
+          <div key="actions" className="flex flex-wrap items-center gap-1">
             {canSpeak && (
               <Button size="sm" variant="ghost" icon={<IconSpeaker size={16} />} onClick={() => speak(row.sentence)}>
                 Speak
