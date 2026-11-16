@@ -25,6 +25,8 @@ function speak(text: string) {
 export function TranslationHistory() {
   const [state, setState] = useState<State>({ status: "loading" });
   const [failed, setFailed] = useState(false);
+  const [notice, setNotice] = useState("");
+  const focusAfter = useRef<number | "main" | null>(null);
   const [canSpeak, setCanSpeak] = useState(false);
 
   useEffect(() => {
@@ -40,10 +42,39 @@ export function TranslationHistory() {
   async function remove(id: number) {
     const res = await fetch(`/api/translations/${id}`, { method: "DELETE" }).catch(() => null);
     // 404 means it is already gone, which is what was asked for.
-    if (!res || (!res.ok && res.status !== 404)) return setFailed(true);
+    if (!res || (!res.ok && res.status !== 404)) {
+      setFailed(true);
+      return false;
+    }
     setFailed(false);
     setState((s) => (s.status === "ready" ? { ...s, rows: s.rows.filter((r) => r.id !== id) } : s));
+    return true;
   }
+
+  /** Deletes after the row's confirmation, then says so and moves focus to the next row (or the page). */
+  async function confirmDelete(id: number) {
+    const rows = state.status === "ready" ? state.rows : [];
+    const at = rows.findIndex((r) => r.id === id);
+    const next = rows[at + 1] ?? rows[at - 1];
+    const done = await remove(id);
+    if (done) {
+      focusAfter.current = next ? next.id : "main";
+      setNotice("Translation deleted.");
+    }
+    return done;
+  }
+
+  // After a delete re-renders the list, focus goes where confirmDelete chose.
+  useEffect(() => {
+    const target = focusAfter.current;
+    if (target === null) return;
+    focusAfter.current = null;
+    const el =
+      target === "main"
+        ? document.getElementById("main")
+        : document.querySelector<HTMLElement>(`[data-delete-id="${target}"]`);
+    el?.focus();
+  }, [state]);
 
   return (
     <Shell
@@ -71,6 +102,9 @@ export function TranslationHistory() {
         <LoadingBlock lines={4} />
       ) : (
         <>
+          <p role="status" className="sr-only">
+            {notice}
+          </p>
           {failed && (
             <Callout tone="danger" role="alert">
               That translation could not be deleted. Try again.
@@ -91,7 +125,7 @@ export function TranslationHistory() {
           ) : (
             <ul className="flex flex-col gap-3">
               {state.rows.map((row) => (
-                <Row key={row.id} row={row} canSpeak={canSpeak} onDelete={remove} />
+                <Row key={row.id} row={row} canSpeak={canSpeak} onDelete={confirmDelete} />
               ))}
             </ul>
           )}
@@ -109,7 +143,8 @@ function Row({
 }: {
   row: Translation;
   canSpeak: boolean;
-  onDelete: (id: number) => Promise<void>;
+  /** Resolves true when the translation is gone (the row then unmounts). */
+  onDelete: (id: number) => Promise<boolean>;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -154,7 +189,7 @@ function Row({
               aria-label={`Yes, delete translation: ${row.sentence}`}
               onClick={async () => {
                 setBusy(true);
-                await onDelete(row.id);
+                if (await onDelete(row.id)) return;
                 // Still here means the delete failed; the page says so above the list.
                 setBusy(false);
                 cancel();
@@ -175,6 +210,7 @@ function Row({
             )}
             <Button
               ref={deleteButton}
+              data-delete-id={row.id}
               size="sm"
               variant="danger-ghost"
               icon={<IconTrash size={16} />}
