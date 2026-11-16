@@ -122,3 +122,21 @@ export function Select({
     </div>
   );
 }
+
+/** A native file picker with its button styled like a secondary button. */
+export function FileInput({ id, className, "aria-describedby": describedBy, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const { invalid, ...wired } = useField(id, describedBy);
+  return (
+    <input
+      type="file"
+      className={cn(
+        "block w-full rounded-control border border-dashed bg-sunken p-2 text-sm text-muted disabled:cursor-not-allowed disabled:opacity-60",
+        "file:mr-3 file:min-h-10 file:rounded-control file:border file:border-line-strong/60 file:bg-surface file:px-4 file:text-sm file:font-medium file:text-foreground hover:file:bg-background",
+        invalid ? INVALID : "border-line-strong/60",
+        className,
+      )}
+      {...wired}
+      {...rest}
+    />
+  );
+}

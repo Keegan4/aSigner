@@ -4,7 +4,7 @@ import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ComponentProps, ReactN
 import { IconCircleCheck, IconCircleX, IconExternal } from "@/components/ui/Icons";
 import { cn } from "@/lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "danger-ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 // Full literal class strings so Tailwind can see them.
@@ -15,6 +15,8 @@ const VARIANT: Record<ButtonVariant, string> = {
     "border border-line-strong/60 bg-surface text-foreground shadow-card hover:bg-sunken hover:border-line-strong disabled:hover:bg-surface",
   ghost: "text-foreground hover:bg-sunken disabled:hover:bg-transparent",
   danger: "bg-danger text-on-danger shadow-card hover:bg-danger-hover disabled:hover:bg-danger",
+  /** A quiet destructive action that asks for confirmation before it does anything. */
+  "danger-ghost": "text-danger-fg hover:bg-danger-soft disabled:hover:bg-transparent",
 };
 
 // sm stays at 36 px (32 px on fine pointers); md and lg are 44 px or more for touch.
@@ -61,7 +63,7 @@ export function Button({
   children,
   ...rest
 }: Common &
-  ButtonHTMLAttributes<HTMLButtonElement> & {
+  ComponentProps<"button"> & {
     /** Shows a spinner and disables the button while work is in progress. */
     loading?: boolean;
   }) {
@@ -225,6 +227,29 @@ export function OptionButton({
           Your answer
         </span>
       )}
+    </button>
+  );
+}
+
+/** A column header's sort control. Put aria-sort on the <th> around it. */
+export function SortButton({
+  direction,
+  className,
+  children,
+  ...rest
+}: { direction: "ascending" | "descending" | null } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex min-h-7 items-center gap-0.5 rounded-sm font-medium transition-colors hover:text-foreground",
+        direction ? "text-foreground" : "text-muted",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+      {direction === "ascending" ? " ▲" : direction === "descending" ? " ▼" : ""}
     </button>
   );
 }

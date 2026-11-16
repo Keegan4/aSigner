@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 
+import { SortButton } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { SearchInput } from "@/components/ui/Field";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import type { ModelInfo, SignStat } from "@/lib/api";
+import { cn } from "@/lib/cn";
 
 const IDLE_LABEL = "_idle"; // server/app/recognition/features.py
 /** Fewer training clips than this and a sign is marked as thinly covered (ml/train.py asks for 5). */
@@ -62,44 +67,40 @@ export function TrainedSignsPanel({
   const neverSeen = words.filter((s) => !live[s.label]).length;
 
   const header = (key: SortKey, label: string, title: string, align = "text-right") => (
-    <th scope="col" className={`whitespace-nowrap px-1 py-1 font-medium ${align}`} aria-sort={
+    <th scope="col" className={`whitespace-nowrap px-1 py-1.5 font-medium ${align}`} aria-sort={
       sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"
     }>
-      <button
-        type="button"
+      <SortButton
         title={title}
+        direction={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : null}
         onClick={() =>
           setSort((s) => ({ key, dir: s.key === key ? (-s.dir as 1 | -1) : key === "label" ? 1 : -1 }))
         }
-        className="underline-offset-2 hover:underline"
       >
         {label}
-        {sort.key === key ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
-      </button>
+      </SortButton>
     </th>
   );
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border p-4 text-sm" aria-label="Trained words">
-      <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">
-        Trained words{model ? ` (${words.length})` : ""}
-      </h2>
+    <Card as="section" className="flex flex-col gap-3 text-sm" aria-label="Trained words">
+      <SectionHeading variant="eyebrow">Trained words{model ? ` (${words.length})` : ""}</SectionHeading>
       {!model ? (
-        <p className="opacity-60">Waiting for the model…</p>
+        <p className="text-muted">Waiting for the model…</p>
       ) : signs.length === 0 ? (
-        <p className="opacity-60">The model did not say which words it knows.</p>
+        <p className="text-muted">The model did not say which words it knows.</p>
       ) : (
         <>
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             {model.clips != null && (
               <>
-                <dt className="opacity-70">Training clips</dt>
+                <dt className="text-muted">Training clips</dt>
                 <dd className="text-right tabular-nums">{model.clips}</dd>
               </>
             )}
             {model.top1 != null && (
               <>
-                <dt className="opacity-70">Overall accuracy</dt>
+                <dt className="text-muted">Overall accuracy</dt>
                 <dd className="text-right tabular-nums">
                   {percent(model.top1)}
                   {model.test_clips ? ` of ${model.test_clips}` : ""}
@@ -108,32 +109,32 @@ export function TrainedSignsPanel({
             )}
             {counted && (
               <>
-                <dt className="opacity-70">Under {FEW_CLIPS} clips</dt>
-                <dd className={`text-right tabular-nums ${thin ? "text-amber-600" : ""}`}>{thin}</dd>
-                <dt className="opacity-70">Never tested</dt>
-                <dd className={`text-right tabular-nums ${untested ? "text-amber-600" : ""}`}>{untested}</dd>
+                <dt className="text-muted">Under {FEW_CLIPS} clips</dt>
+                <dd className={cn("text-right tabular-nums", thin && "font-semibold text-warning-fg")}>{thin}</dd>
+                <dt className="text-muted">Never tested</dt>
+                <dd className={cn("text-right tabular-nums", untested && "font-semibold text-warning-fg")}>
+                  {untested}
+                </dd>
               </>
             )}
-            <dt className="opacity-70">Not seen live yet</dt>
+            <dt className="text-muted">Not seen live yet</dt>
             <dd className="text-right tabular-nums">{neverSeen}</dd>
             {model.trained_at && (
               <>
-                <dt className="opacity-70">Trained</dt>
+                <dt className="text-muted">Trained</dt>
                 <dd className="text-right">{new Date(model.trained_at).toLocaleDateString()}</dd>
               </>
             )}
           </dl>
 
-          <input
-            type="search"
+          <SearchInput
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter words"
             aria-label="Filter words"
-            className="rounded-md border bg-transparent px-2 py-1"
           />
 
-          <div className="max-h-[28rem] overflow-y-auto">
+          <div className="max-h-[28rem] overflow-y-auto rounded-control border border-line">
             <table className="w-full table-fixed border-collapse font-mono text-xs">
               <colgroup>
                 <col />
@@ -141,8 +142,8 @@ export function TrainedSignsPanel({
                 <col className="w-12" />
                 <col className="w-12" />
               </colgroup>
-              <thead className="sticky top-0 bg-background">
-                <tr className="border-b">
+              <thead className="sticky top-0 bg-sunken text-muted">
+                <tr className="border-b border-line">
                   {header("label", "Word", "Sort by word", "text-left")}
                   {header("clips", "Clips", "Training clips of this word")}
                   {header("top1", "Test", "Accuracy on held-out clips at the last training run")}
@@ -155,23 +156,30 @@ export function TrainedSignsPanel({
                   return (
                     <tr
                       key={s.label}
-                      className={`border-b border-foreground/10 ${
-                        s.label === current ? "bg-emerald-500/15" : ""
-                      }`}
+                      className={cn(
+                        "border-b border-line last:border-b-0",
+                        s.label === current && "bg-success-soft font-semibold text-success-fg",
+                      )}
                     >
                       <td className="truncate px-1 py-1" title={name(s.label)}>
+                        {s.label === current && (
+                          <>
+                            <span aria-hidden>▸ </span>
+                            <span className="sr-only">Current guess: </span>
+                          </>
+                        )}
                         {name(s.label)}
                       </td>
                       <td
                         className={`px-1 py-1 text-right tabular-nums ${
-                          s.clips != null && s.clips < FEW_CLIPS ? "text-amber-600" : ""
+                          s.clips != null && s.clips < FEW_CLIPS ? "font-semibold text-warning-fg" : ""
                         }`}
                       >
                         {s.clips ?? "—"}
                       </td>
                       <td
                         className={`px-1 py-1 text-right tabular-nums ${
-                          s.top1 != null && s.top1 < 0.5 ? "text-red-600" : ""
+                          s.top1 != null && s.top1 < 0.5 ? "font-semibold text-danger-fg" : ""
                         }`}
                         title={
                           s.test_clips === 0
@@ -195,13 +203,13 @@ export function TrainedSignsPanel({
               </tbody>
             </table>
           </div>
-          <p className="text-xs opacity-70">
+          <p className="text-xs text-muted">
             Test: share of held-out clips read correctly at the last training run. Live: the
             model&apos;s confidence the last time it picked this word here.
             {!counted && " Retrain the model to see per-word clips and accuracy."}
           </p>
         </>
       )}
-    </section>
+    </Card>
   );
 }

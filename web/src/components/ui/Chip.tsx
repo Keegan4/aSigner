@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const BASE =
-  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors duration-150 ease-standard pointer-fine:min-h-8";
+  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors duration-150 ease-standard pointer-fine:min-h-8 disabled:cursor-not-allowed disabled:opacity-50";
 const IDLE = "border-line-strong/50 bg-surface text-foreground hover:border-line-strong hover:bg-sunken";
 const SELECTED = "border-accent bg-accent text-on-accent hover:bg-accent-hover";
 
