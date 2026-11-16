@@ -71,7 +71,7 @@ export function TranslationHistory() {
     focusAfter.current = null;
     const el =
       target === "main"
-        ? document.getElementById("main")
+        ? Array.from(document.querySelectorAll<HTMLElement>("main#main")).find((m) => m.getClientRects().length > 0)
         : document.querySelector<HTMLElement>(`[data-delete-id="${target}"]`);
     el?.focus();
   }, [state]);

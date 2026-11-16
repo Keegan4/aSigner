@@ -21,11 +21,24 @@ function match(href: string, pathname: string | null): "page" | "section" | null
   return null;
 }
 
+/**
+ * Next keeps the previous page's tree in the document, hidden, after a client-side
+ * navigation, so "#main" can name more than one element. Focus the one on screen.
+ */
+function skipToMain(e: React.MouseEvent<HTMLAnchorElement>) {
+  const main = Array.from(document.querySelectorAll<HTMLElement>("main#main")).find((m) => m.getClientRects().length > 0);
+  if (!main) return;
+  e.preventDefault();
+  main.focus();
+  main.scrollIntoView();
+}
+
 export function AppHeader() {
   return (
     <header className="relative z-30 border-b border-line bg-surface">
       <a
         href="#main"
+        onClick={skipToMain}
         className="sr-only rounded-control bg-accent px-4 py-2 text-sm font-medium text-on-accent focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50"
       >
         Skip to content
