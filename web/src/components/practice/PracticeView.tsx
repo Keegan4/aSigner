@@ -47,7 +47,7 @@ export function PracticeView() {
         <Card
           as="section"
           aria-label="Target sign"
-          className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:flex"
+          className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:flex lg:items-stretch"
         >
           <Field label="Sign">
             <Select value={sign.id} onChange={(e) => setPicked(Number(e.target.value))}>
