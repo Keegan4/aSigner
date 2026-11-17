@@ -141,6 +141,58 @@ On the ASLNow! fingerspelling data (converted to clips; 5 seeds, 80 epochs, 413 
 
 Those clips are a single still frame repeated, from one signer, so they contain no motion and the split is optimistic. The gain there most likely comes from smoothing per-frame augmentation noise and from the extra 104,640 parameters, not from motion. Whether the block helps on real SgSL signs needs the same run on recorded clips with a second signer held out.
 
+### Ablation: graph convolution on the hands
+
+The hand encoders see each hand's 21 landmarks as one flat list, so they have to learn which landmarks are joined. `train.py --graph-conv` adds a second path for each hand that has the skeleton built in. Every landmark carries 12 values (its shape and placement coordinates and the motion of each). Two graph convolution layers (12 → 32 → 32 per landmark) each mix a landmark with the landmarks it shares a bone with, using the normalised adjacency `D^-½ (A + I) D^-½` of MediaPipe's 21 hand bones, so after two layers a fingertip knows about the two joints below it. The 21 results are flattened, projected to the hand's 120 dimensions and added to the flat encoder's output. Pose and face/head are unchanged.
+
+The block is off by default and adds 164,464 parameters (82,232 per hand). A checkpoint from `pretrain.py` made without it still loads: the graph layers start fresh. To measure what it adds:
+
+```bash
+cd ml
+python ablate.py --block graph-conv --seeds 0 1 2 3 4
+```
+
+On the clips recorded in the app (565 clips of 34 signs plus no-sign; 3 seeds, 80 epochs, 107 test clips), the block showed no clear effect:
+
+| | top-1 | top-5 |
+|---|---|---|
+| with graph conv | 94.4% ± 2.5% | 99.1% ± 0.9% |
+| without graph conv | 95.3% ± 1.6% | 99.1% ± 0.9% |
+| paired difference | −0.9% ± 3.7% | +0.0% ± 0.9% |
+
+Top-1 was lower with the block on two seeds and higher on one, so the difference is within the spread across seeds, and the block stays off. Those clips come from one signer, who is in both the training and the test split, with about 13 training clips per sign, which is little for the extra parameters to learn from. The graph path is also added after the encoder's LayerNorm at full strength from the first step; starting it at zero, or pretraining with it, has not been tried. The comparison is worth repeating once a second signer can be held out.
+
+**Starting from a pretrained checkpoint.** The same comparison with `train.py --init`, 3 seeds, 80 epochs, on a GTX 1660 Super. The checkpoint was pretrained for 200 epochs on ASLNow!, CASL-W60, WLASL and asl-signs without the block, so here the graph layers still start fresh:
+
+| Seed | top-1 with graph conv | top-1 without | one-second windows with | one-second windows without |
+|---|---|---|---|---|
+| 0 | 97.2% | 97.2% | 94.2% | 94.5% |
+| 1 | 99.1% | 98.1% | 98.2% | 97.4% |
+| 2 | 98.1% | 99.1% | 95.7% | 96.4% |
+| mean | 98.1% | 98.1% | 96.0% | 96.1% |
+
+No effect again: each variant wins one seed by a single clip. Pretraining matters far more than the block does (95.3% without it above, 98.1% with it).
+
+**Pretraining with the block** (`pretrain.py --graph-conv`, so the graph layers are trained before the recorded clips are seen), against a matching run without it. Both ran for 200 epochs with a 25-epoch warm-up on the four public sets, on the current one-second-window training, one seed each:
+
+| Held-out top-1 after pretraining | with graph conv | without |
+|---|---|---|
+| ASLNow! (305 samples) | 98.4% | 99.3% |
+| CASL-W60 (2,222 clips) | 86.7% | 86.1% |
+| WLASL (1,665 clips) | 41.7% | 42.2% |
+| asl-signs (4,005 clips, unseen signers) | 52.7% | 52.3% |
+
+Then `train.py --init` on the recorded clips from each, 3 seeds:
+
+| Seed | top-1 with graph conv | top-1 without | one-second windows with | one-second windows without |
+|---|---|---|---|---|
+| 0 | 97.2% | 95.3% | 95.3% | 94.9% |
+| 1 | 98.1% | 98.1% | 97.1% | 98.9% |
+| 2 | 97.2% | 98.1% | 94.6% | 96.4% |
+| mean | 97.5% | 97.2% | 95.7% | 96.7% |
+
+Still no clear effect. On the public sets the two are within a point of each other in both directions; on the recorded clips whole-clip top-1 is a third of a point higher with the block and one-second windows a point lower, both inside the spread across seeds. So pretraining the graph layers does not change the answer, and the block stays off. The two runs cannot be pretrained side by side on a 6 GB card: evaluation runs out of memory.
+
 ## Tests
 
 ```bash

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="862" viewBox="0 0 1140 862" font-family="Helvetica, Arial, FreeSans, sans-serif" font-size="10.5" fill="#222">
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="1026" viewBox="0 0 1140 1026" font-family="Helvetica, Arial, FreeSans, 'Arial Unicode MS', sans-serif" font-size="10.5" fill="#222">
 <defs>
   <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
   <style>
@@ -10,9 +10,10 @@
     .c{text-anchor:middle}
     .ln{stroke:#333;stroke-width:1.1;fill:none}
     .pl{font-weight:bold;font-size:13px}
+    .d{stroke-dasharray:5 3}
   </style>
 </defs>
-<rect width="1140" height="862" fill="#fff"/>
+<rect width="1140" height="1026" fill="#fff"/>
 
 <!-- (a) -->
 <text x="20" y="28" class="pl">(a) Landmark extraction and normalisation (one shared implementation for training and serving)</text>
@@ -100,10 +101,12 @@
 <g class="c">
   <rect x="150" y="256" width="205" height="52" rx="4" fill="#DCE6F2" stroke="#4C78A8" stroke-width="1.2"/>
   <text x="252.5" y="276" class="t">Left-hand encoder</text>
+  <rect x="317" y="261" width="34" height="13" rx="2" fill="#fff" stroke="#4C78A8" stroke-width="0.9" class="d"/><text x="334" y="271" font-size="8.5">+ (d)</text>
   <text x="252.5" y="294">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">256</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">128</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">120</tspan></text>
 
   <rect x="150" y="320" width="205" height="52" rx="4" fill="#FDE5CC" stroke="#F58518" stroke-width="1.2"/>
   <text x="252.5" y="340" class="t">Right-hand encoder</text>
+  <rect x="317" y="325" width="34" height="13" rx="2" fill="#fff" stroke="#F58518" stroke-width="0.9" class="d"/><text x="334" y="335" font-size="8.5">+ (d)</text>
   <text x="252.5" y="358">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">256</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">128</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">120</tspan></text>
 
   <rect x="150" y="384" width="205" height="52" rx="4" fill="#DDEFD9" stroke="#54A24B" stroke-width="1.2"/>
@@ -115,7 +118,7 @@
   <text x="252.5" y="486">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>, <tspan font-style="italic">m</tspan>, <tspan font-style="italic">m</tspan><tspan font-size="7" dy="2">Δ</tspan><tspan dy="-2">] ∈ ℝ</tspan><tspan font-size="8" dy="-5">112</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">56</tspan><tspan dy="5"> → ℝ</tspan><tspan font-size="8" dy="-5">40</tspan></text>
 </g>
 <text x="150" y="530" class="s" fill="#444">each, per frame: Linear (→ input / 2) → GELU → Linear (→ region width) → GELU → LayerNorm; learned embedding <tspan font-style="italic">e</tspan><tspan font-size="7" dy="2">miss</tspan><tspan dy="-2"> if region absent</tspan></text>
-<text x="150" y="544" class="s" fill="#444"><tspan font-style="italic">p</tspan>: positions · Δ<tspan font-style="italic">p</tspan>: frame difference, 0 unless both frames valid · <tspan font-style="italic">m</tspan>: validity flags</text>
+<text x="150" y="544" class="s" fill="#444"><tspan font-style="italic">p</tspan>: positions · Δ<tspan font-style="italic">p</tspan>: frame difference, 0 unless both frames valid · <tspan font-style="italic">m</tspan>: validity flags · + (d): optional hand graph path, off by default</text>
 
 <g class="ln" marker-end="url(#ar)">
   <path d="M355,282 C372,282 370,301.75 388,301.75"/><path d="M355,346 C372,346 370,393.25 388,393.25"/>
@@ -315,6 +318,64 @@
   <text x="20" y="820">Parameters per layer: attention 410,880 (Q, K, V, O: 4 × (320 × 320 + 320)) + feed-forward 410,560 + two LayerNorms 1,280 = 822,720; both layers 1,645,440.</text>
 </g>
 
-<line x1="20" y1="832" x2="1120" y2="832" stroke="#bbb" stroke-width="0.8"/>
-<text x="20" y="846" class="s" fill="#333">Trainable parameters: 2,037,668 + 161·<tspan font-style="italic">C</tspan> (2,053,929 for 100 signs + no-sign). Embedding width <tspan font-style="italic">d</tspan> = 320 = 120 + 120 + 40 + 40 (hands, pose, face/head). All dropout <tspan font-style="italic">p</tspan> = 0.1. Exported to ONNX and run on CPU.</text>
+<!-- (d) optional hand graph convolution -->
+<text x="20" y="856" class="pl">(d) Optional hand graph convolution (train.py / pretrain.py --graph-conv; off by default)</text>
+<g class="c">
+  <rect x="20" y="874" width="130" height="76" rx="4" class="b d"/>
+  <text x="85" y="893" class="t">Hand landmarks</text>
+  <text x="85" y="910" class="s">shape and placement:</text>
+  <text x="85" y="923" class="s">[<tspan font-style="italic">p</tspan>, Δ<tspan font-style="italic">p</tspan>] per landmark</text>
+  <text x="85" y="940" font-weight="bold">21 × 12</text>
+
+  <rect x="170" y="874" width="130" height="76" rx="4" class="b d"/>
+  <text x="235" y="942" class="s"><tspan font-style="italic">Â</tspan> = <tspan font-style="italic">D</tspan><tspan font-size="7" dy="-4">−½</tspan><tspan dy="4">(<tspan font-style="italic">A</tspan> + <tspan font-style="italic">I</tspan>) </tspan><tspan font-style="italic">D</tspan><tspan font-size="7" dy="-4">−½</tspan><tspan dy="4"></tspan></text>
+  <text x="282" y="893" class="s" fill="#444">21</text><text x="282" y="905" class="s" fill="#444">bones</text>
+
+  <rect x="320" y="874" width="130" height="76" rx="4" class="b d"/>
+  <text x="385" y="893" class="t">Graph conv. 1</text>
+  <text x="385" y="912">Linear 12 → 32</text>
+  <text x="385" y="926" class="s">per landmark, shared</text>
+  <text x="385" y="940" class="s">then <tspan font-style="italic">Â</tspan> ·, GELU</text>
+
+  <rect x="470" y="874" width="130" height="76" rx="4" class="b d"/>
+  <text x="535" y="893" class="t">Graph conv. 2</text>
+  <text x="535" y="912">Linear 32 → 32</text>
+  <text x="535" y="926" class="s">per landmark, shared</text>
+  <text x="535" y="940" class="s">then <tspan font-style="italic">Â</tspan> ·, GELU</text>
+
+  <rect x="620" y="874" width="130" height="76" rx="4" class="b d"/>
+  <text x="685" y="893" class="t">Flatten, Linear</text>
+  <text x="685" y="912">21 × 32 = 672</text>
+  <text x="685" y="926">→ 120</text>
+  <text x="685" y="940" class="s" fill="#444">a second hand vector</text>
+
+  <text x="782" y="868" class="s" fill="#444">hand encoder (b), 120</text>
+
+  <rect x="814" y="874" width="130" height="76" rx="4" class="b"/>
+  <text x="879" y="893" class="t">Hand output</text>
+  <text x="879" y="912">sum ∈ ℝ<tspan font-size="7" dy="-4">120</tspan><tspan dy="4"></tspan> per frame</text>
+  <text x="879" y="926" class="s">→ concat (b)</text>
+  <text x="879" y="940" class="s" fill="#444"><tspan font-style="italic">e</tspan><tspan font-size="7" dy="2">miss</tspan><tspan dy="-2"> if hand absent</tspan></text>
+</g>
+<g stroke="#555" stroke-width="1.1"><line x1="235" y1="924" x2="223" y2="918"/><line x1="223" y1="918" x2="214" y2="911"/><line x1="214" y1="911" x2="208" y2="904"/><line x1="208" y1="904" x2="203" y2="898"/><line x1="235" y1="924" x2="226" y2="905"/><line x1="226" y1="905" x2="222" y2="896"/><line x1="222" y1="896" x2="220" y2="889"/><line x1="220" y1="889" x2="218" y2="883"/><line x1="226" y1="905" x2="235" y2="903"/><line x1="235" y1="903" x2="235" y2="893"/><line x1="235" y1="893" x2="235" y2="886"/><line x1="235" y1="886" x2="235" y2="880"/><line x1="235" y1="903" x2="244" y2="904"/><line x1="244" y1="904" x2="247" y2="895"/><line x1="247" y1="895" x2="249" y2="888"/><line x1="249" y1="888" x2="251" y2="882"/><line x1="244" y1="904" x2="252" y2="908"/><line x1="235" y1="924" x2="252" y2="908"/><line x1="252" y1="908" x2="257" y2="901"/><line x1="257" y1="901" x2="260" y2="896"/><line x1="260" y1="896" x2="263" y2="891"/></g>
+<g fill="#fff" stroke="#333" stroke-width="0.8"><circle cx="235" cy="924" r="1.9"/><circle cx="223" cy="918" r="1.9"/><circle cx="214" cy="911" r="1.9"/><circle cx="208" cy="904" r="1.9"/><circle cx="203" cy="898" r="1.9"/><circle cx="226" cy="905" r="1.9"/><circle cx="222" cy="896" r="1.9"/><circle cx="220" cy="889" r="1.9"/><circle cx="218" cy="883" r="1.9"/><circle cx="235" cy="903" r="1.9"/><circle cx="235" cy="893" r="1.9"/><circle cx="235" cy="886" r="1.9"/><circle cx="235" cy="880" r="1.9"/><circle cx="244" cy="904" r="1.9"/><circle cx="247" cy="895" r="1.9"/><circle cx="249" cy="888" r="1.9"/><circle cx="251" cy="882" r="1.9"/><circle cx="252" cy="908" r="1.9"/><circle cx="257" cy="901" r="1.9"/><circle cx="260" cy="896" r="1.9"/><circle cx="263" cy="891" r="1.9"/></g>
+<g class="ln" marker-end="url(#ar)">
+  <path d="M150,912 H168"/><path d="M300,912 H318"/><path d="M450,912 H468"/><path d="M600,912 H618"/>
+  <path d="M750,912 H770"/><path d="M782,872 V900"/><path d="M792,912 H812"/>
+</g>
+<circle cx="782" cy="912" r="10" fill="#fff" stroke="#333" stroke-width="1.1"/>
+<path d="M776,912 H788 M782,906 V918" stroke="#333" stroke-width="1.3"/>
+<g class="s" fill="#444">
+  <text x="962" y="893">left and right hand only;</text>
+  <text x="962" y="907">pose and face/head unchanged</text>
+  <text x="962" y="926"><tspan font-style="italic">Â</tspan> is fixed, not learned;</text>
+  <text x="962" y="940">one bone further per layer</text>
+</g>
+<g class="s" fill="#333">
+  <text x="20" y="970">12 per landmark: <tspan font-style="italic">xyz</tspan> of hand shape and of hand placement, and the frame difference of each (2 × 2 × 3). <tspan font-style="italic">A</tspan>: MediaPipe's 21 hand bones.</text>
+  <text x="20" y="984">Parameters per hand: 416 (12 × 32 + 32) + 1,056 (32 × 32 + 32) + 80,760 (672 × 120 + 120) = 82,232; both hands 164,464.</text>
+</g>
+
+<line x1="20" y1="996" x2="1120" y2="996" stroke="#bbb" stroke-width="0.8"/>
+<text x="20" y="1010" class="s" fill="#333">Trainable parameters without (d): 2,037,668 + 161·<tspan font-style="italic">C</tspan> (2,053,929 for 100 signs + no-sign). Embedding width <tspan font-style="italic">d</tspan> = 320 = 120 + 120 + 40 + 40 (hands, pose, face/head). All dropout <tspan font-style="italic">p</tspan> = 0.1. Exported to ONNX and run on CPU.</text>
 </svg>

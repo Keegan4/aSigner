@@ -7,7 +7,10 @@ from data import (
     Clip, augment, close_pool, live_windows, load_clips, middle_window, mirror, to_model_input, window,
     window_frames,
 )
-from train import RegionEncoder, SignNet, export, pick_device, probabilities, threshold_curve, train, training_batch
+from train import (
+    HAND_BONES, HandGraph, RegionEncoder, SignNet, export, hand_adjacency, pick_device, probabilities,
+    threshold_curve, train, training_batch,
+)
 
 from app.recognition.features import (
     CLIP_FRAMES, COORDINATE_SIZE, FRAME_SIZE, IDLE_LABEL, LEFT_HAND, NORMALISED_PARTS,
@@ -420,3 +423,121 @@ def test_ablation_pairs_each_seed_and_leaves_no_model_behind(tmp_path):
     assert result["difference"]["top1"]["runs"] == pytest.approx(paired)
     assert list((tmp_path / "runs").glob("ablation-*/ablation.json"))
     assert not list(tmp_path.rglob("*.onnx"))  # the served model is never touched
+
+
+def test_hand_adjacency_links_each_landmark_to_itself_and_its_bones():
+    adjacency = hand_adjacency()
+    links = adjacency > 0
+    assert adjacency.shape == (21, 21) and torch.equal(adjacency, adjacency.T)
+    assert len(set(HAND_BONES)) == 21 and int(links.sum()) == 21 + 2 * 21
+    assert links.diagonal().all() and all(links[a, b] for a, b in HAND_BONES)
+    # The wrist has three bones (thumb, index and little finger) plus itself; a fingertip has one.
+    assert float(adjacency[0, 0]) == pytest.approx(1 / 4) and float(adjacency[8, 8]) == pytest.approx(1 / 2)
+    assert float(adjacency[7, 8]) == pytest.approx(1 / (3 * 2) ** 0.5)  # a mid-finger joint has two bones
+
+
+def test_one_graph_convolution_reaches_only_the_next_landmark():
+    torch.manual_seed(5)
+    graph = HandGraph(width=120, joint_features=12).eval()
+    joints = torch.randn(1, 1, 21, 12)
+    moved = joints.clone()
+    moved[..., 8, :] += 1.0  # the index fingertip
+    with torch.no_grad():
+        once = (graph.mix(moved, graph.first) - graph.mix(joints, graph.first)).abs().sum(dim=-1)[0, 0]
+        twice = (graph.mix(graph.mix(moved, graph.first), graph.second)
+                 - graph.mix(graph.mix(joints, graph.first), graph.second)).abs().sum(dim=-1)[0, 0]
+    assert set(once.nonzero().flatten().tolist()) == {7, 8}
+    assert set(twice.nonzero().flatten().tolist()) == {6, 7, 8}
+
+
+def test_hand_inputs_are_regrouped_by_landmark():
+    encoder = RegionEncoder((1, 3), width=120, graph=True)
+    clip = torch.zeros(1, 2, NORMALISED_SIZE)
+    clip[..., [COORDINATE_SIZE + 1, COORDINATE_SIZE + 3]] = 1.0
+    shape, placement = NORMALISED_PARTS[1], NORMALISED_PARTS[3]
+    clip[0, :, shape] = torch.arange(63.0)
+    clip[0, :, placement] = 100 + torch.arange(63.0)
+    clip[0, 1, shape] += 0.5  # the hand's shape changes between the two frames
+    features, _ = encoder.inputs(clip)
+    joints = encoder.joints(features)
+    assert joints.shape == (1, 2, 21, 12)
+    # Landmark 8 in the second frame: shape xyz, placement xyz, then the motion of each.
+    assert joints[0, 1, 8].tolist() == [24.5, 25.5, 26.5, 124, 125, 126, 0.5, 0.5, 0.5, 0, 0, 0]
+
+
+def test_graph_conv_is_optional_and_only_on_the_hands():
+    torch.manual_seed(6)
+    plain, graph = SignNet(classes=4), SignNet(classes=4, graph_conv=True)
+    count = lambda model: sum(p.numel() for p in model.parameters())  # noqa: E731
+    # Per hand: 12·32 + 32, 32·32 + 32, then 21·32·120 + 120.
+    assert count(graph) - count(plain) == 2 * 82_232
+    assert not any(".graph." in name for name in plain.state_dict())
+    assert {name.split(".graph.")[0] for name in graph.state_dict() if ".graph." in name} == {"regions.0", "regions.1"}
+    with pytest.raises(ValueError, match="hand regions"):
+        RegionEncoder((4,), width=40, graph=True)
+
+    clip = torch.randn(2, CLIP_FRAMES, NORMALISED_SIZE)
+    clip[..., PRESENCE] = 1.0
+    clip[0, :, COORDINATE_SIZE:COORDINATE_SIZE + 4] = 0.0  # no hands in the first clip
+    graph.eval()
+    logits = graph(clip)
+    assert logits.shape == (2, 4) and torch.isfinite(logits).all()
+    left = graph.regions[0](clip)
+    assert torch.equal(left[0], graph.regions[0].missing.expand(CLIP_FRAMES, -1))
+    assert not torch.equal(left[1], plain.regions[0](clip)[1])
+
+
+def test_a_model_with_graph_conv_exports_and_says_so(tmp_path):
+    write_clips(tmp_path / "clips", per_sign=4)
+    out = tmp_path / "signs.onnx"
+    report = train(tmp_path / "clips", out, epochs=2, seed=0, test_signer="u2", runs=tmp_path / "runs",
+                   graph_conv=True)
+    assert report["graph_conv"] is True
+    recogniser = load_recogniser(str(out))
+    assert recogniser.info["graph_conv"] is True
+    plain = train(tmp_path / "clips", tmp_path / "plain.onnx", epochs=1, seed=0, test_signer="u2",
+                  runs=tmp_path / "runs")
+    assert plain["graph_conv"] is False and "graph_conv" not in plain["info"]
+
+
+def test_graph_conv_export_matches_pytorch_on_different_clips(tmp_path):
+    torch.manual_seed(7)
+    model = SignNet(classes=4, graph_conv=True).eval()
+    rng = np.random.default_rng(7)
+    probes = [to_model_input(fake_clip(rng, index)) for index in range(2)]
+    out = tmp_path / "graph.onnx"
+    export(model, out, ["A", "B", "C", IDLE_LABEL], None, probes[0])
+    recogniser = load_recogniser(str(out))
+    for probe in probes:
+        with torch.no_grad():
+            expected = torch.softmax(model(torch.from_numpy(probe)[None]), dim=1)[0].numpy()
+        assert recogniser.predict(probe) == pytest.approx(expected, abs=1e-4)
+
+
+def test_a_graph_model_starts_from_a_checkpoint_made_without_the_block(tmp_path):
+    from checkpoint import load_into, save_checkpoint
+
+    torch.manual_seed(8)
+    labels = ["A", "B", IDLE_LABEL]
+    source = SignNet(3)
+    save_checkpoint(source, labels, "somewhere", tmp_path / "plain.pt")
+    target = SignNet(3, graph_conv=True)
+    fresh = target.regions[0].graph.out.weight.clone()
+    assert load_into(target, labels, tmp_path / "plain.pt") == "somewhere"
+    assert torch.equal(target.regions[0].encoder[0].weight, source.regions[0].encoder[0].weight)
+    assert torch.equal(target.head[-1].weight, source.head[-1].weight)
+    assert torch.equal(target.regions[0].graph.out.weight, fresh)
+
+
+def test_ablation_can_measure_the_graph_conv(tmp_path):
+    from ablate import ablate
+
+    write_clips(tmp_path / "clips", per_sign=4)
+    result = ablate(tmp_path / "clips", seeds=[0, 1], epochs=2, test_signer="u2", runs=tmp_path / "runs",
+                    block="graph-conv")
+    assert result["block"] == "graph-conv"
+    assert set(result["variants"]) == {"with graph conv", "without graph conv"}
+    paired = [a - b for a, b in zip(result["variants"]["with graph conv"]["top1"]["runs"],
+                                    result["variants"]["without graph conv"]["top1"]["runs"])]
+    assert result["difference"]["top1"]["runs"] == pytest.approx(paired)
+    assert not list(tmp_path.rglob("*.onnx"))

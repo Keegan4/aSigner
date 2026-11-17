@@ -29,7 +29,7 @@ from checkpoint import load_into
 from data import Clip, augmented_samples, live_windows, load_clips, middle_window, to_model_input
 
 from app.recognition.features import (  # path set up by data.py
-    CLIP_FRAMES, COORDINATE_SIZE, IDLE_LABEL, NORMALISED_PARTS,
+    CLIP_FRAMES, COORDINATE_SIZE, HAND_POINTS, IDLE_LABEL, NORMALISED_PARTS,
     NORMALISED_SIZE, PART_WIDTHS, REGION_PARTS,
 )
 from app.recognition.onnx_recogniser import INFO_KEY, LABELS_KEY, PASS_SCORE_KEY, OnnxRecogniser
@@ -41,6 +41,15 @@ MIN_PASS_SCORE = 0.5
 # right hand, pose, face/head. Hands carry most of a sign, so they get the
 # room to keep fine handshape detail (120, 120, 40, 40 at width 320).
 REGION_SHARES = (3, 3, 1, 1)
+# The bones of MediaPipe's hand: landmark 0 is the wrist, then four landmarks
+# per finger from the thumb to the little finger, base to tip.
+HAND_BONES = (
+    (0, 1), (1, 2), (2, 3), (3, 4),
+    (0, 5), (5, 6), (6, 7), (7, 8),
+    (5, 9), (9, 10), (10, 11), (11, 12),
+    (9, 13), (13, 14), (14, 15), (15, 16),
+    (13, 17), (0, 17), (17, 18), (18, 19), (19, 20),
+)
 
 
 def pick_device() -> torch.device:
@@ -58,10 +67,54 @@ def pick_device() -> torch.device:
     return torch.device("cpu")
 
 
-class RegionEncoder(nn.Module):
-    """Encode positions, valid motion and availability for one anatomical region."""
+def hand_adjacency() -> torch.Tensor:
+    """How much each hand landmark takes from each other one in a graph convolution.
 
-    def __init__(self, parts: tuple[int, ...], width: int):
+    A landmark listens to itself and to the landmarks it shares a bone with.
+    Each link is divided by the square roots of both ends' link counts
+    (D^-1/2 (A + I) D^-1/2), so the wrist, with the most links, does not drown
+    out a fingertip.
+    """
+    links = torch.eye(HAND_POINTS)
+    for a, b in HAND_BONES:
+        links[a, b] = links[b, a] = 1.0
+    scale = links.sum(dim=1).rsqrt()
+    return scale[:, None] * links * scale[None, :]
+
+
+class HandGraph(nn.Module):
+    """Two graph convolutions over the hand skeleton, then one vector for the hand.
+
+    Each layer lets a landmark see one bone further, so after two a fingertip
+    knows about the two joints below it. The flat encoder has to learn which
+    landmarks are connected; here it is built in.
+    """
+
+    def __init__(self, width: int, joint_features: int, hidden: int = 32):
+        super().__init__()
+        # Fixed, so it is not a weight and stays out of checkpoints.
+        self.register_buffer("adjacency", hand_adjacency(), persistent=False)
+        self.first = nn.Linear(joint_features, hidden)
+        self.second = nn.Linear(hidden, hidden)
+        self.out = nn.Linear(HAND_POINTS * hidden, width)
+
+    def mix(self, joints: torch.Tensor, layer: nn.Linear) -> torch.Tensor:
+        """One graph convolution: the same weights for every landmark, then its neighbours' sum."""
+        return nn.functional.gelu(self.adjacency @ layer(joints))
+
+    def forward(self, joints: torch.Tensor) -> torch.Tensor:  # (batch, time, landmarks, features)
+        joints = self.mix(self.mix(joints, self.first), self.second)
+        return self.out(joints.flatten(start_dim=-2))
+
+
+class RegionEncoder(nn.Module):
+    """Encode positions, valid motion and availability for one anatomical region.
+
+    With `graph`, a hand also goes through graph convolutions over its skeleton
+    (HandGraph), added to the flat encoder's output.
+    """
+
+    def __init__(self, parts: tuple[int, ...], width: int, graph: bool = False):
         super().__init__()
         self.parts = parts
         coordinates = sum(PART_WIDTHS[i] for i in parts)
@@ -75,6 +128,12 @@ class RegionEncoder(nn.Module):
         )
         self.missing = nn.Parameter(torch.empty(width))
         nn.init.normal_(self.missing, std=0.02)
+        self.graph = None
+        if graph:
+            if any(PART_WIDTHS[i] != HAND_POINTS * 3 for i in parts):
+                raise ValueError("graph convolution is only defined for the hand regions")
+            # Per landmark: xyz and its motion, for each of the hand's parts.
+            self.graph = HandGraph(width, joint_features=2 * len(parts) * 3)
 
     def inputs(self, clip: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         positions, motions, present, motion_valid = [], [], [], []
@@ -91,9 +150,17 @@ class RegionEncoder(nn.Module):
         flags = torch.cat(present, dim=-1)
         return torch.cat([*positions, *motions, flags, *motion_valid], dim=-1), flags
 
+    def joints(self, features: torch.Tensor) -> torch.Tensor:
+        """A hand's positions and motions regrouped by landmark: (batch, time, 21, 12)."""
+        groups = 2 * len(self.parts)  # positions then motions, one group per part
+        coordinates = features[..., :groups * HAND_POINTS * 3]
+        return coordinates.unflatten(-1, (groups, HAND_POINTS, 3)).transpose(-3, -2).flatten(start_dim=-2)
+
     def forward(self, clip: torch.Tensor) -> torch.Tensor:
         features, flags = self.inputs(clip)
         encoded = self.encoder(features)
+        if self.graph is not None:
+            encoded = encoded + self.graph(self.joints(features))
         return torch.where(flags.sum(dim=-1, keepdim=True) > 0, encoded, self.missing)
 
 
@@ -104,13 +171,16 @@ class SignNet(nn.Module):
     the prepended classification token gathers information from the whole clip.
     """
 
-    def __init__(self, classes: int, width: int = 320, temporal_conv: bool = True):
+    def __init__(self, classes: int, width: int = 320, temporal_conv: bool = True, graph_conv: bool = False):
         super().__init__()
         if width % 20 or width % sum(REGION_SHARES):
             raise ValueError(f"embedding width must be divisible by 20 heads and by {sum(REGION_SHARES)} "
                              "(the regions' shares)")
+        # Graph convolution is optional and only for the hands, the regions made
+        # of hand landmarks; ablate.py measures what it adds.
         self.regions = nn.ModuleList(
-            RegionEncoder(parts, width * share // sum(REGION_SHARES))
+            RegionEncoder(parts, width * share // sum(REGION_SHARES),
+                          graph=graph_conv and all(PART_WIDTHS[i] == HAND_POINTS * 3 for i in parts))
             for parts, share in zip(REGION_PARTS, REGION_SHARES)
         )
         # The residual temporal convolution can be left out to measure what it adds
@@ -275,7 +345,7 @@ def export(model: nn.Module, out: Path, labels: list[str], pass_score: float | N
 
 
 def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_signer: str | None, runs: Path,
-          init: Path | None = None, temporal_conv: bool = True):
+          init: Path | None = None, temporal_conv: bool = True, graph_conv: bool = False):
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
 
@@ -294,9 +364,11 @@ def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_
     print(f"{len(train_clips)} training clips, {len(test_clips)} test clips, "
           f"{len(labels) - 1} signs plus no-sign ({split_note})")
 
-    model = SignNet(len(labels), temporal_conv=temporal_conv)
+    model = SignNet(len(labels), temporal_conv=temporal_conv, graph_conv=graph_conv)
     if not temporal_conv:
         print("without the residual temporal convolution")
+    if graph_conv:
+        print("with graph convolution on the hands")
     # Optionally start from weights pretrained on public data (pretrain.py).
     pretrained = load_into(model, labels, init) if init else None
     if pretrained:
@@ -330,7 +402,7 @@ def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_
             print(f"epoch {epoch:3d}  loss {total / len(train_clips):.3f}")
 
     report = {"clips": len(clips), "labels": labels, "split": split_note, "epochs": epochs, "seed": seed,
-              "temporal_conv": temporal_conv}
+              "temporal_conv": temporal_conv, "graph_conv": graph_conv}
     confusion, pass_score = None, None
     if test_clips:
         probs = probabilities(model, test_clips)
@@ -401,6 +473,8 @@ def train(clips_dir: Path | list[Path], out: Path, epochs: int, seed: int, test_
         info["pretrained"] = pretrained
     if not temporal_conv:
         info["temporal_conv"] = False
+    if graph_conv:
+        info["graph_conv"] = True
     report["info"] = info
     export(model, out, labels, pass_score, to_model_input(middle_window(clips[0])), info)
 
@@ -429,6 +503,8 @@ if __name__ == "__main__":
     parser.add_argument("--init", type=Path, help="checkpoint from pretrain.py to start from")
     parser.add_argument("--no-temporal-conv", dest="temporal_conv", action="store_false",
                         help="leave out the residual temporal convolution")
+    parser.add_argument("--graph-conv", action="store_true",
+                        help="add graph convolution over each hand's skeleton")
     args = parser.parse_args()
     train(args.clips, args.out, args.epochs, args.seed, args.test_signer, args.runs, args.init,
-          args.temporal_conv)
+          args.temporal_conv, args.graph_conv)
