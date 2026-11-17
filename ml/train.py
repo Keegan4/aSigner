@@ -141,15 +141,18 @@ class SignNet(nn.Module):
             nn.Linear(width // 2, classes),
         )
 
-    def forward(self, clip: torch.Tensor) -> torch.Tensor:  # (batch, time, features)
+    def encode(self, clip: torch.Tensor) -> torch.Tensor:
+        """Every token after attention: the summary token, then one per frame. (batch, time + 1, width)"""
         frames = torch.cat([region(clip) for region in self.regions], dim=-1)
         if self.temporal_conv:
             local = self.temporal(self.temporal_norm(frames).transpose(1, 2)).transpose(1, 2)
             frames = frames + local
         cls = self.cls_token.expand(clip.shape[0], -1, -1)
         tokens = torch.cat([cls, frames], dim=1) + self.positions
-        encoded = self.encoder(tokens)
-        return self.head(self.norm(encoded[:, 0]))
+        return self.norm(self.encoder(tokens))
+
+    def forward(self, clip: torch.Tensor) -> torch.Tensor:  # (batch, time, features)
+        return self.head(self.encode(clip)[:, 0])
 
 
 def clip_source(signer: str) -> str:

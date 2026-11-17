@@ -21,7 +21,7 @@ from torch import nn
 
 from asl_signs import SOURCE as ASL_SIGNS_SOURCE
 from asl_signs import load_asl_signs
-from checkpoint import save_checkpoint
+from checkpoint import load_into, save_checkpoint
 from data import Clip
 from public_data import CASL_SOURCE, SOURCE, WLASL_SOURCE, load_casl, load_samples, load_wlasl
 from train import SignNet, model_inputs, pick_device, probabilities, training_batch
@@ -68,17 +68,12 @@ def evaluate(model: nn.Module, clips: list[Clip], labels: list[str], loss_fn: nn
     }
 
 
-def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = None,
-             wlasl: Path | None = None, warmup: int | None = None, asl_signs: Path | None = None,
-             per_sign: int | None = 100) -> dict:
-    """`warmup` is how many epochs the learning rate climbs for before it starts
-    to fall; left out, it is the first 30% of them. `per_sign` limits how many
-    asl-signs clips of each sign are read (None for all, about 380 a sign)."""
-    if warmup is not None and not 0 < warmup < epochs:
-        raise SystemExit(f"--warmup must be between 1 and {epochs - 1} for {epochs} epochs.")
-    rng = np.random.default_rng(seed)
-    torch.manual_seed(seed)
+def load_public(data: Path, casl: Path | None, wlasl: Path | None, rng: np.random.Generator,
+                asl_signs: Path | None = None, per_sign: int | None = 100):
+    """The public clips: those to train on, the held-out ones by dataset, where they came from, and how many in all.
 
+    `per_sign` limits how many asl-signs clips of each sign are read (None for all, about 380 a sign).
+    """
     clips = load_samples(data)
     if len({c.label for c in clips}) < 2:
         raise SystemExit(f"Found {len(clips)} usable samples under {data}; see public_data.py for where to get them.")
@@ -110,7 +105,23 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
               f"({len({c.signer for c in asl_test})} whole signers)")
     elif asl_signs:
         print(f"no asl-signs train.csv under {asl_signs}; leaving it out")
-    source = " + ".join(sources)
+    total = (len(clips) + len(casl_train) + len(casl_test) + len(wlasl_train) + len(wlasl_test)
+             + len(asl_train) + len(asl_test))
+    return train_clips, held_out, " + ".join(sources), total
+
+
+def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = None,
+             wlasl: Path | None = None, warmup: int | None = None, asl_signs: Path | None = None,
+             per_sign: int | None = 100, init: Path | None = None) -> dict:
+    """`warmup` is how many epochs the learning rate climbs for before it starts
+    to fall; left out, it is the first 30% of them. `init` is a checkpoint to
+    start from, such as the one pretrain_masked.py makes."""
+    if warmup is not None and not 0 < warmup < epochs:
+        raise SystemExit(f"--warmup must be between 1 and {epochs - 1} for {epochs} epochs.")
+    rng = np.random.default_rng(seed)
+    torch.manual_seed(seed)
+
+    train_clips, held_out, source, samples = load_public(data, casl, wlasl, rng, asl_signs, per_sign)
     # Same label set shape as train.py: windows split evenly between two signs are labelled idle.
     labels = sorted({c.label for c in train_clips} | {IDLE_LABEL})
     held_out = {name: [c for c in group if c.label in labels] for name, group in held_out.items() if group}
@@ -118,7 +129,11 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
           f"{len(labels) - 1} labels ({source})")
 
     device = pick_device()
-    model = SignNet(len(labels)).to(device)
+    model = SignNet(len(labels))
+    if init:
+        source = f"{source}, started from {init.name} ({load_into(model, labels, init)})"
+        print(f"starting from {init}")
+    model.to(device)
     print(f"training on {device}")
     steps = (len(train_clips) + 63) // 64
     optimiser = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
@@ -153,8 +168,7 @@ def pretrain(data: Path, out: Path, epochs: int, seed: int, casl: Path | None = 
         print(f"epoch {epoch:3d}  loss {row['train']['loss']:.3f}  "
               + "  ".join(f"{name} f1 {row[name]['f1']:.3f}" for name in held_out))
 
-    report = {"samples": (len(clips) + len(casl_train) + len(casl_test) + len(wlasl_train) + len(wlasl_test)
-                          + len(asl_train) + len(asl_test)),
+    report = {"samples": samples,
               "labels": labels, "epochs": epochs, "warmup_epochs": warmup if warmup else 0.3 * epochs,
               "seed": seed, "source": source, "history": history}
     if "asl-now" in held_out:
@@ -194,6 +208,7 @@ if __name__ == "__main__":
     parser.add_argument("--warmup", type=int,
                         help="epochs the learning rate rises for before it falls (default: 30%% of --epochs)")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--init", type=Path, help="checkpoint to start from, such as pretrain_masked.py's")
     args = parser.parse_args()
     pretrain(args.data, args.out, args.epochs, args.seed, args.casl, args.wlasl, args.warmup,
-             args.asl_signs, args.per_sign or None)
+             args.asl_signs, args.per_sign or None, args.init)
