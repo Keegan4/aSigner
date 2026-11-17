@@ -1,11 +1,22 @@
 "use client";
 
 import { DrawingUtils, HandLandmarker } from "@mediapipe/tasks-vision";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { Button, TextLink } from "@/components/ui/Button";
+import { Callout } from "@/components/ui/Callout";
+import { Card } from "@/components/ui/Card";
+import { Chip } from "@/components/ui/Chip";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Field, FileInput, Select } from "@/components/ui/Field";
+import { GlossTokens } from "@/components/ui/Gloss";
+import { IconClose, IconDownload, IconFilm } from "@/components/ui/Icons";
+import { Meter } from "@/components/ui/Meter";
 import { ModelNote } from "@/components/ui/ModelNote";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Shell } from "@/components/ui/Shell";
+import { SignInPrompt } from "@/components/ui/States";
+import { Switch } from "@/components/ui/Switch";
 import { type ModelInfo, WS_URL } from "@/lib/api";
 import { FRAME_SIZE, packFrame } from "@/lib/tracking/features";
 import { closeTrackers, detect, loadTrackers, type Trackers } from "@/lib/tracking/landmarkers";
@@ -236,184 +247,224 @@ export function VideoTranslator() {
   const finished = status.kind === "done" || status.kind === "stopped";
 
   return (
-    <Shell back="/translate" backLabel="Live translation" title="Translate a video">
-      <p className="text-sm opacity-70">
-        Choose a recording of someone signing to see what the sign model reads, window by window. The video
-        stays in your browser: it is tracked here and only landmark coordinates are sent.
-      </p>
-
-      <section className="flex flex-col gap-3 rounded-lg border p-4 text-sm">
-        <input
-          type="file"
-          accept="video/*"
-          disabled={running}
-          onChange={(e) => choose(e.target.files?.[0])}
-          className="file:mr-3 file:rounded-md file:border file:bg-transparent file:px-3 file:py-1.5"
-        />
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="flex items-center gap-2">
-            Frames per second
-            <select
-              value={rate}
-              disabled={running}
-              onChange={(e) => setRate(Number(e.target.value))}
-              className="rounded-md border bg-transparent px-2 py-1"
-            >
-              {RATES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={mirror} disabled={running} onChange={(e) => setMirror(e.target.checked)} />
-            Mirror the video
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={save} disabled={running} onChange={(e) => setSave(e.target.checked)} />
-            Save sentences to my history
-          </label>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          {running ? (
-            <button onClick={stop} className="rounded-md border px-3 py-1.5">
-              Stop
-            </button>
-          ) : (
-            <button
-              onClick={run}
-              disabled={!url}
-              className="rounded-md bg-foreground px-3 py-1.5 font-medium text-background disabled:opacity-40"
-            >
-              {finished ? "Translate again" : "Translate"}
-            </button>
-          )}
-          {(finished || running) && windows.length > 0 && (
-            <button onClick={download} className="rounded-md border px-3 py-1.5">
-              Download log (JSON)
-            </button>
-          )}
-          {running && (
-            <progress value={status.progress} max={1} className="flex-1" aria-label="Translation progress" />
-          )}
-        </div>
-        <p className="text-xs opacity-60">
-          Mirror the video if it was recorded with a selfie camera that saves a mirrored picture; the live
-          translator tracks the camera unmirrored. Sentences are only kept when you ask.
-        </p>
-      </section>
-
-      {status.kind === "error" && (
-        <p role="alert" className="rounded-md border p-3 text-sm">
-          {status.message}
-        </p>
-      )}
-      {status.kind === "signed-out" && (
-        <p role="alert" className="text-sm">
-          <a href="/api/auth/login" className="underline underline-offset-4">
-            Sign in with Google
-          </a>{" "}
-          to translate.
-        </p>
-      )}
-
-      <div className={`relative w-full overflow-hidden rounded-xl bg-neutral-900 ${url ? "" : "hidden"}`}>
-        {/* The video is only a frame source; frames are shown on the canvas with the tracking on top. */}
-        <video
-          ref={videoRef}
-          src={url ?? undefined}
-          muted
-          playsInline
-          preload="auto"
-          onLoadedData={() => show(0)}
-          className="hidden"
-        />
-        <canvas ref={canvasRef} className="h-auto w-full" />
-      </div>
-
-      {model && <ModelNote model={model} />}
-
-      {(glosses.length > 0 || sentences.length > 0 || finished) && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">Translation</h2>
-          {sentences.length === 0 && glosses.length === 0 ? (
-            <p className="text-sm opacity-70">No signs were recognised.</p>
-          ) : (
-            <>
-              <ul aria-live="polite" className="flex flex-col gap-2">
-                {sentences.map((s, i) => (
-                  <li key={i} className="rounded-lg border p-3">
-                    <p className="text-lg">{s.sentence}</p>
-                    <p className="font-mono text-sm opacity-70">
-                      {s.glosses.join(" ")} · ended at {time(s.t)}
-                      {s.from_model ? "" : " · plain glosses"}
-                    </p>
-                  </li>
+    <Shell
+      back="/translate"
+      backLabel="Live translation"
+      title="Translate a video"
+      width="wide"
+      description={
+        <>
+          Choose a recording of someone signing to see what the sign model reads, window by window. The video
+          stays in your browser: it is tracked here and only landmark coordinates are sent.
+        </>
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+        <Card as="section" aria-label="Video and options" className="flex flex-col gap-5 text-sm">
+          <Step number={1} title="Choose a video">
+            <Field label="Video file" hint={name ? `Loaded: ${name}` : "Any video your browser can play."}>
+              <FileInput accept="video/*" disabled={running} onChange={(e) => choose(e.target.files?.[0])} />
+            </Field>
+          </Step>
+          <Step number={2} title="Options">
+            <Field label="Frames per second">
+              <Select value={rate} disabled={running} onChange={(e) => setRate(Number(e.target.value))}>
+                {RATES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
                 ))}
-              </ul>
-              <ol className="flex flex-wrap gap-2 font-mono text-sm">
-                {glosses.map((g, i) => (
-                  <li key={i}>
-                    <button
-                      onClick={() => show(g.t)}
-                      disabled={running}
-                      className="rounded-md border px-2 py-1 hover:bg-foreground/5"
-                      title="Show this frame"
-                    >
-                      {g.gloss} <span className="opacity-60">{time(g.t)}</span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            </>
-          )}
-        </section>
-      )}
+              </Select>
+            </Field>
+            <div className="flex flex-col">
+              <Switch
+                label="Mirror the video"
+                checked={mirror}
+                disabled={running}
+                onChange={(e) => setMirror(e.target.checked)}
+              />
+              <Switch
+                label="Save sentences to my history"
+                checked={save}
+                disabled={running}
+                onChange={(e) => setSave(e.target.checked)}
+              />
+            </div>
+            <p className="text-xs text-muted">
+              Mirror the video if it was recorded with a selfie camera that saves a mirrored picture; the live
+              translator tracks the camera unmirrored. Sentences are only kept when you ask.
+            </p>
+          </Step>
+          <Step number={3} title="Translate">
+            <div className="flex flex-wrap items-center gap-2">
+              {running ? (
+                <Button onClick={stop} icon={<IconClose size={18} />}>
+                  Stop
+                </Button>
+              ) : (
+                <Button variant="primary" onClick={run} disabled={!url}>
+                  {finished ? "Translate again" : "Translate"}
+                </Button>
+              )}
+              {(finished || running) && windows.length > 0 && (
+                <Button onClick={download} icon={<IconDownload size={18} />}>
+                  Download log (JSON)
+                </Button>
+              )}
+            </div>
+            {running && (
+              <div className="flex items-center gap-3">
+                <Meter
+                  kind="progress"
+                  value={status.progress}
+                  max={1}
+                  label="Translation progress"
+                  valueText={percent(status.progress)}
+                />
+                <span className="w-10 text-right text-xs text-muted tabular-nums">{percent(status.progress)}</span>
+              </div>
+            )}
+            {!url && <p className="text-xs text-muted">Choose a video first.</p>}
+          </Step>
+        </Card>
 
-      {windows.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">
-            What the model saw ({windows.length} windows)
-          </h2>
-          <p className="text-xs opacity-60">
-            Each row is one look at the last second. A sign is counted once it is read the same way several
-            times running. A dash means too little seen yet, no hands, or not confident enough.
-          </p>
-          <div className="max-h-96 overflow-auto rounded-lg border">
-            <table className="w-full text-left font-mono text-sm">
-              <thead className="sticky top-0 bg-background">
-                <tr className="border-b">
-                  <th className="px-3 py-2 font-medium">Time</th>
-                  <th className="px-3 py-2 font-medium">Read as</th>
-                  <th className="px-3 py-2 font-medium">Top guesses</th>
-                </tr>
-              </thead>
-              <tbody>
-                {windows.map((w, i) => (
-                  <tr
-                    key={i}
-                    onClick={() => show(w.t)}
-                    className={`cursor-pointer border-b last:border-0 hover:bg-foreground/5 ${w.label ? "" : "opacity-60"}`}
-                  >
-                    <td className="px-3 py-1.5">{time(w.t)}</td>
-                    <td className="px-3 py-1.5">{w.label ?? "–"}</td>
-                    <td className="px-3 py-1.5">
-                      {w.top.length ? w.top.map(([g, p]) => `${g} ${percent(p)}`).join(", ") : "–"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="flex min-w-0 flex-col gap-6">
+          {status.kind === "error" && (
+            <Callout tone="danger" role="alert">
+              {status.message}
+            </Callout>
+          )}
+          {status.kind === "signed-out" && <SignInPrompt role="alert" to="translate" />}
+
+          {!url && (
+            <EmptyState icon={<IconFilm size={24} />} title="No video chosen">
+              The video appears here with the tracking drawn on it.
+            </EmptyState>
+          )}
+          <div className={`relative w-full overflow-hidden rounded-card bg-stage ${url ? "" : "hidden"}`}>
+            {/* The video is only a frame source; frames are shown on the canvas with the tracking on top. */}
+            <video
+              ref={videoRef}
+              src={url ?? undefined}
+              muted
+              playsInline
+              preload="auto"
+              onLoadedData={() => show(0)}
+              className="hidden"
+            />
+            <canvas ref={canvasRef} className="h-auto w-full" />
           </div>
-        </section>
-      )}
 
-      <p className="text-sm opacity-70">
-        <Link href="/translate" className="underline underline-offset-4">
-          Translate live from the camera
-        </Link>
-      </p>
+          {model && <ModelNote model={model} />}
+
+          {(glosses.length > 0 || sentences.length > 0 || finished) && (
+            <section aria-labelledby="video-translation" className="flex flex-col gap-3">
+              <SectionHeading id="video-translation" variant="eyebrow">
+                Translation
+              </SectionHeading>
+              {sentences.length === 0 && glosses.length === 0 ? (
+                <p className="text-sm text-muted">No signs were recognised.</p>
+              ) : (
+                <>
+                  <ul aria-live="polite" className="flex flex-col gap-2">
+                    {sentences.map((s, i) => (
+                      <Card as="li" key={i} padding="sm" className="flex flex-col gap-2 sm:px-4">
+                        <p className="text-lg font-medium">{s.sentence}</p>
+                        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                          <GlossTokens glosses={s.glosses} size="sm" />
+                          <span className="tabular-nums">
+                            · ended at {time(s.t)}
+                            {s.from_model ? "" : " · plain glosses"}
+                          </span>
+                        </p>
+                      </Card>
+                    ))}
+                  </ul>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs text-muted">Each sign as it was read. Choose one to show that frame.</p>
+                    <ol className="flex flex-wrap gap-2">
+                      {glosses.map((g, i) => (
+                        <li key={i}>
+                          <Chip
+                            onClick={() => show(g.t)}
+                            disabled={running}
+                            title="Show this frame"
+                            className="font-mono"
+                          >
+                            {g.gloss} <span className="font-sans text-xs font-normal text-muted">{time(g.t)}</span>
+                          </Chip>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
+          {windows.length > 0 && (
+            <section aria-labelledby="video-windows" className="flex flex-col gap-3">
+              <SectionHeading
+                id="video-windows"
+                variant="eyebrow"
+                description="Each row is one look at the last second. A sign is counted once it is read the same way several times running. A dash means too little seen yet, no hands, or not confident enough."
+              >
+                What the model saw ({windows.length} windows)
+              </SectionHeading>
+              <div className="max-h-96 overflow-auto rounded-card border border-line bg-surface">
+                <table className="w-full text-left font-mono text-sm">
+                  <thead className="sticky top-0 bg-sunken text-xs text-muted">
+                    <tr className="border-b border-line">
+                      <th className="px-3 py-2 font-medium">Time</th>
+                      <th className="px-3 py-2 font-medium">Read as</th>
+                      <th className="px-3 py-2 font-medium">Top guesses</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {windows.map((w, i) => (
+                      <tr
+                        key={i}
+                        onClick={() => show(w.t)}
+                        className={`cursor-pointer border-b border-line last:border-0 hover:bg-sunken ${w.label ? "text-foreground" : "text-muted"}`}
+                      >
+                        <td className="px-3 py-1.5 tabular-nums">{time(w.t)}</td>
+                        <td className="px-3 py-1.5 font-semibold">{w.label ?? "–"}</td>
+                        <td className="px-3 py-1.5">
+                          {w.top.length ? w.top.map(([g, p]) => `${g} ${percent(p)}`).join(", ") : "–"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          <p className="text-sm">
+            <TextLink href="/translate">Translate live from the camera</TextLink>
+          </p>
+        </div>
+      </div>
     </Shell>
+  );
+}
+
+function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3 border-b border-line pb-5 last:border-0 last:pb-0">
+      <h2 className="flex items-center gap-2.5 text-base font-semibold">
+        <span
+          aria-hidden
+          className="flex size-6 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent-fg"
+        >
+          {number}
+        </span>
+        <span>
+          <span className="sr-only">Step {number}: </span>
+          {title}
+        </span>
+      </h2>
+      {children}
+    </div>
   );
 }

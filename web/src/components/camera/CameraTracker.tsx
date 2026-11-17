@@ -147,15 +147,25 @@ export function CameraTracker({
   }, []);
 
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-900">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card bg-stage">
       <video ref={videoRef} playsInline muted className="h-full w-full -scale-x-100 object-cover" />
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full -scale-x-100" />
       {status !== "running" && (
         <p
           role={status === "error" ? "alert" : "status"}
-          className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-neutral-200"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm text-on-stage"
         >
-          {message}
+          {status === "loading" ? (
+            <span aria-hidden className="spinner size-6 text-on-stage-muted" />
+          ) : (
+            <span
+              aria-hidden
+              className="flex size-9 items-center justify-center rounded-full border-2 border-danger text-base font-bold text-danger"
+            >
+              !
+            </span>
+          )}
+          <span className="max-w-sm">{message}</span>
         </p>
       )}
     </div>

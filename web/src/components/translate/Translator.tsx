@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CameraStage, StagePill } from "@/components/camera/CameraStage";
 import { CameraTracker } from "@/components/camera/CameraTracker";
 import {
   emptyFeed,
@@ -13,8 +13,16 @@ import {
   PredictionsPanel,
 } from "@/components/translate/DebugPanels";
 import { type LiveSeen, TrainedSignsPanel } from "@/components/translate/TrainedSignsPanel";
-import { Shell } from "@/components/ui/Shell";
+import { StatusDot } from "@/components/ui/Badge";
+import { Button, TextLink } from "@/components/ui/Button";
+import { Callout } from "@/components/ui/Callout";
+import { Card } from "@/components/ui/Card";
+import { GlossTokens } from "@/components/ui/Gloss";
 import { ModelNote } from "@/components/ui/ModelNote";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Shell } from "@/components/ui/Shell";
+import { ServerUnreachable, SignInPrompt } from "@/components/ui/States";
+import { Switch } from "@/components/ui/Switch";
 import { type ModelInfo, type Translation, WS_URL } from "@/lib/api";
 
 type Link_ = "connecting" | "open" | "signed-out" | "closed";
@@ -111,83 +119,107 @@ export function Translator() {
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type }));
   };
 
+  const connection = {
+    connecting: { tone: "warning", text: "Connecting…" },
+    open: { tone: "success", text: "Connected" },
+    "signed-out": { tone: "danger", text: "Signed out" },
+    closed: { tone: "danger", text: "Not connected" },
+  } as const;
+  const linkState = connection[link];
+
   return (
-    <Shell back="/" title="Translate" wide>
-      <label className="flex items-center gap-2 self-start text-sm">
-        <input type="checkbox" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
-        Show debug panels (model predictions and landmarks)
-      </label>
+    <Shell back="/" backLabel="Lessons" title="Translate" wide>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-card border border-line bg-surface px-4 py-2 shadow-card">
+        <Switch
+          checked={debug}
+          onChange={(e) => setDebug(e.target.checked)}
+          label="Show debug panels"
+          description="Model predictions and landmarks"
+        />
+        <p className="inline-flex items-center gap-2 text-sm text-muted">
+          <StatusDot tone={linkState.tone} />
+          Server: <span className="font-medium text-foreground">{linkState.text}</span>
+        </p>
+      </div>
       <div
         className={`grid gap-6 lg:items-start ${
           debug ? "lg:grid-cols-[18rem_minmax(0,1fr)_18rem]" : "lg:grid-cols-[18rem_minmax(0,1fr)]"
         }`}
       >
-        <aside className="order-2 flex flex-col gap-6 lg:order-1 lg:sticky lg:top-4">
+        <aside
+          aria-label="Model predictions and trained words"
+          className={`order-2 flex flex-col gap-6 lg:order-1 lg:sticky lg:top-4 ${
+            debug ? "md:grid md:grid-cols-2 md:items-start lg:flex" : ""
+          }`}>
           {debug && <PredictionsPanel prediction={prediction} />}
           <TrainedSignsPanel model={model} live={live} current={prediction?.top[0]?.[0] ?? null} />
         </aside>
         <div className="order-1 flex min-w-0 flex-col gap-6 lg:order-2">
-          <CameraTracker onFrame={onFrame} onVideoFrame={onVideoFrame} onCamera={onCamera} />
+          <CameraStage
+            corner={
+              <StagePill>
+                <StatusDot tone={linkState.tone} />
+                {linkState.text}
+              </StagePill>
+            }
+          >
+            <CameraTracker onFrame={onFrame} onVideoFrame={onVideoFrame} onCamera={onCamera} />
+          </CameraStage>
 
           {unavailable ? (
-            <p role="alert" className="rounded-md border p-3 text-sm">
+            <Callout tone="warning" role="alert">
               {unavailable}
-            </p>
+            </Callout>
           ) : link === "signed-out" ? (
-            <p role="alert" className="text-sm">
-              <a href="/api/auth/login" className="underline underline-offset-4">
-                Sign in with Google
-              </a>{" "}
-              to translate.
-            </p>
+            <SignInPrompt role="alert" to="translate" />
           ) : link === "closed" ? (
-            <p role="alert" className="text-sm text-red-600">
-              The connection to the aSigner server was lost. Reload to try again.
-            </p>
+            <ServerUnreachable reason="lost" />
           ) : (
             <>
-              <section className="flex flex-col gap-3 rounded-lg border p-4">
-                <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">Signs so far</h2>
-                <p aria-live="polite" className="min-h-8 font-mono text-xl">
-                  {glosses.length ? glosses.join(" ") : <span className="text-sm opacity-60">
-                    {link === "open" ? "Sign to the camera. Pause to end a sentence." : "Connecting…"}
-                  </span>}
+              <Card as="section" aria-labelledby="signs-so-far" className="flex flex-col gap-4">
+                <SectionHeading id="signs-so-far" variant="eyebrow">
+                  Signs so far
+                </SectionHeading>
+                <p aria-live="polite" className="flex min-h-10 items-center">
+                  {glosses.length ? (
+                    <GlossTokens glosses={glosses} size="lg" />
+                  ) : (
+                    <span className="text-sm text-muted">
+                      {link === "open" ? "Sign to the camera. Pause to end a sentence." : "Connecting…"}
+                    </span>
+                  )}
                 </p>
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <button
-                    onClick={() => send("flush")}
-                    disabled={glosses.length === 0}
-                    className="rounded-md bg-foreground px-3 py-1.5 font-medium text-background disabled:opacity-40"
-                  >
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line pt-4">
+                  <Button variant="primary" onClick={() => send("flush")} disabled={glosses.length === 0}>
                     End sentence
-                  </button>
-                  <button
-                    onClick={() => send("clear")}
-                    disabled={glosses.length === 0}
-                    className="rounded-md border px-3 py-1.5 disabled:opacity-40"
-                  >
+                  </Button>
+                  <Button onClick={() => send("clear")} disabled={glosses.length === 0}>
                     Clear
-                  </button>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={speak} onChange={(e) => setSpeak(e.target.checked)} />
-                    Speak sentences aloud
-                  </label>
+                  </Button>
+                  <Switch
+                    checked={speak}
+                    onChange={(e) => setSpeak(e.target.checked)}
+                    label="Speak sentences aloud"
+                    className="sm:ml-auto"
+                  />
                 </div>
-              </section>
+              </Card>
 
               <ModelNote model={model} />
 
-              <section className="flex flex-col gap-3">
-                <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">Sentences</h2>
+              <section aria-labelledby="sentences" className="flex flex-col gap-3">
+                <SectionHeading id="sentences" variant="eyebrow">
+                  Sentences
+                </SectionHeading>
                 {sentences.length === 0 ? (
-                  <p className="text-sm opacity-70">Finished sentences appear here and are saved.</p>
+                  <p className="text-sm text-muted">Finished sentences appear here and are saved.</p>
                 ) : (
-                  <ul aria-live="polite" className="flex flex-col gap-2">
+                  <ul aria-live="polite" className="flex flex-col gap-3">
                     {sentences.map((s) => (
-                      <li key={s.id} className="rounded-lg border p-3">
-                        <p className="text-lg">{s.sentence}</p>
-                        <p className="font-mono text-sm opacity-70">{s.glosses.join(" ")}</p>
-                      </li>
+                      <Card as="li" key={s.id} padding="sm" className="flex flex-col gap-2 sm:px-4">
+                        <p className="text-lg font-medium text-foreground">{s.sentence}</p>
+                        <GlossTokens glosses={s.glosses} size="sm" />
+                      </Card>
                     ))}
                   </ul>
                 )}
@@ -195,19 +227,15 @@ export function Translator() {
             </>
           )}
 
-          <p className="text-sm opacity-70">
+          <p className="text-sm text-muted">
             Only landmark coordinates are sent, and only the text of each sentence is kept.{" "}
-            <Link href="/translations" className="underline underline-offset-4">
-              Past translations
-            </Link>
+            <TextLink href="/translations">Past translations</TextLink>
             {" · "}
-            <Link href="/translate/video" className="underline underline-offset-4">
-              Translate a video instead
-            </Link>
+            <TextLink href="/translate/video">Translate a video instead</TextLink>
           </p>
         </div>
         {debug && (
-          <aside className="order-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          <aside aria-label="Landmark output" className="order-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <LandmarksPanel feed={feed} />
           </aside>
         )}

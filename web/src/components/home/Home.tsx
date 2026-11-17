@@ -3,132 +3,175 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { getJson, type LessonSummary, type Me } from "@/lib/api";
+import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+import { Callout } from "@/components/ui/Callout";
+import { Card, cardLinkCover } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { IconArrowRight, IconBook } from "@/components/ui/Icons";
+import { Meter } from "@/components/ui/Meter";
+import { NAV_ITEMS } from "@/components/ui/navigation";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Shell } from "@/components/ui/Shell";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ServerUnreachable } from "@/components/ui/States";
+import { useSession } from "@/hooks/useSession";
+import { getJson, type LessonSummary, type Progress } from "@/lib/api";
 
 export function Home() {
-  const [me, setMe] = useState<Me | null | undefined>(undefined);
-  const [lessons, setLessons] = useState<LessonSummary[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [devLogin, setDevLogin] = useState(false);
+  const { me } = useSession();
+  const [lessons, setLessons] = useState<LessonSummary[] | null>(null);
+  const [error, setError] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
 
   useEffect(() => {
-    Promise.all([getJson<Me>("/api/me"), getJson<LessonSummary[]>("/api/lessons")])
-      .then(([user, list]) => {
-        setMe(user);
-        setLessons(list ?? []);
-      })
-      .catch(() => {
-        setMe(null);
-        setError("The aSigner server is not reachable. Start it and reload.");
-      });
-    getJson<{ dev: boolean }>("/api/auth/methods")
-      .then((m) => setDevLogin(Boolean(m?.dev)))
-      .catch(() => {});
+    getJson<LessonSummary[]>("/api/lessons")
+      .then((list) => setLessons(list ?? []))
+      .catch(() => setError(true));
   }, []);
 
-  async function signOut() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setMe(null);
-  }
+  // Read-only, for the per-lesson bars; without it the cards simply show no progress.
+  useEffect(() => {
+    if (!me) return;
+    getJson<Progress>("/api/progress")
+      .then((p) => setProgress(p))
+      .catch(() => {});
+  }, [me]);
+
+  const first = lessons?.[0];
+  const tools = NAV_ITEMS.filter((item) => item.href !== "/" && (!item.signedIn || me));
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-4 py-10">
-      <header className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">aSigner</h1>
-        {me === undefined ? null : me ? (
-          <div className="flex items-center gap-3 text-sm">
-            <span>{me.name || me.email}</span>
-            <button onClick={signOut} className="rounded-md border px-3 py-1.5 hover:bg-foreground/5">
-              Sign out
-            </button>
-          </div>
+    <Shell
+      hero
+      width="default"
+      title="Learn Singapore Sign Language"
+      description="Sign to your camera and get feedback as you go."
+      actions={
+        first ? (
+          <ButtonLink
+            href={`/lessons/${encodeURIComponent(first.slug)}`}
+            variant="primary"
+            size="lg"
+            iconAfter={<IconArrowRight size={18} />}
+          >
+            Start with {first.title}
+          </ButtonLink>
         ) : (
-          // Plain links: the server redirects the whole page.
-          <div className="flex items-center gap-2">
-            {devLogin && (
-              <a href="/api/auth/dev-login" className="rounded-md border px-3 py-2 text-sm">
-                Local sign-in
-              </a>
-            )}
-            <a
-              href="/api/auth/login"
-              className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
-            >
-              Sign in with Google
-            </a>
-          </div>
-        )}
-      </header>
+          <ButtonLink href="#lessons" variant="primary" size="lg" iconAfter={<IconArrowRight size={18} />}>
+            Browse lessons
+          </ButtonLink>
+        )
+      }
+    >
+      <Callout tone="warning" title="A student project">
+        aSigner is a student project. It is not a substitute for learning from Deaf instructors, and its
+        lesson content has not yet been reviewed by an SgSL signer.
+      </Callout>
 
-      <section className="flex flex-col gap-3">
-        <p className="text-lg">
-          Learn Singapore Sign Language by signing to your camera and getting feedback as you go.
-        </p>
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-          aSigner is a student project. It is not a substitute for learning from Deaf instructors,
-          and its lesson content has not yet been reviewed by an SgSL signer.
-        </p>
+      <section aria-labelledby="lessons" className="flex flex-col gap-4">
+        <SectionHeading id="lessons">Lessons</SectionHeading>
+        {error ? (
+          <ServerUnreachable />
+        ) : lessons === null ? (
+          <ul aria-hidden className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1].map((i) => (
+              <li key={i}>
+                <Card className="flex flex-col gap-3">
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </Card>
+              </li>
+            ))}
+          </ul>
+        ) : lessons.length === 0 ? (
+          <EmptyState icon={<IconBook size={24} />} title="No lessons yet">
+            The server has no lessons to show.
+          </EmptyState>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {lessons.map((lesson) => (
+              <li key={lesson.slug} className="flex">
+                <LessonCard lesson={lesson} progress={progress} />
+              </li>
+            ))}
+          </ul>
+        )}
+        {lessons === null && !error && (
+          <p role="status" className="sr-only">
+            Loading lessons…
+          </p>
+        )}
       </section>
 
-      {error && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide opacity-60">Lessons</h2>
-        <ul className="flex flex-col gap-2">
-          {lessons.map((lesson) => (
-            <li key={lesson.slug}>
-              <Link
-                href={`/lessons/${encodeURIComponent(lesson.slug)}`}
-                className="block rounded-lg border p-4 hover:bg-foreground/5"
-              >
-                <div className="flex items-baseline justify-between gap-4">
-                  <span className="font-medium">{lesson.title}</span>
-                  <span className="text-sm opacity-60">{lesson.sign_count} signs</span>
-                </div>
-                <p className="mt-1 text-sm opacity-70">{lesson.summary}</p>
-              </Link>
-            </li>
-          ))}
+      <section aria-labelledby="tools" className="flex flex-col gap-4">
+        <SectionHeading id="tools">More in aSigner</SectionHeading>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {tools.map((tool) => {
+            const Icon = tool.icon;
+            return (
+              <li key={tool.href} className="flex">
+                <Card interactive padding="sm" className="flex w-full items-start gap-3 sm:p-4">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent-fg">
+                    <Icon size={20} />
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <Link href={tool.href} className={`font-semibold text-foreground ${cardLinkCover}`}>
+                      {tool.label}
+                    </Link>
+                    <span className="text-sm text-muted">{tool.description}</span>
+                  </span>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       </section>
+    </Shell>
+  );
+}
 
-      <nav className="flex flex-wrap gap-6 text-sm">
-        {me && (
-          <Link href="/progress" className="underline underline-offset-4">
-            Your progress
+function LessonCard({ lesson, progress }: { lesson: LessonSummary; progress: Progress | null }) {
+  // Progress rows carry their lesson's slug as `category`.
+  const mine = progress?.signs.filter((s) => s.category === lesson.slug) ?? [];
+  const mastered = progress ? mine.filter((s) => s.mastery === progress.max_mastery).length : 0;
+  return (
+    <Card interactive className="flex w-full flex-col gap-4">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-lg font-semibold tracking-tight">
+          <Link href={`/lessons/${encodeURIComponent(lesson.slug)}`} className={cardLinkCover}>
+            {lesson.title}
           </Link>
+        </h3>
+        <Badge className="shrink-0 tabular-nums">{lesson.sign_count} signs</Badge>
+      </div>
+      <p className="text-sm text-muted">{lesson.summary}</p>
+      <div className="mt-auto flex flex-col gap-2">
+        {progress && (
+          <>
+            <div className="flex items-baseline justify-between gap-2 text-xs text-muted">
+              <span>
+                <span className="font-semibold text-foreground tabular-nums">{mine.length}</span> of{" "}
+                {lesson.sign_count} practised
+              </span>
+              {mastered > 0 && <span className="tabular-nums">{mastered} mastered</span>}
+            </div>
+            <Meter
+              kind="progress"
+              size="sm"
+              tone="success"
+              value={mine.length}
+              max={Math.max(1, lesson.sign_count)}
+              label={`${lesson.title}: signs practised`}
+              valueText={`${mine.length} of ${lesson.sign_count}`}
+            />
+          </>
         )}
-        {me && (
-          <Link href="/translate" className="underline underline-offset-4">
-            Translate
-          </Link>
-        )}
-        {me && (
-          <Link href="/translate/video" className="underline underline-offset-4">
-            Translate a video
-          </Link>
-        )}
-        {me && (
-          <Link href="/translations" className="underline underline-offset-4">
-            Past translations
-          </Link>
-        )}
-        <Link href="/check" className="underline underline-offset-4">
-          Check your camera and tracking
-        </Link>
-        {me && (
-          <Link href="/record" className="underline underline-offset-4">
-            Record training clips
-          </Link>
-        )}
-        <Link href="/train" className="underline underline-offset-4">
-          Help train the sign model
-        </Link>
-      </nav>
-    </main>
+        <span aria-hidden className="inline-flex items-center gap-1 text-sm font-medium text-accent-fg">
+          Open lesson <IconArrowRight size={16} />
+        </span>
+      </div>
+    </Card>
   );
 }

@@ -1,10 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { PracticeSession } from "@/components/practice/PracticeSession";
+import { Button, TextLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Field, Select } from "@/components/ui/Field";
+import { IconArrowRight } from "@/components/ui/Icons";
 import { Demo, LessonFallback, Shell } from "@/components/ui/Shell";
 import { useLesson } from "@/hooks/useLesson";
 
@@ -20,7 +24,7 @@ export function PracticeView() {
   if (lesson.signs.length === 0) {
     return (
       <Shell back={back} backLabel="Back to lesson" title={lesson.title}>
-        <p className="text-sm opacity-70">This lesson has no signs yet.</p>
+        <EmptyState title="This lesson has no signs yet." />
       </Shell>
     );
   }
@@ -32,52 +36,56 @@ export function PracticeView() {
   const next = lesson.signs[(index + 1) % lesson.signs.length];
 
   return (
-    <Shell back={back} backLabel="Back to lesson" title={`Practise: ${sign.gloss}`}>
-      <label className="flex items-center gap-2 text-sm">
-        Sign
-        <select
-          value={sign.id}
-          onChange={(e) => setPicked(Number(e.target.value))}
-          className="rounded-md border bg-background px-2 py-1"
+    <Shell
+      back={back}
+      backLabel="Back to lesson"
+      width="default"
+      eyebrow={lesson.title}
+      title={`Practise: ${sign.gloss}`}
+    >
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+        <Card
+          as="section"
+          aria-label="Target sign"
+          className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:flex lg:items-stretch"
         >
-          {lesson.signs.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.gloss}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Demo path={sign.demo_path} gloss={sign.gloss} />
-        <div className="flex flex-col gap-2 text-sm">
-          <p className="opacity-80">
+          <Field label="Sign">
+            <Select value={sign.id} onChange={(e) => setPicked(Number(e.target.value))}>
+              {lesson.signs.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.gloss}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <p className="hidden font-mono text-5xl font-semibold tracking-tight break-all text-foreground lg:block" aria-hidden>
+            {sign.gloss}
+          </p>
+          {/* Beside the details on tablets, under them elsewhere. */}
+          <div className="md:col-start-2 md:row-span-4 md:row-start-1">
+            <Demo path={sign.demo_path} gloss={sign.gloss} />
+          </div>
+          <p className="text-sm text-muted">
             {sign.description ?? "Description awaiting review by an SgSL signer."}
           </p>
           {sign.sign_bank_url && (
-            <a
-              href={sign.sign_bank_url}
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-4"
-            >
+            <TextLink href={sign.sign_bank_url} external className="self-start text-sm">
               SgSL Sign Bank entry
-            </a>
+            </TextLink>
           )}
-        </div>
+          <p className="border-t border-line pt-4 text-sm text-muted">
+            Camera not tracking?{" "}
+            <TextLink href="/check">Check it here</TextLink>
+          </p>
+        </Card>
+        <PracticeSession sign={sign}>
+          {lesson.signs.length > 1 && (
+            <Button onClick={() => setPicked(next.id)} iconAfter={<IconArrowRight size={18} />}>
+              Next: {next.gloss}
+            </Button>
+          )}
+        </PracticeSession>
       </div>
-      <PracticeSession sign={sign}>
-        {lesson.signs.length > 1 && (
-          <button
-            onClick={() => setPicked(next.id)}
-            className="self-start rounded-md border px-3 py-1.5 text-sm hover:bg-foreground/5"
-          >
-            Next: {next.gloss}
-          </button>
-        )}
-      </PracticeSession>
-      <Link href="/check" className="text-sm underline underline-offset-4">
-        Camera not tracking? Check it here
-      </Link>
     </Shell>
   );
 }

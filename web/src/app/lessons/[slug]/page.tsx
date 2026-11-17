@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LessonView } from "@/components/lessons/LessonView";
+
+export const metadata: Metadata = { title: "Lesson" };
 
 // The route's params are read on the client, so the page needs a Suspense boundary.
 export default function Page() {

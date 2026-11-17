@@ -57,9 +57,9 @@ Never verified:
 | `deploy/training-vm/` | Docker Compose and Caddy for running the training page on its own Linux VM |
 | `deploy/trainer/` | Docker Compose for training on the GPU machine: pulls takes from that VM's Postgres and trains (`ml/Dockerfile`) |
 | `web/src/app/` | Routes only; each page renders one component |
-| `web/src/components/<feature>/` | `camera` (tracker, check page), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `train` (training page), `translate` (live and history), `ui` (shared page frame and small parts) |
+| `web/src/components/<feature>/` | `camera` (tracker, check page, the camera frame with its overlays and the parts shared by the two take recorders), `home`, `lessons` (lesson, quiz), `practice`, `progress`, `record`, `train` (training page), `translate` (live, video and history), `styleguide` (the `/styleguide` page), `ui` (page frame, header, footer and the shared components: buttons, cards, callouts, form fields, icons and the rest) |
 | `web/src/lib/` | `api.ts` (types and fetch helper), `practice.ts` (practice socket and its mock), `tracking/` (frame packing, MediaPipe setup) |
-| `web/src/hooks/` | Shared data hooks |
+| `web/src/hooks/` | Shared data hooks: `useLesson`, and `useSession` (who is signed in, read once for the header and home page) |
 
 ### Where new code goes
 
@@ -67,6 +67,7 @@ Never verified:
 - Routes and sockets stay thin. Anything worth testing without HTTP goes in `server/app/services/`. Services do not import from `routes/` or `ws/`.
 - Anything the model or training needs goes in `server/app/recognition/` and must not import FastAPI, settings or the database at module level.
 - A new screen: a page in `web/src/app/` and a component in its feature folder under `web/src/components/`. Server imports are absolute (`from app.services.practice import ...`); web imports use the `@/` alias.
+- Web UI: colours, radius, shadows and motion are tokens in `web/src/app/globals.css`, with light and dark values together; use them through Tailwind names such as `bg-surface`, `text-muted`, `border-line` and `text-danger-fg`, not palette classes such as `red-600`. Build screens from the components in `web/src/components/ui` (every page renders inside `Shell`) rather than styling buttons, cards, fields or notes by hand. `/styleguide` shows every token and component; add new ones there too.
 
 ## Gotchas
 
