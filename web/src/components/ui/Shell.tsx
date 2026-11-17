@@ -5,6 +5,7 @@ import { LoadingBlock, ServerUnreachable } from "@/components/ui/States";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Mannequin } from "@/components/demo/Mannequin";
 
 export type ShellWidth = "narrow" | "default" | "wide";
 
@@ -133,7 +134,10 @@ export function Mastery({ level, max }: { level: number; max: number }) {
   );
 }
 
-/** The demo slot. Empty until demo media that may be shown exists (see the handoff). */
+/**
+ * The demo slot: a mannequin for a recorded landmark clip (.json, see
+ * ml/export_demos.py), a video for anything else, empty for a sign with neither.
+ */
 export function Demo({ path, gloss }: { path: string | null; gloss: string }) {
   if (!path) {
     return (
@@ -143,6 +147,7 @@ export function Demo({ path, gloss }: { path: string | null; gloss: string }) {
       </div>
     );
   }
+  if (path.endsWith(".json")) return <Mannequin src={path} gloss={gloss} />;
   return (
     <video
       src={path}
